@@ -3,6 +3,7 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
+import { mensagemErroCadastro } from '@/lib/erros-auth'
 import { destinoSeguro } from '@/lib/redirecionamento'
 import { clienteServidor } from '@/lib/supabase/servidor'
 
@@ -73,15 +74,7 @@ export async function cadastrar(_: EstadoAuth, form: FormData): Promise<EstadoAu
       emailRedirectTo: `${await origem()}/auth/confirmar?proximo=${encodeURIComponent(proximo)}`,
     },
   })
-  if (error) {
-    return {
-      erro:
-        error.code === 'weak_password'
-          ? 'Escolha uma senha mais forte.'
-          : 'Não foi possível criar a conta.',
-      email: dados.data.email,
-    }
-  }
+  if (error) return { erro: mensagemErroCadastro(error.code), email: dados.data.email }
   if (!data.session) {
     return { mensagem: `Enviamos um e-mail para ${dados.data.email}. Confirme para continuar.` }
   }
