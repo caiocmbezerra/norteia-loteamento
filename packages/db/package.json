@@ -12,6 +12,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@norteia/dominio": "workspace:*"
+    "@norteia/dominio": "workspace:*",
+    "@supabase/supabase-js": "2.119.0"
   }
 }
