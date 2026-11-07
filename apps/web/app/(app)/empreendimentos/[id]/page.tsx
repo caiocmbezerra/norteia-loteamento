@@ -65,11 +65,18 @@ export default async function PaginaEmpreendimento({
           </>
         }
         acoes={
-          podeEditar && (
-            <Button asChild variant="outline">
-              <Link href={`/empreendimentos/${id}/editar`}>Editar dados</Link>
-            </Button>
-          )
+          <>
+            {temPapel(ctx, 'dono', 'financeiro', 'engenharia', 'contador', 'socio_leitura') && (
+              <Button asChild>
+                <Link href={`/empreendimentos/${id}/viabilidade`}>Viabilidade</Link>
+              </Button>
+            )}
+            {podeEditar && (
+              <Button asChild variant="outline">
+                <Link href={`/empreendimentos/${id}/editar`}>Editar dados</Link>
+              </Button>
+            )}
+          </>
         }
       />
 

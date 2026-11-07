@@ -37,7 +37,7 @@ export function Indicador({
   return (
     <div className="flex flex-col gap-1 rounded-lg border bg-background p-3">
       <span className="text-xs text-muted-foreground">{rotulo}</span>
-      <span className="text-lg font-semibold">{valor}</span>
+      <span className="text-base font-semibold sm:text-lg">{valor}</span>
       {nota && <span className="text-xs text-muted-foreground">{nota}</span>}
     </div>
   )

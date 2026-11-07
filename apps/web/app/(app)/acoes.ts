@@ -1,8 +1,9 @@
 'use server'
 
+import { criarDemonstracao } from '@norteia/aplicacao'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { COOKIE_TENANT, clientesDoUsuario } from '@/lib/contexto'
+import { COOKIE_TENANT, clientesDoUsuario, exigirContexto } from '@/lib/contexto'
 
 export async function trocarCliente(form: FormData) {
   const id = String(form.get('tenant') ?? '')
@@ -16,4 +17,11 @@ export async function trocarCliente(form: FormData) {
     })
   }
   redirect('/painel')
+}
+
+/** Empreendimento de demonstração com o caso de referência (Fase 2). */
+export async function criarEmpreendimentoDemonstracao() {
+  const ctx = await exigirContexto()
+  const id = await criarDemonstracao(ctx.db, ctx.tenant.id)
+  redirect(`/empreendimentos/${id}`)
 }
