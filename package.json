@@ -1,0 +1,32 @@
+{
+  "name": "norteia-loteamento",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --filter=@norteia/web",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "pnpm --filter @norteia/web test:e2e",
+    "test:fronteiras": "node scripts/verificar-fronteiras.mjs",
+    "db:test": "supabase test db",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "5.1.0",
+    "eslint": "10.14.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "supabase": "3.0.0",
+    "turbo": "2.11.10",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "5.1.0"
+  }
+}
