@@ -12,10 +12,11 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@norteia/db": "workspace:*",
     "@norteia/dominio": "workspace:*",
+    "@norteia/integracoes": "workspace:*",
     "@norteia/motor-financeiro": "workspace:*",
     "@norteia/projecao": "workspace:*",
-    "@norteia/integracoes": "workspace:*",
-    "@norteia/db": "workspace:*"
+    "@supabase/supabase-js": "2.119.0"
   }
 }
