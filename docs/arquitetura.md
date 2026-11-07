@@ -1,7 +1,7 @@
 # NorteIA Loteamento — Arquitetura
 
-> Status: **proposta para aprovação** (v0.1, 03/11/2026). Nenhum código de aplicação foi escrito.
-> Decisões marcadas com **[ABERTA]** dependem das dúvidas listadas na resposta que acompanha este documento.
+> Status: **proposta para aprovação** (v0.2, 07/11/2026). Nenhum código de aplicação foi escrito.
+> As decisões de produto D-001 a D-010 estão em `docs/decisoes.md`; regras de negócio em `docs/dominio.md`.
 
 ---
 
@@ -38,7 +38,7 @@
 | PDF | **React-PDF** no servidor para extratos/informes; modelos de contrato em **DOCX com placeholders** (`docx-templates`) | O loteador e o advogado editam o modelo no Word. |
 | Testes | **Vitest** (motor e domínio, cobertura 100% no motor), **pgTAP** (RLS, gatilhos, funções SQL), **Playwright** (fluxos ponta a ponta) | Cada camada testada onde o erro nasce. |
 | Observabilidade | **Sentry** + logs estruturados nas Edge Functions + tabela `job_execucao` | Saber quando a régua ou a conciliação falha. |
-| Hospedagem | **Vercel** (web) + **Supabase região `sa-east-1` (São Paulo)** | Latência e residência de dados no Brasil (LGPD). **[ABERTA: confirmação de custo/organização]** |
+| Hospedagem | **Vercel** (web) + **Supabase região `sa-east-1` (São Paulo)** | Latência e residência de dados no Brasil (LGPD). Projeto `krmfljdyzuiipfsfpqvn`, organização Pro (D-001). |
 
 **Por que não um backend separado (NestJS etc.) agora:** o volume (até ~3.000 lotes por empreendimento, dezenas de milhares de parcelas por cliente) cabe com folga no Postgres + Server Actions. A camada de *aplicação* (casos de uso) fica em pacote próprio (§3), então extrair um serviço depois é mudar o transporte, não a regra.
 
@@ -151,7 +151,8 @@ Regras da montagem:
 
 - **Realizado** é persistido como dado (é fato: pagamento, baixa).
 - **Comprometido, carteira e projetado** são calculados sob demanda a partir dos registros (são consequência). Para desempenho do painel consolidado, o resultado do motor fica em cache (`resultado_fluxo_cache`) invalidado por gatilho quando qualquer registro de origem do empreendimento muda.
-- **Plano original (baseline):** ao aprovar uma viabilidade, o sistema grava um **snapshot imutável** do fluxo projetado e das premissas (`plano_versao`). O painel compara esse snapshot com *realizado + projetado atual*. **[ABERTA: regras de re-baseline]**
+- **Plano original (baseline):** ao aprovar uma viabilidade, o sistema grava um **snapshot imutável** do fluxo projetado e das premissas (`plano_versao`). O painel compara esse snapshot com *realizado + projetado atual*. Revisões (re-baseline) só pelo papel `dono`, com justificativa obrigatória; cada revisão é uma nova `plano_versao` e a original nunca é apagada — o painel mostra original × última revisão × realizado+projetado (D-006).
+- **Base monetária:** projeções em **valores reais** (moeda da data-base) com TMA real, por padrão; visão nominal opcional aplica premissa de inflação ao fluxo e exige TMA nominal. O motor recusa combinar fluxo real com taxa nominal e vice-versa (D-005).
 
 ### 5.4 API do motor (esboço de assinaturas, não implementação)
 
@@ -273,7 +274,7 @@ Entidades de apoio não desenhadas: `documento` (polimórfico, Storage), `lead`,
 Hierarquia: **Tenant (cliente da NorteIA)** → Empresas → SPEs → Empreendimentos.
 
 - **Tenant** é a unidade de cobrança e de isolamento. Um grupo loteador com 3 empresas e 7 SPEs é *um* tenant.
-- **Usuário** é global (Supabase Auth). **Membro** liga usuário a tenant; um mesmo usuário pode ser membro de vários tenants (ex.: contador, corretor parceiro, sócio investidor em dois grupos). **[ABERTA: identidade única da família NorteIA]**
+- **Usuário** é global (Supabase Auth). **Membro** liga usuário a tenant; um mesmo usuário pode ser membro de vários tenants (ex.: contador, corretor parceiro, sócio investidor em dois grupos). Corretor parceiro acessa vários loteadores com o mesmo login. Login é **próprio deste produto**; cada pessoa recebe um `pessoa_global_id` estável para permitir unificar o login da família NorteIA no futuro sem migração destrutiva (D-003).
 - **Papéis com escopo:** `dono`, `financeiro`, `engenharia`, `comercial_gestor`, `corretor`, `contador`, `socio_leitura`, `permutante_leitura`, `comprador`. Cada papel é atribuído em um escopo (tenant inteiro, empresa, SPE ou empreendimento). Corretor vê só lotes, reservas e suas comissões; sócio vê só as SPEs em que participa.
 - **RLS:** função `auth_tem_acesso(tenant_id, escopo_id, permissao)` em `security definer`, apoiada em tabela de permissões materializada por usuário (rápida). O tenant ativo vai num claim do JWT (Custom Access Token Hook), mas a verificação **sempre** consulta a tabela de membros — o claim é só seleção, não autorização.
 - **Service role** usada apenas em Edge Functions de sistema (webhooks, jobs), que *sempre* filtram por tenant e gravam `executado_por = 'sistema:<job>'`.
@@ -305,9 +306,9 @@ Hierarquia: **Tenant (cliente da NorteIA)** → Empresas → SPEs → Empreendim
 
 | Porta | Métodos principais | Adaptador inicial | Futuro |
 | --- | --- | --- | --- |
-| `GatewayCobranca` | `criarCliente`, `emitirCobranca` (boleto+Pix), `cancelar`, `consultar`, `interpretarWebhook` | **Asaas** | Inter, Sicoob, Itaú (CNAB/API) |
+| `GatewayCobranca` (conta Asaas **do próprio loteador**, chave por tenant no Vault — D-004) | `criarCliente`, `emitirCobranca` (boleto+Pix), `cancelar`, `consultar`, `interpretarWebhook` | **Asaas** | Inter, Sicoob, Itaú (CNAB/API) |
 | `AssinaturaEletronica` | `criarEnvelope`, `adicionarSignatario`, `status`, `baixarAssinado`, `interpretarWebhook` | **Clicksign** | D4Sign |
-| `Mensageria` | `enviarTemplate`, `status`, `interpretarWebhook` | WhatsApp **[ABERTA: provedor]** + e-mail (Resend) | — |
+| `Mensageria` | `enviarTemplate`, `status`, `interpretarWebhook` | WhatsApp **Cloud API oficial (Meta)** (D-009) + e-mail (Resend) | — |
 | `FonteIndices` | `serie(codigo, de, ate)` | **BCB SGS** (IPCA 433, IGP-M 189, INCC-M 192 — códigos a confirmar na implementação) | IBGE/FGV direto |
 | `ExportacaoContabil` | `exportarLancamentos(periodo, layout)` | CSV/TXT genérico configurável | Domínio, Alterdata, Omie |
 | `ProvedorIA` | `extrairDocumento`, `responderComFerramentas` | Claude (Anthropic API) | — |
@@ -387,6 +388,6 @@ Convenções confirmadas (viram regras do motor e entram no `docs/dominio.md`):
 
 ---
 
-## 16. Decisões que dependem de você
+## 16. Situação das decisões
 
-Resumo das marcações **[ABERTA]** deste documento — detalhadas, em ordem de importância, na mensagem que acompanha esta proposta.
+Todas as decisões que estavam abertas foram tomadas em 07/11/2026 (D-003 a D-010, `docs/decisoes.md`). Ainda falta a aprovação deste documento, de `docs/dominio.md` e de `docs/roadmap.md`.
