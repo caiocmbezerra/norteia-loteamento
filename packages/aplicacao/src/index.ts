@@ -1,3 +1,3 @@
-// Casos de uso: orquestra repositórios, motor e integrações.
-// Implementação prevista no roadmap (docs/roadmap.md).
-export {}
+// Casos de uso: orquestram banco, motor e integrações. Recebem o cliente do banco por injeção.
+export { ErroAplicacao, traduzirErroBanco } from './erros'
+export { criarEmpreendimento, realizarCadastroInicial } from './empreendimentos'

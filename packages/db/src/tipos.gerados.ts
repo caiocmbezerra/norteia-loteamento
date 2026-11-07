@@ -512,6 +512,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: 'lotes_empreendimento_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
             foreignKeyName: 'lotes_tenant_id_empreendimento_id_quadra_id_fkey'
             columns: ['tenant_id', 'empreendimento_id', 'quadra_id']
             isOneToOne: false
@@ -911,6 +918,18 @@ export type Database = {
           p_papel: Database['public']['Enums']['papel']
           p_tenant: string
           p_validade_dias?: number
+        }
+        Returns: string
+      }
+      criar_empreendimento_com_lotes: {
+        Args: {
+          p_data_base: string
+          p_lotes: Json
+          p_municipio: string
+          p_nome: string
+          p_spe: string
+          p_tenant: string
+          p_uf: string
         }
         Returns: string
       }

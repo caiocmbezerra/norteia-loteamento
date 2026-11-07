@@ -12,3 +12,8 @@ export type NovaLinha<T extends keyof Public['Tables']> = Public['Tables'][T]['I
 export type Alteracao<T extends keyof Public['Tables']> = Public['Tables'][T]['Update']
 /** Valores de um enum: `Enum<'lote_status'>`. */
 export type Enum<T extends keyof Public['Enums']> = Public['Enums'][T]
+
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+/** Cliente do banco já tipado. A aplicação recebe este cliente por injeção. */
+export type ClienteBanco = SupabaseClient<Database>

@@ -1,0 +1,51 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { Cartao, TituloPagina } from '@/components/ui/cartao'
+import { exigirContexto } from '@/lib/contexto'
+
+export const metadata: Metadata = { title: 'Configurações' }
+
+const SECOES = [
+  {
+    href: '/configuracoes/membros',
+    titulo: 'Membros e convites',
+    texto: 'Quem acessa, com qual papel e em qual escopo.',
+  },
+  {
+    href: '/configuracoes/empresas',
+    titulo: 'Empresas e SPEs',
+    texto: 'Estrutura societária dos empreendimentos.',
+  },
+  {
+    href: '/configuracoes/auditoria',
+    titulo: 'Auditoria',
+    texto: 'Quem alterou o quê, quando, antes e depois.',
+  },
+]
+
+export default async function Configuracoes() {
+  const ctx = await exigirContexto()
+  return (
+    <>
+      <TituloPagina
+        titulo="Configurações"
+        subtitulo={`${ctx.tenant.nome} · plano ${ctx.tenant.plano}`}
+      />
+      <ul className="grid gap-4 sm:grid-cols-3">
+        {SECOES.map((s) => (
+          <li key={s.href}>
+            <Link
+              href={s.href}
+              className="block rounded-xl focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              <Cartao className="h-full transition-colors hover:border-primary/50">
+                <h2 className="font-semibold">{s.titulo}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{s.texto}</p>
+              </Cartao>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}

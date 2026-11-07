@@ -37,6 +37,10 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+        env:
+          # O build não acessa o banco; valores fictícios só para a configuração existir.
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
 
   banco:
     name: Banco (migrations + pgTAP)
@@ -67,7 +71,7 @@ jobs:
   e2e:
     name: Ponta a ponta (Playwright)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -78,6 +82,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Instalar Chromium
         run: pnpm --filter @norteia/web exec playwright install --with-deps chromium
+      - name: Subir Supabase local (banco, auth e API)
+        run: |
+          pnpm exec supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,storage-api,postgres-meta
+          pnpm exec supabase status -o env \
+            | grep -E '^(API_URL|PUBLISHABLE_KEY)=' \
+            | sed 's/^API_URL=/NEXT_PUBLIC_SUPABASE_URL=/; s/^PUBLISHABLE_KEY=/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=/' \
+            > apps/web/.env.local
       - name: Testes ponta a ponta (celular e desktop)
         run: pnpm test:e2e
       - uses: actions/upload-artifact@v4
