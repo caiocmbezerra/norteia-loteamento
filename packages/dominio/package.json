@@ -12,6 +12,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@norteia/motor-financeiro": "workspace:*"
+    "@norteia/motor-financeiro": "workspace:*",
+    "zod": "4.6.7"
   }
 }
