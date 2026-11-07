@@ -1,0 +1,17 @@
+{
+  "name": "@norteia/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tipos gerados do Supabase, cliente e repositórios.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@norteia/dominio": "workspace:*"
+  }
+}

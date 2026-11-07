@@ -1,0 +1,21 @@
+{
+  "name": "@norteia/aplicacao",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Casos de uso: orquestra repositórios, motor e integrações.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@norteia/dominio": "workspace:*",
+    "@norteia/motor-financeiro": "workspace:*",
+    "@norteia/projecao": "workspace:*",
+    "@norteia/integracoes": "workspace:*",
+    "@norteia/db": "workspace:*"
+  }
+}
