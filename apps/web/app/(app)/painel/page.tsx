@@ -6,6 +6,7 @@ import { SeloStatus } from '@/components/status-lote'
 import { Button } from '@/components/ui/button'
 import { Cartao, TituloPagina } from '@/components/ui/cartao'
 import { exigirContexto, temPapel } from '@/lib/contexto'
+import { criarEmpreendimentoDemonstracao } from '../acoes'
 
 export const metadata: Metadata = { title: 'Painel' }
 
@@ -26,11 +27,21 @@ export default async function Painel() {
         titulo="Painel"
         subtitulo={ctx.tenant.nome}
         acoes={
-          temPapel(ctx, 'dono', 'engenharia', 'comercial_gestor') && (
-            <Button asChild>
-              <Link href="/empreendimentos/novo">Novo empreendimento</Link>
-            </Button>
-          )
+          <>
+            {temPapel(ctx, 'dono') &&
+              !empreendimentos.some((e) => e.nome.startsWith('Demonstração')) && (
+                <form action={criarEmpreendimentoDemonstracao}>
+                  <Button type="submit" variant="outline">
+                    Criar demonstração
+                  </Button>
+                </form>
+              )}
+            {temPapel(ctx, 'dono', 'engenharia', 'comercial_gestor') && (
+              <Button asChild>
+                <Link href="/empreendimentos/novo">Novo empreendimento</Link>
+              </Button>
+            )}
+          </>
         }
       />
       {empreendimentos.length === 0 && (

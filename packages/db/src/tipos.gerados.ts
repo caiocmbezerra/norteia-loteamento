@@ -746,6 +746,64 @@ export type Database = {
           },
         ]
       }
+      plano_versoes: {
+        Row: {
+          aprovado_em: string
+          aprovado_por: string
+          empreendimento_id: string
+          id: string
+          motivo: string | null
+          premissas: NonNullable<Json>
+          resumo: NonNullable<Json>
+          tenant_id: string
+          tma_mensal: number
+          versao: number
+          viabilidade_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          aprovado_em?: string
+          aprovado_por: string
+          empreendimento_id: string
+          id?: string
+          motivo?: string | null
+          premissas: NonNullable<Json>
+          resumo: NonNullable<Json>
+          tenant_id: string
+          tma_mensal: number
+          versao: number
+          viabilidade_id: string
+        }
+        Update: {
+          aprovado_em?: string
+          aprovado_por?: string
+          empreendimento_id?: string
+          id?: string
+          motivo?: string | null
+          premissas?: NonNullable<Json>
+          resumo?: NonNullable<Json>
+          tenant_id?: string
+          tma_mensal?: number
+          versao?: number
+          viabilidade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'plano_versoes_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'plano_versoes_tenant_id_viabilidade_id_fkey'
+            columns: ['tenant_id', 'viabilidade_id']
+            isOneToOne: false
+            referencedRelation: 'viabilidades'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       planos: {
         Row: {
           id: string
@@ -904,12 +962,67 @@ export type Database = {
           },
         ]
       }
+      viabilidades: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          empreendimento_id: string
+          id: string
+          nome: string
+          premissas: NonNullable<Json>
+          situacao: Database['public']['Enums']['viabilidade_situacao']
+          tenant_id: string
+          tma_mensal: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id: string
+          id?: string
+          nome: string
+          premissas: NonNullable<Json>
+          situacao?: Database['public']['Enums']['viabilidade_situacao']
+          tenant_id: string
+          tma_mensal: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id?: string
+          id?: string
+          nome?: string
+          premissas?: NonNullable<Json>
+          situacao?: Database['public']['Enums']['viabilidade_situacao']
+          tenant_id?: string
+          tma_mensal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'viabilidades_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       aceitar_convite: { Args: { p_token: string }; Returns: string }
+      aprovar_viabilidade: {
+        Args: { p_motivo?: string; p_resumo: Json; p_viabilidade: string }
+        Returns: number
+      }
       criar_convite: {
         Args: {
           p_email: string
@@ -976,6 +1089,7 @@ export type Database = {
         | 'socio_leitura'
         | 'permutante_leitura'
       parametro_tipo: 'decimal' | 'inteiro' | 'centavos' | 'texto' | 'booleano'
+      viabilidade_situacao: 'rascunho' | 'aprovada' | 'arquivada'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1103,6 +1217,7 @@ export const Constants = {
         'permutante_leitura',
       ],
       parametro_tipo: ['decimal', 'inteiro', 'centavos', 'texto', 'booleano'],
+      viabilidade_situacao: ['rascunho', 'aprovada', 'arquivada'],
     },
   },
 } as const
