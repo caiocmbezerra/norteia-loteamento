@@ -22,9 +22,9 @@ Clientes, membros, papéis com escopo, convites, empresas, SPEs, glebas, empreen
 
 ## Critérios da Fase 1
 
-| Critério                                                                                | Situação                                                   |
-| --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Isolamento em todas as tabelas (pgTAP) e CI falha com tabela sem RLS                    | ✅                                                         |
-| Alterações em lote, empreendimento e parâmetro aparecem na auditoria com antes e depois | ✅                                                         |
-| Pequeno loteador cria conta, empreendimento e 100 lotes em menos de 15 minutos          | ✅ automatizado em ~3 s; falta o teste com pessoa real     |
-| Advisors de segurança do Supabase sem alertas críticos                                  | pendente: depende das migrations no projeto remoto (D-021) |
+| Critério                                                                                | Situação                                                              |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Isolamento em todas as tabelas (pgTAP) e CI falha com tabela sem RLS                    | ✅                                                                    |
+| Alterações em lote, empreendimento e parâmetro aparecem na auditoria com antes e depois | ✅                                                                    |
+| Pequeno loteador cria conta, empreendimento e 100 lotes em menos de 15 minutos          | ✅ automatizado em ~3 s; falta o teste com pessoa real                |
+| Advisors de segurança do Supabase sem alertas críticos                                  | integração GitHub ligada em 08/11/2026; verificar após a 1ª aplicação |
