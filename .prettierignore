@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+.next
+coverage
+dist
+supabase/.temp
+apps/web/next-env.d.ts
