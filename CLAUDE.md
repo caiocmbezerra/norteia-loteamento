@@ -13,7 +13,7 @@ Leia `README.md` e, antes de mexer em regra de negócio, `docs/dominio.md`. Deci
 
 ## Antes de enviar
 
-`pnpm format:check && pnpm lint && pnpm test:fronteiras && pnpm typecheck && pnpm test` e, se mexeu no banco, `pnpm db:test`.
+`pnpm format:check && pnpm lint && pnpm test:fronteiras && pnpm typecheck && pnpm test` e, se mexeu no banco, `pnpm exec supabase db reset && pnpm db:test && pnpm db:lint && pnpm db:tipos`. Testes de banco usam os auxiliares de `supabase/tests/auxiliares/testes.psql` (usuários, troca de usuário, contagem por tenant).
 
 ## Estilo
 

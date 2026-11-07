@@ -15,7 +15,9 @@
     "test:fronteiras": "node scripts/verificar-fronteiras.mjs",
     "db:test": "supabase test db",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:tipos": "supabase gen types typescript --local -s public > packages/db/src/tipos.gerados.ts && prettier --write packages/db/src/tipos.gerados.ts",
+    "db:lint": "supabase db lint -s public,privado --level warning --fail-on warning"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
