@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualidade:
+    name: Lint, tipos, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Formatação
+        run: pnpm format:check
+      - name: Lint
+        run: pnpm lint
+      - name: Fronteiras entre pacotes
+        run: pnpm test:fronteiras
+      - name: Tipos
+        run: pnpm typecheck
+      - name: Testes (motor com cobertura de 100%)
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+
+  banco:
+    name: Banco (migrations + pgTAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Subir Postgres local com as migrations
+        run: pnpm exec supabase db start
+      - name: Testes pgTAP (RLS, auditoria, travas)
+        run: pnpm exec supabase test db
+
+  e2e:
+    name: Ponta a ponta (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Instalar Chromium
+        run: pnpm --filter @norteia/web exec playwright install --with-deps chromium
+      - name: Testes ponta a ponta (celular e desktop)
+        run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: relatorio-playwright
+          path: apps/web/playwright-report
+          retention-days: 7
