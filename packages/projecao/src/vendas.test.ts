@@ -107,6 +107,7 @@ describe('projetarReceitas com contrato (Fase 5)', () => {
     valorCentavos: 46_000,
     amortizacaoCentavos: 45_000,
     jurosCentavos: 1_000,
+    correcaoCentavos: 0,
     situacao: 'aberta',
     recebimentos: [],
     ...o,
@@ -162,6 +163,18 @@ describe('projetarReceitas com contrato (Fase 5)', () => {
     // Tributos do recebido ficam comprometidos
     const tributoReal = l.filter((x) => x.categoria === 'tributo' && x.natureza === 'comprometido')
     expect(soma(tributoReal)).toBeCloseTo(-(10_000 + 23_700) * 0.0593, 6)
+  })
+
+  it('correção do reajuste entra como receita imobiliária', () => {
+    const l = projetar(
+      comContrato([
+        parcela({ valorCentavos: 47_000, correcaoCentavos: 1_000, vencimento: '2026-08-10' }),
+      ]),
+    )
+    const mes7 = l.filter((x) => x.mes === 7 && x.natureza === 'carteira')
+    const soma7 = (c: string) => soma(mes7.filter((x) => x.categoria === c))
+    expect(soma7('receita_imobiliaria')).toBeCloseTo(46_000 * 0.93, 6)
+    expect(soma7('receita_juros')).toBeCloseTo(1_000 * 0.93, 6)
   })
 
   it('comissão sobre o recebido no contrato e entrada em aberto', () => {

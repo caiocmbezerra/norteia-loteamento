@@ -26,6 +26,8 @@ export interface ParcelaReal {
   valorCentavos: number
   amortizacaoCentavos: number
   jurosCentavos: number
+  /** Correção monetária acumulada pelos reajustes (RN-K03); entra como receita imobiliária. */
+  correcaoCentavos: number
   situacao: 'aberta' | 'paga' | 'cancelada'
   recebimentos: readonly RecebimentoReal[]
 }
@@ -99,7 +101,9 @@ export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
       if (!porRecebido) lancarComissaoNoAto()
       for (const pc of v.contrato) {
         if (pc.situacao === 'cancelada') continue
-        const fracao = new Decimal(pc.amortizacaoCentavos).div(pc.valorCentavos)
+        const fracao = new Decimal(pc.amortizacaoCentavos + pc.correcaoCentavos).div(
+          pc.valorCentavos,
+        )
         const centro = pc.numero === 0 ? 'vendas' : 'carteira'
         const parte = (
           mes: number,
