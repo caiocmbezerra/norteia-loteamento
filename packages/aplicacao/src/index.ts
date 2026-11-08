@@ -23,3 +23,10 @@ export {
   registrarContrato,
   registrarPagamento,
 } from './custos'
+export {
+  type DadosVenda,
+  cancelarReserva,
+  registrarVenda,
+  reservarLote,
+  vendasDoEmpreendimento,
+} from './comercial'
