@@ -8,3 +8,4 @@ export {
   preencherModelo,
   textoDoDocumento,
 } from './documentos'
+export * from './dimob'

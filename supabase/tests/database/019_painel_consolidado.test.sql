@@ -30,9 +30,9 @@ insert into public.vendas (id, tenant_id, empreendimento_id, lote_id, comprador_
   select venda_id, testes.id('tenant'), empreendimento_id, lote_id, (select id from public.compradores where tenant_id = testes.id('tenant')),
          '2025-11-01', 10000000, 400000, 120, 0, 'sac', '2025-12-01' from carga;
 insert into public.contratos (id, tenant_id, empreendimento_id, venda_id, lote_id, comprador_id, multa_atraso, juros_mora_mensal,
-                             reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo)
+                             reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, numero)
   select contrato_id, testes.id('tenant'), empreendimento_id, venda_id, lote_id, (select id from public.compradores where tenant_id = testes.id('tenant')),
-         0.02, 0.01, 12, 2, 'ignorar' from carga;
+         0.02, 0.01, 12, 2, 'ignorar', row_number() over () from carga;
 -- 120 parcelas de 80.000: as 10 primeiras pagas, a 11ª vencida, o resto a vencer
 insert into public.parcelas (tenant_id, contrato_id, numero, vencimento, valor_centavos, amortizacao_centavos, juros_centavos, pago_centavos, situacao)
   select testes.id('tenant'), c.contrato_id, n, ('2025-12-01'::date + make_interval(months => n - 1))::date, 80000, 80000, 0,

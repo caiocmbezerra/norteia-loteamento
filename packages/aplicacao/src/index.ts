@@ -129,3 +129,4 @@ export {
   extratoPermutante,
   temPortal,
 } from './portal'
+export * from './fiscal'
