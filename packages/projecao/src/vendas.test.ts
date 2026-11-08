@@ -1,5 +1,7 @@
 import {
   CASO_REFERENCIA,
+  Decimal,
+  type Lancamento,
   TMA_REFERENCIA,
   projetarViabilidade,
   resumirViabilidade,
@@ -7,6 +9,7 @@ import {
 } from '@norteia/motor-financeiro'
 import { describe, expect, it } from 'vitest'
 import {
+  type ParcelaReal,
   type VendaReal,
   orcamentoDoPlano,
   projetarAtual,
@@ -93,6 +96,97 @@ describe('projetarReceitas', () => {
     const r = projetarReceitas({ ...base, hoje: '2027-07-15', vendas: [] }) // mês 18
     expect(r.vendasPorMes.slice(0, 18).every((q) => !q)).toBe(true)
     expect(r.vendasPorMes[18]).toBe(4)
+  })
+})
+
+describe('projetarReceitas com contrato (Fase 5)', () => {
+  // R$ 1.000,00: entrada 100,00 (paga) + 2 parcelas de 460,00 (450 amortização + 10 juros)
+  const parcela = (o: Partial<ParcelaReal>): ParcelaReal => ({
+    numero: 1,
+    vencimento: '2026-03-10',
+    valorCentavos: 46_000,
+    amortizacaoCentavos: 45_000,
+    jurosCentavos: 1_000,
+    situacao: 'aberta',
+    recebimentos: [],
+    ...o,
+  })
+  const comContrato = (contrato: ParcelaReal[], o: Partial<VendaReal> = {}) =>
+    venda({
+      dataVenda: '2026-02-10',
+      precoCentavos: 100_000,
+      entradaCentavos: 10_000,
+      parcelas: 2,
+      contrato,
+      ...o,
+    })
+  const premissas = { ...CASO_REFERENCIA, lotesVendaveis: 1 }
+  const projetar = (v: VendaReal, hoje = '2026-05-15') =>
+    projetarReceitas({ dataBase: '2026-01-01', hoje, premissas, vendas: [v] }).lancamentos
+  const soma = (l: Lancamento[]) => l.reduce((s, x) => s.plus(x.valor), new Decimal(0)).toNumber()
+
+  it('recebido é realizado no mês do pagamento, com encargos como juros', () => {
+    const l = projetar(
+      comContrato([
+        parcela({
+          numero: 0,
+          vencimento: '2026-02-10',
+          valorCentavos: 10_000,
+          amortizacaoCentavos: 10_000,
+          jurosCentavos: 0,
+          situacao: 'paga',
+          recebimentos: [{ data: '2026-02-10', principalCentavos: 10_000, encargosCentavos: 0 }],
+        }),
+        parcela({
+          recebimentos: [{ data: '2026-04-02', principalCentavos: 23_000, encargosCentavos: 700 }],
+        }),
+        parcela({ numero: 2, vencimento: '2026-08-10' }),
+        parcela({ numero: 3, situacao: 'cancelada' }),
+      ]),
+    )
+    const realizado = l.filter((x) => x.natureza === 'realizado')
+    expect(soma(realizado.filter((x) => x.mes === 1))).toBe(10_000)
+    expect(
+      soma(realizado.filter((x) => x.mes === 3 && x.categoria === 'receita_imobiliaria')),
+    ).toBe(22_500)
+    expect(soma(realizado.filter((x) => x.mes === 3 && x.categoria === 'receita_juros'))).toBe(
+      1_200,
+    )
+    // Saldo vencido da parcela 1 cai no mês atual (4); a parcela 2, no vencimento (7)
+    const carteira = l.filter(
+      (x) => x.natureza === 'carteira' && x.categoria !== 'comissao' && x.categoria !== 'tributo',
+    )
+    expect(soma(carteira.filter((x) => x.mes === 4))).toBeCloseTo(23_000 * 0.93, 6)
+    expect(soma(carteira.filter((x) => x.mes === 7))).toBeCloseTo(46_000 * 0.93, 6)
+    expect(carteira.some((x) => x.mes < 4)).toBe(false)
+    // Tributos do recebido ficam comprometidos
+    const tributoReal = l.filter((x) => x.categoria === 'tributo' && x.natureza === 'comprometido')
+    expect(soma(tributoReal)).toBeCloseTo(-(10_000 + 23_700) * 0.0593, 6)
+  })
+
+  it('comissão sobre o recebido no contrato e entrada em aberto', () => {
+    const l = projetar(
+      comContrato(
+        [
+          parcela({
+            numero: 0,
+            vencimento: '2026-02-10',
+            valorCentavos: 10_000,
+            amortizacaoCentavos: 10_000,
+            jurosCentavos: 0,
+          }),
+          parcela({
+            recebimentos: [{ data: '2026-03-10', principalCentavos: 46_000, encargosCentavos: 0 }],
+            situacao: 'paga',
+          }),
+        ],
+        { comissaoModo: 'recebido' },
+      ),
+    )
+    const comissao = l.filter((x) => x.categoria === 'comissao')
+    expect(soma(comissao.filter((x) => x.natureza === 'comprometido'))).toBe(-45_000 * 0.05)
+    // Entrada em aberto não sofre inadimplência no caso de referência
+    expect(soma(comissao.filter((x) => x.natureza === 'carteira'))).toBe(-10_000 * 0.05)
   })
 })
 
