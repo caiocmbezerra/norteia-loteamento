@@ -1852,6 +1852,183 @@ export type Database = {
         }
         Relationships: []
       }
+      permuta_lotes: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          lote_id: string
+          permuta_id: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          lote_id: string
+          permuta_id: string
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          lote_id?: string
+          permuta_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'permuta_lotes_tenant_id_lote_id_fkey'
+            columns: ['tenant_id', 'lote_id']
+            isOneToOne: false
+            referencedRelation: 'lotes'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'permuta_lotes_tenant_id_permuta_id_fkey'
+            columns: ['tenant_id', 'permuta_id']
+            isOneToOne: false
+            referencedRelation: 'permutas'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      permutantes: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          documento: string | null
+          email: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          tenant_id: string
+          usuario_id: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          tenant_id: string
+          usuario_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          tenant_id?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'permutantes_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'permutantes_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'perfis'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      permutas: {
+        Row: {
+          abate_distrato: boolean | null
+          atualizado_em: string
+          atualizado_por: string | null
+          base: string | null
+          criado_em: string
+          criado_por: string | null
+          empreendimento_id: string
+          id: string
+          inicio: string
+          observacao: string | null
+          percentual: number | null
+          permutante_id: string
+          situacao: string
+          tenant_id: string
+          tipo: string
+          valor_economico_centavos: number | null
+        }
+        ComputedFields: never
+        Insert: {
+          abate_distrato?: boolean | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          base?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id: string
+          id?: string
+          inicio: string
+          observacao?: string | null
+          percentual?: number | null
+          permutante_id: string
+          situacao?: string
+          tenant_id: string
+          tipo: string
+          valor_economico_centavos?: number | null
+        }
+        Update: {
+          abate_distrato?: boolean | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          base?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id?: string
+          id?: string
+          inicio?: string
+          observacao?: string | null
+          percentual?: number | null
+          permutante_id?: string
+          situacao?: string
+          tenant_id?: string
+          tipo?: string
+          valor_economico_centavos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'permutas_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'permutas_tenant_id_permutante_id_fkey'
+            columns: ['tenant_id', 'permutante_id']
+            isOneToOne: false
+            referencedRelation: 'permutantes'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       plano_funcionalidades: {
         Row: {
           funcionalidade: string
@@ -2156,6 +2333,60 @@ export type Database = {
             columns: ['tenant_id', 'parcela_id']
             isOneToOne: false
             referencedRelation: 'parcelas'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      repasses_permuta: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          data: string
+          estornado_em: string | null
+          id: string
+          motivo_estorno: string | null
+          observacao: string | null
+          permuta_id: string
+          tenant_id: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          estornado_em?: string | null
+          id?: string
+          motivo_estorno?: string | null
+          observacao?: string | null
+          permuta_id: string
+          tenant_id: string
+          valor_centavos: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          estornado_em?: string | null
+          id?: string
+          motivo_estorno?: string | null
+          observacao?: string | null
+          permuta_id?: string
+          tenant_id?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'repasses_permuta_tenant_id_permuta_id_fkey'
+            columns: ['tenant_id', 'permuta_id']
+            isOneToOne: false
+            referencedRelation: 'permutas'
             referencedColumns: ['tenant_id', 'id']
           },
         ]
@@ -2530,6 +2761,10 @@ export type Database = {
         }
         Returns: string
       }
+      criar_permuta: {
+        Args: { p_dados: Json; p_empreendimento: string; p_lotes?: string[]; p_permutante: string }
+        Returns: string
+      }
       criar_tenant: {
         Args: { p_cnpj?: string; p_nome: string; p_razao_social?: string }
         Returns: string
@@ -2551,6 +2786,7 @@ export type Database = {
         Args: { p_motivo: string; p_recebimento: string }
         Returns: undefined
       }
+      estornar_repasse: { Args: { p_motivo: string; p_repasse: string }; Returns: undefined }
       executar_distrato: {
         Args: {
           p_contrato: string
@@ -2593,6 +2829,10 @@ export type Database = {
           p_principal: number
           p_referencia?: string
         }
+        Returns: string
+      }
+      registrar_repasse: {
+        Args: { p_data: string; p_observacao?: string; p_permuta: string; p_valor: number }
         Returns: string
       }
       renegociar_contrato: {
