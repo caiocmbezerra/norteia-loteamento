@@ -11,6 +11,11 @@
 - Permuta física: lotes do permutante saem do estoque; valor econômico gerencial.
 - Permuta financeira: percentual sobre o recebido, a amortização ou o VGV; extrato apurado dos fatos, repasses registrados e estornáveis; saldo a repassar no fluxo atual.
 
+## Feito (6c — sócios)
+
+- SPE → sócios, participações com vigência, aportes, mútuos, devoluções e distribuições.
+- Resultado da SPE rateado pela participação vigente em cada mês; retorno (TIR) por sócio sobre os movimentos realizados.
+
 ## Critérios
 
 | Critério                                                               | Situação                                                                                |
@@ -22,5 +27,5 @@
 ## Pendente
 
 - Portal do permutante (Fase 7): extrato somente leitura com login próprio.
-- **6c:** sócios, participações com vigência, aportes, mútuos, distribuições e retorno por sócio.
+- Portal do sócio (Fase 7): a RLS já restringe cada sócio aos próprios dados.
 - **6d:** painéis por empreendimento, SPE, sócio e consolidado.

@@ -101,3 +101,14 @@ export {
   permutasFinanceiras,
   registrarRepasse,
 } from './permutas'
+export {
+  type PainelSpe,
+  type SocioNaSpe,
+  TIPOS_MOVIMENTO,
+  type TipoMovimento,
+  cadastrarSocio,
+  carregarPainelSpe,
+  definirParticipacao,
+  estornarMovimentoSocio,
+  registrarMovimentoSocio,
+} from './socios'
