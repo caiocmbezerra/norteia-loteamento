@@ -142,6 +142,54 @@ export type Database = {
           },
         ]
       }
+      compradores: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          cpf: string | null
+          criado_em: string
+          criado_por: string | null
+          email: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cpf?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cpf?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'compradores_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       contas_pagar: {
         Row: {
           atualizado_em: string
@@ -362,6 +410,77 @@ export type Database = {
             columns: ['tenant_id']
             isOneToOne: false
             referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      corretores: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          comissao_modo: string
+          comissao_percentual: number
+          creci: string | null
+          criado_em: string
+          criado_por: string | null
+          id: string
+          imobiliaria_id: string | null
+          nome: string
+          tenant_id: string
+          usuario_id: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          comissao_modo?: string
+          comissao_percentual?: number
+          creci?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          imobiliaria_id?: string | null
+          nome: string
+          tenant_id: string
+          usuario_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          comissao_modo?: string
+          comissao_percentual?: number
+          creci?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          imobiliaria_id?: string | null
+          nome?: string
+          tenant_id?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'corretores_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'corretores_tenant_id_imobiliaria_id_fkey'
+            columns: ['tenant_id', 'imobiliaria_id']
+            isOneToOne: false
+            referencedRelation: 'imobiliarias'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'corretores_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'perfis'
             referencedColumns: ['id']
           },
         ]
@@ -658,6 +777,48 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'glebas_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      imobiliarias: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          cnpj: string | null
+          criado_em: string
+          criado_por: string | null
+          id: string
+          nome: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cnpj?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome: string
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cnpj?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'imobiliarias_tenant_id_fkey'
             columns: ['tenant_id']
             isOneToOne: false
             referencedRelation: 'tenants'
@@ -1250,6 +1411,77 @@ export type Database = {
           },
         ]
       }
+      reservas: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          cliente_nome: string
+          corretor_id: string | null
+          criado_em: string
+          criado_por: string | null
+          empreendimento_id: string
+          expira_em: string
+          id: string
+          lote_id: string
+          motivo_encerramento: string | null
+          situacao: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cliente_nome: string
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id: string
+          expira_em: string
+          id?: string
+          lote_id: string
+          motivo_encerramento?: string | null
+          situacao?: string
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cliente_nome?: string
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id?: string
+          expira_em?: string
+          id?: string
+          lote_id?: string
+          motivo_encerramento?: string | null
+          situacao?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'reservas_tenant_id_corretor_id_fkey'
+            columns: ['tenant_id', 'corretor_id']
+            isOneToOne: false
+            referencedRelation: 'corretores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'reservas_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'reservas_tenant_id_lote_id_fkey'
+            columns: ['tenant_id', 'lote_id']
+            isOneToOne: false
+            referencedRelation: 'lotes'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       spes: {
         Row: {
           atualizado_em: string
@@ -1334,6 +1566,118 @@ export type Database = {
           },
         ]
       }
+      vendas: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          comissao_modo: string
+          comissao_percentual: number
+          comprador_id: string
+          corretor_id: string | null
+          criado_em: string
+          criado_por: string | null
+          data_venda: string
+          empreendimento_id: string
+          entrada_centavos: number
+          id: string
+          juros_mensal: number
+          justificativa_sem_registro: string | null
+          lote_id: string
+          parcelas: number
+          preco_centavos: number
+          primeira_parcela_em: string | null
+          reserva_id: string | null
+          sistema: string
+          situacao: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          comissao_modo?: string
+          comissao_percentual?: number
+          comprador_id: string
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data_venda: string
+          empreendimento_id: string
+          entrada_centavos: number
+          id?: string
+          juros_mensal: number
+          justificativa_sem_registro?: string | null
+          lote_id: string
+          parcelas: number
+          preco_centavos: number
+          primeira_parcela_em?: string | null
+          reserva_id?: string | null
+          sistema: string
+          situacao?: string
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          comissao_modo?: string
+          comissao_percentual?: number
+          comprador_id?: string
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data_venda?: string
+          empreendimento_id?: string
+          entrada_centavos?: number
+          id?: string
+          juros_mensal?: number
+          justificativa_sem_registro?: string | null
+          lote_id?: string
+          parcelas?: number
+          preco_centavos?: number
+          primeira_parcela_em?: string | null
+          reserva_id?: string | null
+          sistema?: string
+          situacao?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'vendas_tenant_id_comprador_id_fkey'
+            columns: ['tenant_id', 'comprador_id']
+            isOneToOne: false
+            referencedRelation: 'compradores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'vendas_tenant_id_corretor_id_fkey'
+            columns: ['tenant_id', 'corretor_id']
+            isOneToOne: false
+            referencedRelation: 'corretores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'vendas_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'vendas_tenant_id_lote_id_fkey'
+            columns: ['tenant_id', 'lote_id']
+            isOneToOne: false
+            referencedRelation: 'lotes'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'vendas_tenant_id_reserva_id_fkey'
+            columns: ['tenant_id', 'reserva_id']
+            isOneToOne: false
+            referencedRelation: 'reservas'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       viabilidades: {
         Row: {
           atualizado_em: string
@@ -1395,6 +1739,7 @@ export type Database = {
         Args: { p_motivo?: string; p_resumo: Json; p_viabilidade: string }
         Returns: number
       }
+      cancelar_reserva: { Args: { p_motivo: string; p_reserva: string }; Returns: undefined }
       criar_convite: {
         Args: {
           p_email: string
@@ -1434,6 +1779,7 @@ export type Database = {
         }
         Returns: string
       }
+      expirar_reservas: { Args: Record<PropertyKey, never>; Returns: number }
       parametro_vigente: {
         Args: {
           p_chave: string
@@ -1443,6 +1789,14 @@ export type Database = {
           p_tenant: string
         }
         Returns: Json
+      }
+      reservar_lote: {
+        Args: { p_cliente_nome: string; p_corretor?: string; p_horas?: number; p_lote: string }
+        Returns: string
+      }
+      vender_lote: {
+        Args: { p_justificativa?: string; p_lote: string; p_venda: Json }
+        Returns: string
       }
     }
     Enums: {
