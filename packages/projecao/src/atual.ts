@@ -4,6 +4,7 @@ import {
   projetarViabilidade,
 } from '@norteia/motor-financeiro'
 import type { ItemOrcamento, ProjecaoCustos } from './custos'
+import type { PermutaFinanceira } from './permutas'
 import { type VendaReal, projetarReceitas } from './vendas'
 
 /** Orçamento inicial a partir dos custos do plano aprovado (para o orçamento revisado). */
@@ -25,7 +26,12 @@ export function orcamentoDoPlano(premissas: PremissasViabilidade): ItemOrcamento
 export function projetarAtual(
   premissas: PremissasViabilidade,
   custos: ProjecaoCustos,
-  vendas?: { dataBase: string; hoje: string; vendas: readonly VendaReal[] },
+  vendas?: {
+    dataBase: string
+    hoje: string
+    vendas: readonly VendaReal[]
+    permutas?: readonly PermutaFinanceira[]
+  },
 ): ProjecaoViabilidade {
   const receitas = vendas
     ? projetarReceitas({ ...vendas, premissas })

@@ -20,3 +20,9 @@ export {
   type VendaReal,
   projetarReceitas,
 } from './vendas'
+export {
+  type ApuracaoRepasse,
+  type LinhaRepasse,
+  type PermutaFinanceira,
+  apurarRepasses,
+} from './permutas'

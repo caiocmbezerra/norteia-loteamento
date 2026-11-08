@@ -9,6 +9,7 @@ import {
   tabelaAmortizacao,
 } from '@norteia/motor-financeiro'
 import { mesDoFluxo } from './datas'
+import { type PermutaFinanceira, apurarRepasses } from './permutas'
 
 /** Recebimento não estornado de uma parcela do contrato. */
 export interface RecebimentoReal {
@@ -54,7 +55,9 @@ export interface VendaReal {
   /** Parcelas do contrato (Fase 5). Sem contrato, a tabela é recalculada a partir da venda. */
   contrato?: readonly ParcelaReal[]
   /** Distrato executado: a venda sai do VGV, o lote volta ao estoque e a devolução é saída. */
-  distrato?: { devolucoes: readonly DevolucaoReal[] }
+  distrato?: { data?: string | null; devolucoes: readonly DevolucaoReal[] }
+  /** Identificação para extratos (ex.: "Quadra A · Lote 1"). */
+  rotulo?: string
 }
 
 export interface EntradaReceitas {
@@ -63,6 +66,8 @@ export interface EntradaReceitas {
   /** Premissas do plano vigente: inadimplência, tributos e ritmo para o estoque restante. */
   premissas: PremissasViabilidade
   vendas: readonly VendaReal[]
+  /** Permutas financeiras do empreendimento (RN-T03). */
+  permutas?: readonly PermutaFinanceira[]
 }
 
 const UM = new Decimal(1)
@@ -226,9 +231,59 @@ export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
     vendasPorMes[mes]! += q
   }
 
+  // Repasse ao permutante financeiro (RN-T03, RN-T04): pago = realizado; devido e não pago =
+  // comprometido; sobre as receitas futuras, na mesma natureza delas.
+  const repasses: Lancamento[] = []
+  const repassar = (mes: number, valor: Decimal, natureza: Lancamento['natureza']) => {
+    if (!valor.isZero())
+      repasses.push({ mes, valor, categoria: 'repasse_permuta', natureza, centroCusto: 'permuta' })
+  }
+  for (const pm of e.permutas ?? []) {
+    const pct = new Decimal(pm.percentual)
+    const mesInicio = mesDoFluxo(e.dataBase, pm.inicio)
+    for (const pg of pm.pagos)
+      if (pg.data <= e.hoje)
+        repassar(
+          mesDoFluxo(e.dataBase, pg.data),
+          new Decimal(pg.valorCentavos).negated(),
+          'realizado',
+        )
+    repassar(
+      mesAtual,
+      new Decimal(apurarRepasses(pm, e.vendas, e.hoje).saldoCentavos).negated(),
+      'comprometido',
+    )
+    if (pm.base === 'vgv') {
+      for (const [m, q] of projetadas.vendasPorMes.entries())
+        if (q && m >= mesInicio)
+          repassar(m, new Decimal(p.precoLoteCentavos).times(q).times(pct).negated(), 'projetado')
+    } else {
+      const futuras = [
+        ...lancamentos.filter((l) => l.natureza === 'carteira'),
+        ...projetadas.lancamentos.filter((l) => l.natureza === 'projetado'),
+      ]
+      for (const l of futuras)
+        if (
+          l.mes >= mesInicio &&
+          (l.categoria === 'receita_imobiliaria' ||
+            (pm.base === 'recebido' && l.categoria === 'receita_juros'))
+        )
+          repassar(l.mes, l.valor.times(pct).negated(), l.natureza)
+      if (pm.abateDistrato)
+        for (const v of e.vendas)
+          for (const d of v.distrato?.devolucoes ?? [])
+            if (!d.pagoEm)
+              repassar(
+                Math.max(mesDoFluxo(e.dataBase, d.vencimento), mesAtual),
+                new Decimal(d.valorCentavos).times(pct),
+                'comprometido',
+              )
+    }
+  }
+
   return {
     base: p.base,
-    lancamentos: [...lancamentos, ...projetadas.lancamentos],
+    lancamentos: [...lancamentos, ...projetadas.lancamentos, ...repasses],
     vendasPorMes,
     vgvVendido: vgvReal.plus(projetadas.vgvVendido),
   }

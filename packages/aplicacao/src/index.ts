@@ -92,3 +92,12 @@ export {
   regrasDistrato,
   simularDistrato,
 } from './distrato'
+export {
+  type DadosPermutante,
+  type PermutaDetalhe,
+  carregarPermutas,
+  criarPermuta,
+  estornarRepasse,
+  permutasFinanceiras,
+  registrarRepasse,
+} from './permutas'
