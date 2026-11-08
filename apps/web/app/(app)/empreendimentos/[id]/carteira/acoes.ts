@@ -2,6 +2,8 @@
 
 import {
   INDICES_REAJUSTE,
+  cederContrato,
+  trocarLote,
   anteciparParcelas,
   renegociarContrato,
   cancelarCobranca,
@@ -235,4 +237,91 @@ export async function antecipar(
   }
   revalidar(empreendimentoId, contratoId)
   redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?antecipado=1`)
+}
+
+export async function ceder(
+  empreendimentoId: string,
+  contratoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const hoje = hojeSaoPaulo()
+    const r = z
+      .object({
+        nome: z.string().trim().min(2, 'Nome do cessionário: ao menos 2 caracteres.'),
+        cpf: z
+          .string()
+          .transform((v) => v.replace(/\D/g, ''))
+          .refine((v) => v === '' || v.length === 11, 'CPF: informe os 11 dígitos.'),
+        email: z.union([z.literal(''), z.email('E-mail inválido.')]),
+        telefone: z.string().trim().max(30),
+        data: z.iso
+          .date({ error: 'Data inválida.' })
+          .refine((d) => d <= hoje, 'A data do aditivo não pode estar no futuro.'),
+        motivo: z.string().trim().min(5, 'Descreva o motivo (ao menos 5 caracteres).'),
+      })
+      .parse(valoresDoFormulario(form))
+    const vazio = (v: string) => (v.trim() === '' ? null : v.trim())
+    await cederContrato(ctx.db, ctx.tenant.id, contratoId, {
+      cessionario: {
+        nome: r.nome,
+        cpf: vazio(r.cpf),
+        email: vazio(r.email),
+        telefone: vazio(r.telefone),
+      },
+      data: r.data,
+      motivo: r.motivo,
+    })
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?cedido=1`)
+}
+
+export async function trocar(
+  empreendimentoId: string,
+  contratoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const hoje = hojeSaoPaulo()
+    const r = z
+      .object({
+        lote: z.uuid({ error: 'Escolha o novo lote.' }),
+        preco: dinheiro('Preço', 1),
+        data: z.iso
+          .date({ error: 'Data inválida.' })
+          .refine((d) => d <= hoje, 'A data do aditivo não pode estar no futuro.'),
+        motivo: z.string().trim().min(5, 'Descreva o motivo (ao menos 5 caracteres).'),
+        parcelas: z.coerce
+          .number()
+          .int()
+          .min(1, 'Parcelas: mínimo 1.')
+          .max(480, 'Parcelas: máximo 480.'),
+        juros,
+        sistema: z.enum(['price', 'sac']),
+        primeiraParcela: z.iso.date({ error: 'Informe a data da 1ª parcela.' }),
+      })
+      .parse(valoresDoFormulario(form))
+    await trocarLote(ctx.db, contratoId, {
+      loteId: r.lote,
+      precoCentavos: r.preco,
+      data: r.data,
+      motivo: r.motivo,
+      parcelas: r.parcelas,
+      jurosMensal: r.juros,
+      sistema: r.sistema,
+      primeiraParcelaEm: r.primeiraParcela,
+    })
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  revalidatePath(`/empreendimentos/${empreendimentoId}`)
+  redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?trocado=1`)
 }

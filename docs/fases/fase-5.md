@@ -26,6 +26,11 @@
 - Antecipação de parcelas a vencer com desconto dos juros não decorridos (RN-K08); quitação antecipada.
 - Termo de quitação para imprimir/PDF (texto-modelo, PL-17).
 
+## Feito (5c-3a)
+
+- Cessão do contrato a outro comprador por aditivo (adimplência exigida conforme parâmetro do cliente).
+- Troca de lote por aditivo, com a diferença de preço no novo plano e o lote anterior de volta ao estoque.
+
 ## Critérios
 
 | Critério                                                               | Situação                                           |
@@ -45,4 +50,4 @@
 - Crédito por pagamento a maior.
 - Conferir o código do INCC no SGS e ativar a série.
 - **5c-2:** régua de cobrança (e-mail/WhatsApp, opt-out — RN-K10), com envio dos links do Asaas.
-- **5c-3:** cessão de contrato e troca de lote por aditivo, modelos de contrato (DOCX) e assinatura eletrônica (PL-06).
+- **5c-3b:** modelos de contrato e de termos (DOCX) editáveis por cliente e assinatura eletrônica (PL-06).

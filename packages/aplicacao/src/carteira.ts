@@ -10,6 +10,7 @@ import {
   gerarParcelasContrato,
 } from '@norteia/motor-financeiro'
 import type { ParcelaReal } from '@norteia/projecao'
+import { type DadosComprador, obterComprador } from './comercial'
 import { ErroAplicacao, traduzirErroBanco } from './erros'
 
 type ErroBanco = { code?: string; message: string; hint?: string | null }
@@ -141,6 +142,8 @@ export interface ContratoDetalhe {
   sistema: 'price' | 'sac'
   aditivos: {
     id: string
+    tipo: 'renegociacao' | 'cessao' | 'troca_lote'
+    condicoes: Record<string, unknown>
     data: string
     motivo: string
     saldoAnteriorCentavos: number
@@ -177,7 +180,7 @@ export async function carregarContrato(
   const { data: c, error } = await db
     .from('contratos')
     .select(
-      'id, tenant_id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos), vendas(juros_mensal, sistema), aditivos(id, data, motivo, saldo_anterior_centavos, encargos_incorporados_centavos, desconto_centavos, novo_saldo_centavos, parcelas_anteriores)',
+      'id, tenant_id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos), vendas(juros_mensal, sistema), aditivos(id, tipo, data, motivo, condicoes, saldo_anterior_centavos, encargos_incorporados_centavos, desconto_centavos, novo_saldo_centavos, parcelas_anteriores)',
     )
     .eq('id', contratoId)
     .maybeSingle()
@@ -304,6 +307,8 @@ export async function carregarContrato(
       .sort((a, b) => a.data.localeCompare(b.data))
       .map((a) => ({
         id: a.id,
+        tipo: a.tipo as 'renegociacao' | 'cessao' | 'troca_lote',
+        condicoes: (a.condicoes ?? {}) as Record<string, unknown>,
         data: a.data,
         motivo: a.motivo,
         saldoAnteriorCentavos: a.saldo_anterior_centavos,
@@ -694,4 +699,98 @@ export async function anteciparParcelas(
     parcelas: itens.length,
     descontoCentavos: itens.reduce((t, i) => t + i.desconto_centavos, 0),
   }
+}
+
+/** Cessão (RN-K07): cadastra ou reaproveita o cessionário e passa o contrato a ele. */
+export async function cederContrato(
+  db: ClienteBanco,
+  tenantId: string,
+  contratoId: string,
+  d: { cessionario: DadosComprador; data: string; motivo: string },
+): Promise<string> {
+  const cessionario = await obterComprador(db, tenantId, d.cessionario)
+  const { data, error } = await db.rpc('ceder_contrato', {
+    p_contrato: contratoId,
+    p_cessionario: cessionario,
+    p_data: d.data,
+    p_motivo: d.motivo,
+  })
+  falhar(error)
+  return data!
+}
+
+export interface DadosTrocaLote {
+  loteId: string
+  precoCentavos: number
+  data: string
+  motivo: string
+  parcelas: number
+  jurosMensal: string
+  sistema: 'price' | 'sac'
+  primeiraParcelaEm: string
+}
+
+/**
+ * Troca de lote (RN-K07): saldo em aberto + (preço do novo lote − preço atual) em novo plano do
+ * motor; o lote antigo volta ao estoque.
+ */
+export async function trocarLote(
+  db: ClienteBanco,
+  contratoId: string,
+  d: DadosTrocaLote,
+): Promise<string> {
+  const [{ data: c, error }, parcelas] = await Promise.all([
+    db.from('contratos').select('vendas(preco_centavos)').eq('id', contratoId).single(),
+    paginar((de, ate) =>
+      db
+        .from('parcelas')
+        .select('numero, valor_centavos, pago_centavos, situacao')
+        .eq('contrato_id', contratoId)
+        .order('numero')
+        .range(de, ate),
+    ),
+  ])
+  falhar(error)
+  const saldo = parcelas
+    .filter((p) => p.situacao === 'aberta')
+    .reduce((t, p) => t + p.valor_centavos - p.pago_centavos, 0)
+  const novo = saldo + d.precoCentavos - (c!.vendas?.preco_centavos ?? 0)
+  if (novo <= 0)
+    throw new ErroAplicacao(
+      'Com esse preço não resta saldo: a diferença é devolução (distrato).',
+      'invalido',
+      'preco',
+    )
+  const ultimo = parcelas.reduce((m, p) => Math.max(m, p.numero), 0)
+  const plano = gerarParcelasContrato({
+    precoCentavos: centavos(novo),
+    entradaCentavos: centavos(0),
+    dataEntrada: d.data,
+    parcelas: d.parcelas,
+    jurosMensal: new Decimal(d.jurosMensal),
+    sistema: d.sistema,
+    primeiraParcelaEm: d.primeiraParcelaEm,
+  })
+  const { data, error: erro } = await db.rpc('trocar_lote', {
+    p_contrato: contratoId,
+    p_lote_novo: d.loteId,
+    p_data: d.data,
+    p_motivo: d.motivo,
+    p_preco_novo: d.precoCentavos,
+    p_condicoes: {
+      parcelas: d.parcelas,
+      juros_mensal: d.jurosMensal,
+      sistema: d.sistema,
+      primeira_parcela_em: d.primeiraParcelaEm,
+    },
+    p_parcelas: plano.map((p) => ({
+      numero: ultimo + p.numero,
+      vencimento: p.vencimento,
+      valor_centavos: p.valor,
+      amortizacao_centavos: p.amortizacao,
+      juros_centavos: p.juros,
+    })),
+  })
+  falhar(erro)
+  return data!
 }

@@ -16,12 +16,14 @@ import type { EstadoFormulario } from '@/lib/acao'
 import {
   antecipar,
   cancelarCobrancaAcao,
+  ceder,
   emitirCobranca,
   estornar,
   gerar,
   reajustar,
   receber,
   renegociar,
+  trocar,
 } from './acoes'
 
 const moeda = (c: number) => formatarMoeda(arredondarCentavos(String(c)))
@@ -569,6 +571,230 @@ export function FormularioAntecipacao({
       </output>
       <Button type="submit" disabled={enviando || lista.length === 0} className="self-start">
         {enviando ? 'Registrando…' : 'Registrar antecipação'}
+      </Button>
+    </form>
+  )
+}
+
+/** Cessão do contrato a outro comprador (o plano de parcelas não muda). */
+export function FormularioCessao({
+  empreendimentoId,
+  contratoId,
+  hoje,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  hoje: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    ceder.bind(null, empreendimentoId, contratoId),
+    {},
+  )
+  const er = estado.erros ?? {}
+  const v = (k: string) => estado.valores?.[k]
+  return (
+    <form action={acao} className="flex flex-col gap-3" noValidate>
+      {estado.erro && <Alerta>{estado.erro}</Alerta>}
+      <div className="grid grid-cols-2 gap-3">
+        <Campo id="ces-nome" rotulo="Nome do cessionário" erro={er.nome}>
+          <Entrada {...aria('ces', 'nome', er.nome)} defaultValue={v('nome')} autoComplete="off" />
+        </Campo>
+        <Campo id="ces-cpf" rotulo="CPF do cessionário" erro={er.cpf}>
+          <Entrada {...aria('ces', 'cpf', er.cpf)} inputMode="numeric" defaultValue={v('cpf')} />
+        </Campo>
+        <Campo id="ces-email" rotulo="E-mail" erro={er.email}>
+          <Entrada {...aria('ces', 'email', er.email)} type="email" defaultValue={v('email')} />
+        </Campo>
+        <Campo id="ces-telefone" rotulo="Telefone">
+          <Entrada id="ces-telefone" name="telefone" inputMode="tel" defaultValue={v('telefone')} />
+        </Campo>
+        <Campo id="ces-data" rotulo="Data da cessão" erro={er.data}>
+          <Entrada
+            {...aria('ces', 'data', er.data)}
+            type="date"
+            max={hoje}
+            defaultValue={v('data') ?? hoje}
+          />
+        </Campo>
+        <Campo id="ces-motivo" rotulo="Motivo" erro={er.motivo}>
+          <Entrada {...aria('ces', 'motivo', er.motivo)} defaultValue={v('motivo')} />
+        </Campo>
+      </div>
+      <Button type="submit" disabled={enviando} className="self-start">
+        {enviando ? 'Registrando…' : 'Registrar aditivo de cessão'}
+      </Button>
+    </form>
+  )
+}
+
+/** Troca de lote: a diferença de preço entra no saldo, que vira novo plano (prévia pelo motor). */
+export function FormularioTrocaLote({
+  empreendimentoId,
+  contratoId,
+  lotes,
+  saldoCentavos,
+  precoAtualCentavos,
+  jurosMensal,
+  sistema,
+  hoje,
+  primeiraParcela,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  lotes: { id: string; rotulo: string; precoCentavos: number | null }[]
+  saldoCentavos: number
+  precoAtualCentavos: number
+  jurosMensal: string
+  sistema: 'price' | 'sac'
+  hoje: string
+  primeiraParcela: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    trocar.bind(null, empreendimentoId, contratoId),
+    {},
+  )
+  const er = estado.erros ?? {}
+  const v = (k: string, padrao: string) => estado.valores?.[k] ?? padrao
+  const [campos, setCampos] = useState({
+    lote: v('lote', ''),
+    preco: v('preco', ''),
+    parcelas: v('parcelas', '12'),
+    juros: v('juros', new Decimal(jurosMensal).times(100).toString().replace('.', ',')),
+    sistema: v('sistema', sistema) as 'price' | 'sac',
+    primeiraParcela: v('primeiraParcela', primeiraParcela),
+    data: v('data', hoje),
+  })
+  const escolherLote = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const l = lotes.find((x) => x.id === e.target.value)
+    setCampos({
+      ...campos,
+      lote: e.target.value,
+      preco: l?.precoCentavos ? emTexto(l.precoCentavos) : campos.preco,
+    })
+  }
+  const mudar =
+    (k: keyof typeof campos) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setCampos({ ...campos, [k]: e.target.value })
+  const previa = useMemo(() => {
+    const preco = lerCentavos(campos.preco)
+    const n = Number(campos.parcelas)
+    const taxa = /^\d{1,2}(,\d{1,4})?$/.test(campos.juros)
+      ? new Decimal(campos.juros.replace(',', '.')).div(100)
+      : null
+    if (!preco || !taxa || !Number.isInteger(n) || n < 1 || n > 480) return null
+    const novo = saldoCentavos + preco - precoAtualCentavos
+    if (
+      novo <= 0 ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(campos.primeiraParcela) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(campos.data)
+    )
+      return { novo, plano: null }
+    const plano = gerarParcelasContrato({
+      precoCentavos: centavos(novo),
+      entradaCentavos: centavos(0),
+      dataEntrada: campos.data,
+      parcelas: n,
+      jurosMensal: taxa,
+      sistema: campos.sistema,
+      primeiraParcelaEm: campos.primeiraParcela,
+    })
+    return { novo, plano }
+  }, [campos, saldoCentavos, precoAtualCentavos])
+  return (
+    <form action={acao} className="flex flex-col gap-3" noValidate>
+      {estado.erro && <Alerta>{estado.erro}</Alerta>}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Campo id="tro-lote" rotulo="Novo lote" erro={er.lote}>
+          <Selecao {...aria('tro', 'lote', er.lote)} value={campos.lote} onChange={escolherLote}>
+            <option value="">Escolha…</option>
+            {lotes.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.rotulo}
+              </option>
+            ))}
+          </Selecao>
+        </Campo>
+        <Campo id="tro-preco" rotulo="Preço do novo lote (R$)" erro={er.preco}>
+          <Entrada
+            {...aria('tro', 'preco', er.preco)}
+            inputMode="decimal"
+            value={campos.preco}
+            onChange={mudar('preco')}
+          />
+        </Campo>
+        <Campo id="tro-parcelas" rotulo="Parcelas do saldo" erro={er.parcelas}>
+          <Entrada
+            {...aria('tro', 'parcelas', er.parcelas)}
+            inputMode="numeric"
+            value={campos.parcelas}
+            onChange={mudar('parcelas')}
+          />
+        </Campo>
+        <Campo id="tro-juros" rotulo="Juros ao mês (%)" erro={er.juros}>
+          <Entrada
+            {...aria('tro', 'juros', er.juros)}
+            inputMode="decimal"
+            value={campos.juros}
+            onChange={mudar('juros')}
+          />
+        </Campo>
+        <Campo id="tro-sistema" rotulo="Sistema">
+          <Selecao
+            id="tro-sistema"
+            name="sistema"
+            value={campos.sistema}
+            onChange={mudar('sistema')}
+          >
+            <option value="price">Price</option>
+            <option value="sac">SAC</option>
+          </Selecao>
+        </Campo>
+        <Campo id="tro-primeiraParcela" rotulo="1ª parcela" erro={er.primeiraParcela}>
+          <Entrada
+            {...aria('tro', 'primeiraParcela', er.primeiraParcela)}
+            type="date"
+            value={campos.primeiraParcela}
+            onChange={mudar('primeiraParcela')}
+          />
+        </Campo>
+        <Campo id="tro-data" rotulo="Data da troca" erro={er.data}>
+          <Entrada
+            {...aria('tro', 'data', er.data)}
+            type="date"
+            max={hoje}
+            value={campos.data}
+            onChange={mudar('data')}
+          />
+        </Campo>
+        <Campo id="tro-motivo" rotulo="Motivo" erro={er.motivo}>
+          <Entrada {...aria('tro', 'motivo', er.motivo)} defaultValue={estado.valores?.motivo} />
+        </Campo>
+      </div>
+      <output aria-live="polite" className="rounded-lg border bg-muted/50 p-3 text-sm">
+        {previa ? (
+          <>
+            <span className="block">
+              Saldo {moeda(saldoCentavos)} + diferença de preço {moeda(previa.novo - saldoCentavos)}{' '}
+              = <strong>{moeda(previa.novo)}</strong>
+            </span>
+            {previa.plano ? (
+              <span className="block text-xs text-muted-foreground">
+                {campos.sistema === 'price'
+                  ? `${previa.plano.length} × ${moeda(previa.plano[0]!.valor)}`
+                  : `de ${moeda(previa.plano[0]!.valor)} a ${moeda(previa.plano.at(-1)!.valor)}`}
+              </span>
+            ) : (
+              <span className="block text-xs text-destructive">
+                Sem saldo depois da troca: a diferença é devolução (distrato).
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="text-muted-foreground">Escolha o lote e as condições do saldo.</span>
+        )}
+      </output>
+      <Button type="submit" disabled={enviando} className="self-start">
+        {enviando ? 'Registrando…' : 'Registrar aditivo de troca de lote'}
       </Button>
     </form>
   )

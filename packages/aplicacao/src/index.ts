@@ -24,7 +24,9 @@ export {
   registrarPagamento,
 } from './custos'
 export {
+  type DadosComprador,
   type DadosVenda,
+  obterComprador,
   cancelarReserva,
   registrarVenda,
   reservarLote,
@@ -35,6 +37,7 @@ export {
   type ContratoNaCarteira,
   type DadosRecebimento,
   type DadosRenegociacao,
+  type DadosTrocaLote,
   INDICES_REAJUSTE,
   type IndiceReajuste,
   type PainelCarteira,
@@ -42,12 +45,14 @@ export {
   type RecebimentoContrato,
   anteciparParcelas,
   carregarCarteira,
+  cederContrato,
   carregarContrato,
   estornarRecebimento,
   gerarContrato,
   reajustarContrato,
   registrarRecebimento,
   renegociarContrato,
+  trocarLote,
 } from './carteira'
 export {
   type IntegracaoAsaas,

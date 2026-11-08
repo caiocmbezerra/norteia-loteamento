@@ -29,8 +29,48 @@ export async function cancelarReserva(db: ClienteBanco, reservaId: string, motiv
   falhar(error)
 }
 
+export interface DadosComprador {
+  nome: string
+  cpf: string | null
+  email: string | null
+  telefone: string | null
+}
+
+/** Reaproveita o comprador pelo CPF ou cadastra um novo. */
+export async function obterComprador(
+  db: ClienteBanco,
+  tenantId: string,
+  comprador: DadosComprador,
+): Promise<string> {
+  const d = { comprador }
+  let compradorId: string | null = null
+  if (d.comprador.cpf) {
+    const { data, error } = await db
+      .from('compradores')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('cpf', d.comprador.cpf)
+      .maybeSingle()
+    falhar(error)
+    compradorId = data?.id ?? null
+  }
+  if (!compradorId) {
+    const { data, error } = await db
+      .from('compradores')
+      .insert({ tenant_id: tenantId, ...d.comprador })
+      .select('id')
+      .single()
+    if (error?.code === '23514')
+      throw new ErroAplicacao('CPF inválido: confira os dígitos.', 'cpf', 'cpf')
+    falhar(error)
+    compradorId = data!.id
+  }
+
+  return compradorId!
+}
+
 export interface DadosVenda {
-  comprador: { nome: string; cpf: string | null; email: string | null; telefone: string | null }
+  comprador: DadosComprador
   corretorId: string | null
   dataVenda: string
   precoCentavos: number
@@ -55,28 +95,7 @@ export async function registrarVenda(
   d: DadosVenda,
   justificativa?: string,
 ): Promise<{ vendaId: string; contratoId: string | null }> {
-  let compradorId: string | null = null
-  if (d.comprador.cpf) {
-    const { data, error } = await db
-      .from('compradores')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('cpf', d.comprador.cpf)
-      .maybeSingle()
-    falhar(error)
-    compradorId = data?.id ?? null
-  }
-  if (!compradorId) {
-    const { data, error } = await db
-      .from('compradores')
-      .insert({ tenant_id: tenantId, ...d.comprador })
-      .select('id')
-      .single()
-    if (error?.code === '23514')
-      throw new ErroAplicacao('CPF inválido: confira os dígitos.', 'cpf', 'cpf')
-    falhar(error)
-    compradorId = data!.id
-  }
+  const compradorId = await obterComprador(db, tenantId, d.comprador)
 
   let comissao = { percentual: 0, modo: 'ato' }
   if (d.corretorId) {

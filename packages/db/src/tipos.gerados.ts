@@ -2344,6 +2344,10 @@ export type Database = {
       }
       cancelar_cobranca: { Args: { p_cobranca: string; p_motivo: string }; Returns: undefined }
       cancelar_reserva: { Args: { p_motivo: string; p_reserva: string }; Returns: undefined }
+      ceder_contrato: {
+        Args: { p_cessionario: string; p_contrato: string; p_data: string; p_motivo: string }
+        Returns: string
+      }
       conciliar_cobrancas: { Args: { p_limite?: number }; Returns: number }
       configurar_asaas: {
         Args: { p_ambiente: string; p_chave: string; p_tenant: string }
@@ -2440,6 +2444,18 @@ export type Database = {
       }
       reservar_lote: {
         Args: { p_cliente_nome: string; p_corretor?: string; p_horas?: number; p_lote: string }
+        Returns: string
+      }
+      trocar_lote: {
+        Args: {
+          p_condicoes: Json
+          p_contrato: string
+          p_data: string
+          p_lote_novo: string
+          p_motivo: string
+          p_parcelas: Json
+          p_preco_novo: number
+        }
         Returns: string
       }
       vender_lote: {
