@@ -57,3 +57,13 @@ export {
   desativarAsaas,
   gerarCobranca,
 } from './integracoes'
+export {
+  type EscopoParametro,
+  type Parametro,
+  type ValorParametro,
+  carregarParametros,
+  definirParametro,
+  ehPercentual,
+  textoDoValor,
+  valorDoTexto,
+} from './parametros'
