@@ -1,6 +1,6 @@
-import { carregarCarteira } from '@norteia/aplicacao'
+import { carregarCarteira, simularCessao } from '@norteia/aplicacao'
 import { formatarData, formatarMoeda } from '@norteia/dominio'
-import { arredondarCentavos } from '@norteia/motor-financeiro'
+import { Decimal, arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -13,8 +13,14 @@ export const metadata: Metadata = { title: 'Carteira' }
 
 const moeda = (c: number) => formatarMoeda(arredondarCentavos(String(c)))
 
-export default async function PaginaCarteira({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function PaginaCarteira({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ taxa?: string; perda?: string }>
+}) {
+  const [{ id }, busca] = await Promise.all([params, searchParams])
   const ctx = await exigirContexto()
   if (
     !temPapel(
@@ -52,6 +58,13 @@ export default async function PaginaCarteira({ params }: { params: Promise<{ id:
     return `${codigo} ${c ? formatarData(c).slice(3) : 'sem dados'}`
   })
   const podeGerar = temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor')
+  const pct = (v: string | undefined) =>
+    v && /^\d{1,2}(,\d{1,4})?$/.test(v)
+      ? new Decimal(v.replace(',', '.')).div(100).toString()
+      : null
+  const taxa = pct(busca.taxa)
+  const perda = pct(busca.perda ?? '0')
+  const cessao = taxa && perda ? await simularCessao(ctx.db, id, hoje, taxa, perda) : null
   const t = painel.totais
 
   return (
@@ -171,6 +184,47 @@ export default async function PaginaCarteira({ params }: { params: Promise<{ id:
             </tbody>
           </table>
         </div>
+      </Cartao>
+      <Cartao className="flex flex-col gap-3">
+        <h2 className="font-semibold">Simular cessão da carteira</h2>
+        <p className="text-sm text-muted-foreground">
+          Quanto o fundo ou banco pagaria hoje pelas parcelas em aberto, à taxa de desconto dele e
+          com a perda esperada.
+        </p>
+        <form className="flex flex-wrap items-end gap-3" method="get">
+          <label className="flex flex-col gap-1 text-sm">
+            Taxa de desconto (% ao mês)
+            <input
+              name="taxa"
+              inputMode="decimal"
+              defaultValue={busca.taxa ?? '1,5'}
+              className="h-10 w-32 rounded-md border bg-background px-3"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Perda esperada (%)
+            <input
+              name="perda"
+              inputMode="decimal"
+              defaultValue={busca.perda ?? '5'}
+              className="h-10 w-32 rounded-md border bg-background px-3"
+            />
+          </label>
+          <button type="submit" className="h-10 rounded-md border px-4 text-sm hover:bg-muted">
+            Simular
+          </button>
+        </form>
+        {cessao && (
+          <section aria-label="Resultado da cessão" className="grid grid-cols-3 gap-3">
+            <Indicador
+              rotulo="Carteira nominal"
+              valor={moeda(cessao.nominalCentavos)}
+              nota={`${cessao.parcelas} parcelas`}
+            />
+            <Indicador rotulo="Valor da cessão" valor={moeda(cessao.presenteCentavos)} />
+            <Indicador rotulo="Deságio" valor={moeda(cessao.desagioCentavos)} />
+          </section>
+        )}
       </Cartao>
     </>
   )

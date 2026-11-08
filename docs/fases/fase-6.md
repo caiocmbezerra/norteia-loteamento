@@ -16,6 +16,12 @@
 - SPE → sócios, participações com vigência, aportes, mútuos, devoluções e distribuições.
 - Resultado da SPE rateado pela participação vigente em cada mês; retorno (TIR) por sócio sobre os movimentos realizados.
 
+## Feito (6d — painéis)
+
+- Painel consolidado na página inicial: totais da loteadora e tabela por empreendimento e SPE (vendidos, recebido, carteira, vencido, TIR do plano).
+- Simulação de cessão de carteira na carteira de cada empreendimento.
+- Já existentes: plano × atual (TIR, VPL, exposição, necessidade de aporte) e estresse por empreendimento; resultado por SPE e por sócio.
+
 ## Critérios
 
 | Critério                                                               | Situação                                                                                |
@@ -28,4 +34,3 @@
 
 - Portal do permutante (Fase 7): extrato somente leitura com login próprio.
 - Portal do sócio (Fase 7): a RLS já restringe cada sócio aos próprios dados.
-- **6d:** painéis por empreendimento, SPE, sócio e consolidado.

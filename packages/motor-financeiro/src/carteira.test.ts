@@ -4,6 +4,7 @@ import {
   ErroMotor,
   calcularEncargos,
   descontoAntecipacao,
+  simularCessaoCarteira,
   centavos,
   diasEntre,
   gerarParcelasContrato,
@@ -147,6 +148,34 @@ describe('descontoAntecipacao (RN-K08)', () => {
     expect(descontoAntecipacao(centavos(0), '2026-12-08', '2026-11-08', taxa)).toBe(0)
     expect(() =>
       descontoAntecipacao(centavos(1), '2026-12-08', '2026-11-08', new Decimal('-0.01')),
+    ).toThrow(ErroMotor)
+  })
+})
+
+describe('simularCessaoCarteira', () => {
+  it('valor presente à taxa do comprador, menos a perda esperada; vencida vale o saldo', () => {
+    const r = simularCessaoCarteira(
+      [
+        { vencimento: '2026-12-08', saldoCentavos: centavos(100_000) }, // 30 dias → 99.009,90
+        { vencimento: '2026-10-08', saldoCentavos: centavos(50_000) }, // vencida
+      ],
+      '2026-11-08',
+      new Decimal('0.01'),
+      new Decimal('0.05'),
+    )
+    expect(r.nominalCentavos).toBe(150_000)
+    // (99.009,90 + 50.000) × 0,95 = 141.559,41
+    expect(r.presenteCentavos).toBe(141_559)
+    expect(r.desagioCentavos).toBe(8_441)
+    expect(r.parcelas).toBe(2)
+    expect(() =>
+      simularCessaoCarteira([], '2026-11-08', new Decimal('0.01'), new Decimal(1)),
+    ).toThrow(ErroMotor)
+    expect(() =>
+      simularCessaoCarteira([], '2026-11-08', new Decimal('-0.01'), new Decimal(0)),
+    ).toThrow(ErroMotor)
+    expect(() =>
+      simularCessaoCarteira([], '2026-11-08', new Decimal('0.01'), new Decimal('-0.1')),
     ).toThrow(ErroMotor)
   })
 })

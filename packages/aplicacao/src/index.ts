@@ -112,3 +112,9 @@ export {
   estornarMovimentoSocio,
   registrarMovimentoSocio,
 } from './socios'
+export {
+  type LinhaConsolidado,
+  type PainelConsolidado,
+  carregarConsolidado,
+  simularCessao,
+} from './paineis'
