@@ -122,6 +122,7 @@ as $$
       select jsonb_agg(jsonb_build_object(
         'id', c.id, 'loteadora', t.nome, 'empreendimento', e.nome,
         'lote', 'Quadra ' || q.codigo || ' · Lote ' || l.numero, 'situacao', c.situacao,
+        'boleto_disponivel', exists (select 1 from public.integracoes_asaas ia where ia.tenant_id = c.tenant_id and ia.ativo),
         'saldo', (select coalesce(sum(valor_centavos - pago_centavos), 0) from public.parcelas where contrato_id = c.id and situacao = 'aberta'),
         'vencido', (select coalesce(sum(valor_centavos - pago_centavos), 0) from public.parcelas where contrato_id = c.id and situacao = 'aberta' and vencimento < p_hoje),
         'proxima', (select jsonb_build_object('id', p.id, 'numero', p.numero, 'vencimento', p.vencimento, 'saldo', p.valor_centavos - p.pago_centavos)

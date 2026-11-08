@@ -4,6 +4,7 @@ import { arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { ConvitePortal } from '@/components/convite-portal'
 import { Cartao, Indicador, TituloPagina } from '@/components/ui/cartao'
 import { exigirContexto, temPapel } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
@@ -150,6 +151,20 @@ export default async function PaginaPermutas({ params }: { params: Promise<{ id:
                 <FormularioRepasse empreendimentoId={id} permutaId={p.id} hoje={hoje} />
               )}
             </>
+          )}
+          {podeEditar && p.permutantePortal && (
+            <details>
+              <summary className="cursor-pointer text-sm font-medium">Portal do permutante</summary>
+              <div className="mt-3">
+                <ConvitePortal
+                  tipo="permutante"
+                  id={`convite-${p.id}`}
+                  alvoId={p.permutantePortal.id}
+                  email={p.permutantePortal.email}
+                  ativo={p.permutantePortal.ativo}
+                />
+              </div>
+            </details>
           )}
         </Cartao>
       ))}

@@ -122,6 +122,8 @@ export interface ContratoDetalhe {
   loteId: string
   lote: string
   comprador: string | null
+  /** Para o convite ao portal do comprador. */
+  compradorPortal: { id: string; email: string | null; ativo: boolean } | null
   indiceReajuste: string | null
   regra: RegraEncargos
   regrasReajuste: { periodicidadeMeses: number; defasagemMeses: number; negativo: string }
@@ -194,7 +196,7 @@ export async function carregarContrato(
   const { data: c, error } = await db
     .from('contratos')
     .select(
-      'id, tenant_id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos), vendas(juros_mensal, sistema), distratos(data, motivo, devolucao_centavos, resumo, devolucoes(id, numero, vencimento, valor_centavos, pago_em)), aditivos(id, tipo, data, motivo, condicoes, saldo_anterior_centavos, encargos_incorporados_centavos, desconto_centavos, novo_saldo_centavos, parcelas_anteriores)',
+      'id, tenant_id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(id, nome, email, usuario_id), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos), vendas(juros_mensal, sistema), distratos(data, motivo, devolucao_centavos, resumo, devolucoes(id, numero, vencimento, valor_centavos, pago_em)), aditivos(id, tipo, data, motivo, condicoes, saldo_anterior_centavos, encargos_incorporados_centavos, desconto_centavos, novo_saldo_centavos, parcelas_anteriores)',
     )
     .eq('id', contratoId)
     .maybeSingle()
@@ -293,6 +295,13 @@ export async function carregarContrato(
     loteId: c.lote_id,
     lote: `Quadra ${c.lotes?.quadras?.codigo ?? '?'} · Lote ${c.lotes?.numero ?? '?'}`,
     comprador: c.compradores?.nome ?? null,
+    compradorPortal: c.compradores
+      ? {
+          id: c.compradores.id,
+          email: c.compradores.email,
+          ativo: c.compradores.usuario_id !== null,
+        }
+      : null,
     indiceReajuste: c.indice_reajuste,
     regra,
     regrasReajuste: {

@@ -19,6 +19,7 @@ export interface PermutaDetalhe {
   id: string
   tipo: 'fisica' | 'financeira'
   permutante: string
+  permutantePortal: { id: string; email: string | null; ativo: boolean } | null
   inicio: string
   situacao: string
   percentual: string | null
@@ -38,7 +39,7 @@ export interface PermutaDetalhe {
 }
 
 const SELECAO =
-  'id, tipo, inicio, situacao, percentual, base, abate_distrato, valor_economico_centavos, permutantes(nome), permuta_lotes(lotes(numero, quadras(codigo))), repasses_permuta(id, data, valor_centavos, observacao, estornado_em)'
+  'id, tipo, inicio, situacao, percentual, base, abate_distrato, valor_economico_centavos, permutantes(id, nome, email, usuario_id), permuta_lotes(lotes(numero, quadras(codigo))), repasses_permuta(id, data, valor_centavos, observacao, estornado_em)'
 
 function paraFinanceira(p: {
   id: string
@@ -96,6 +97,13 @@ export async function carregarPermutas(
     id: p.id,
     tipo: p.tipo as PermutaDetalhe['tipo'],
     permutante: p.permutantes?.nome ?? '',
+    permutantePortal: p.permutantes
+      ? {
+          id: p.permutantes.id,
+          email: p.permutantes.email,
+          ativo: p.permutantes.usuario_id !== null,
+        }
+      : null,
     inicio: p.inicio,
     situacao: p.situacao,
     percentual: p.percentual === null ? null : String(p.percentual),

@@ -118,3 +118,14 @@ export {
   carregarConsolidado,
   simularCessao,
 } from './paineis'
+export {
+  type ContratoPortal,
+  type MeuPortal,
+  aceitarConvitePortal,
+  carregarContratoPortal,
+  carregarMeuPortal,
+  convidarParaPortal,
+  emitirSegundaVia,
+  extratoPermutante,
+  temPortal,
+} from './portal'

@@ -4,7 +4,14 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { configSupabase } from '@/lib/env'
 
 // /api/webhooks: avisos de serviços externos, autenticados pelo token de cada integração.
-const PREFIXOS_PUBLICOS = ['/entrar', '/cadastrar', '/auth', '/convite', '/api/webhooks']
+const PREFIXOS_PUBLICOS = [
+  '/entrar',
+  '/cadastrar',
+  '/auth',
+  '/convite',
+  '/portal-convite',
+  '/api/webhooks',
+]
 
 function ehPublica(caminho: string) {
   return (
