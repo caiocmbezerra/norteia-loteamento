@@ -14,9 +14,12 @@
 - Arquivo de importação para o PGD Dimob, no leiaute oficial guardado com vigência (PGD 2.8g); original ou retificadora.
 - Número sequencial de contrato por loteadora.
 
+## Feito (7b-2 — informe de IR)
+
+- Informe de pagamentos por ano (DOCX no modelo do cliente, padrão provisório): pagamentos do ano, total do ano e acumulado até 31/12; baixado na tela do contrato e no portal do comprador.
+
 ## A fazer
 
-- 7b-2: informe de IR formal ao comprador (PL-19).
 - 7c: exportação contábil configurável por cliente; visão caixa × competência.
 - 7d: parâmetros IBS/CBS com vigência; PWA (manifesto e ícone); andamento da obra e documentos no portal.
 

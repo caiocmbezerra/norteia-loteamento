@@ -117,13 +117,21 @@ export default async function PaginaContratoPortal({
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-semibold">Informe de pagamentos por ano</h3>
               <p className="text-xs text-muted-foreground">
-                Total pago em cada ano, para a sua declaração de imposto de renda.
+                Total pago em cada ano e o informe para a sua declaração de imposto de renda.
               </p>
               <ul className="flex flex-col divide-y text-sm">
                 {[...porAno].map(([ano, total]) => (
-                  <li key={ano} className="flex justify-between py-2">
+                  <li key={ano} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span>{ano}</span>
-                    <span className="font-medium">{moeda(total)}</span>
+                    <span className="flex items-center gap-3">
+                      <span className="font-medium">{moeda(total)}</span>
+                      <a
+                        href={`/portal/contratos/${c.id}/informe?ano=${ano}`}
+                        className="text-primary underline-offset-4 hover:underline"
+                      >
+                        Baixar informe {ano}
+                      </a>
+                    </span>
                   </li>
                 ))}
               </ul>

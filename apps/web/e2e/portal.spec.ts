@@ -1,5 +1,7 @@
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
+import PizZip from 'pizzip'
 
 const DB_URL = process.env.DB_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
 
@@ -67,6 +69,12 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
   await dona.getByLabel('1ª parcela').fill(dia(20))
   await dona.getByRole('button', { name: 'Registrar venda' }).click()
   await dona.getByRole('link', { name: 'Ver parcelas' }).click()
+  // Entrada paga na data da venda.
+  await dona.getByLabel('Data do pagamento').fill(dia(-10))
+  await dona.getByRole('button', { name: 'Registrar recebimento' }).click()
+  await expect(dona.getByText('Recebimento registrado.')).toBeVisible()
+  const ano = dia(-10).slice(0, 4)
+  await expect(dona.getByRole('link', { name: `Informe de pagamentos ${ano}` })).toBeVisible()
 
   // Convite: o e-mail do comprador já vem preenchido.
   await expect(dona.getByLabel('E-mail para o portal')).toHaveValue(emailComprador)
@@ -92,13 +100,21 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
 
   await expect(comprador.getByRole('heading', { name: 'Olá, Paulo' })).toBeVisible()
   await expect(comprador.getByText('Quadra A · Lote 1')).toBeVisible()
-  await expect(comprador.getByText(/Saldo a pagar\s*R\$\s90\.000,00/)).toBeVisible()
+  await expect(comprador.getByText(/Saldo a pagar\s*R\$\s81\.000,00/)).toBeVisible()
 
   // Parcelas e informe de pagamentos.
   await comprador.getByRole('link', { name: 'Parcelas e pagamentos' }).click()
   await expect(comprador.getByText('Entrada · ')).toBeVisible()
   await expect(comprador.getByRole('button', { name: 'Abrir boleto/Pix' })).toHaveCount(1)
-  await expect(comprador.getByText('Nenhum pagamento registrado ainda.')).toBeVisible()
+  // Informe de IR do ano, no modelo padrão.
+  const [download] = await Promise.all([
+    comprador.waitForEvent('download'),
+    comprador.getByRole('link', { name: `Baixar informe ${ano}` }).click(),
+  ])
+  const xml = new PizZip(readFileSync((await download.path())!)).file('word/document.xml')!.asText()
+  const texto = xml.replace(/<[^>]+>/g, '')
+  expect(texto).toContain('Paulo Comprador')
+  expect(texto).toMatch(new RegExp(`Total pago em ${ano}: R\\$\\s9\\.000,00`))
 
   // Sai e volta: entrar (toque 1, 2 com o envio) leva direto ao portal; segunda via é o 3º toque.
   await comprador.getByRole('button', { name: 'Sair' }).click()

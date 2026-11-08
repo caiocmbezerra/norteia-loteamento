@@ -101,6 +101,14 @@ export default async function PaginaContrato({
           }[],
         }),
   ])
+  // Informe de IR: um por ano com pagamento.
+  const anosComPagamento = [
+    ...new Set(
+      c.parcelas.flatMap((p) =>
+        p.recebimentos.filter((r) => !r.estornado).map((r) => r.data.slice(0, 4)),
+      ),
+    ),
+  ].sort((a, b) => b.localeCompare(a))
   const abertas = c.parcelas
     .filter((p) => p.situacao === 'aberta')
     .map((p) => ({
@@ -201,6 +209,15 @@ export default async function PaginaContrato({
               Termo de quitação
             </a>
           )}
+          {anosComPagamento.map((ano) => (
+            <a
+              key={ano}
+              href={`${baseDocs}/informe_pagamentos?ano=${ano}`}
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Informe de pagamentos {ano}
+            </a>
+          ))}
           <Link
             href="/configuracoes/modelos"
             className="text-muted-foreground underline-offset-4 hover:underline"

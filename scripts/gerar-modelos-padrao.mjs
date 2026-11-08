@@ -59,6 +59,23 @@ const tabelaParcelas = new Table({
   ],
 })
 
+const tabelaPagamentos = new Table({
+  width: { size: 100, type: WidthType.PERCENTAGE },
+  rows: [
+    new TableRow({
+      tableHeader: true,
+      children: [celula('Data'), celula('Referência'), celula('Valor pago')],
+    }),
+    new TableRow({
+      children: [
+        celula('{#pagamentos}{data}'),
+        celula('{referencia}'),
+        celula('{valor}{/pagamentos}'),
+      ],
+    }),
+  ],
+})
+
 const modelos = {
   contrato: [
     titulo('Compromisso de compra e venda de lote'),
@@ -142,6 +159,29 @@ const modelos = {
       spacing: { before: 240, after: 160 },
     }),
     ...assinaturas,
+  ],
+  informe_pagamentos: [
+    titulo('Informe de pagamentos — ano-calendário {informe_ano}'),
+    p('MODELO PROVISÓRIO — revise este texto com o contador da sua empresa antes de usar.', {
+      alignment: AlignmentType.CENTER,
+    }),
+    p('VENDEDORA: {vendedora_razao_social}, CNPJ {vendedora_cnpj}, {vendedora_endereco}.'),
+    p('COMPRADOR(A): {comprador_nome}, CPF {comprador_cpf}.'),
+    p(
+      'IMÓVEL: Lote {lote_numero} da Quadra {lote_quadra}, com {lote_area} m², do empreendimento {empreendimento_nome}, em {cidade}. Compromisso de compra e venda nº {contrato_numero}, firmado em {venda_data}, pelo preço de {venda_preco}.',
+    ),
+    p('PAGAMENTOS FEITOS EM {informe_ano}:'),
+    tabelaPagamentos,
+    p('Total pago em {informe_ano}: {informe_pago_ano}.', { spacing: { before: 240, after: 160 } }),
+    p('Total pago até 31/12/{informe_ano}: {informe_pago_acumulado}.'),
+    p(
+      'Valores efetivamente recebidos, incluídos eventuais multa e juros de mora. Informe emitido em {hoje} para fins de declaração do imposto de renda.',
+    ),
+    p('_____________________________________', {
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 600, after: 0 },
+    }),
+    p('{vendedora_razao_social}', { alignment: AlignmentType.CENTER }),
   ],
 }
 

@@ -25,6 +25,7 @@ export const NOMES_DOCUMENTO: Record<TipoDocumento, string> = {
   aditivo_renegociacao: 'Aditivo de renegociação',
   aditivo_cessao: 'Aditivo de cessão',
   aditivo_troca_lote: 'Aditivo de troca de lote',
+  informe_pagamentos: 'Informe de pagamentos (IR)',
 }
 
 /** Marcadores disponíveis nos modelos (o cliente usa no Word entre chaves). */
@@ -65,6 +66,15 @@ export const MARCADORES: { marcador: string; descricao: string }[] = [
   { marcador: 'cedente_cpf', descricao: 'CPF do cedente (cessão)' },
   { marcador: 'quitacao_data', descricao: 'Data da quitação' },
   { marcador: 'quitacao_total', descricao: 'Total recebido' },
+  { marcador: 'contrato_numero', descricao: 'Número do contrato' },
+  { marcador: 'vendedora_endereco', descricao: 'Endereço da SPE vendedora' },
+  { marcador: 'informe_ano', descricao: 'Ano-calendário do informe' },
+  { marcador: 'informe_pago_ano', descricao: 'Total pago no ano (informe)' },
+  { marcador: 'informe_pago_acumulado', descricao: 'Total pago até 31/12 do ano (informe)' },
+  {
+    marcador: '#pagamentos … /pagamentos',
+    descricao: 'Tabela de pagamentos do informe: {data}, {referencia}, {valor}',
+  },
   { marcador: 'hoje', descricao: 'Data de emissão' },
 ]
 
@@ -84,6 +94,7 @@ const deBase64 = (texto: string) => Uint8Array.from(atob(texto), (c) => c.charCo
 const EXEMPLO: DadosDocumento = Object.fromEntries([
   ...MARCADORES.filter((m) => !m.marcador.startsWith('#')).map((m) => [m.marcador, 'exemplo']),
   ['parcelas', [{ numero: '1', vencimento: '01/01/2030', valor: 'R$ 1,00' }]],
+  ['pagamentos', [{ data: '01/01/2030', referencia: 'Parcela 1', valor: 'R$ 1,00' }]],
 ])
 
 export interface ModeloCliente {
@@ -186,6 +197,8 @@ export async function gerarDocumento(
     .eq('id', contratoId)
     .single()
   falhar(error)
+  if (tipo === 'informe_pagamentos')
+    throw new ErroAplicacao('O informe de pagamentos é gerado por ano.', 'invalido')
   if (tipo === 'quitacao' && c!.situacao !== 'quitado')
     throw new ErroAplicacao('O termo de quitação só sai com o contrato quitado.', 'invalido')
 
@@ -301,4 +314,80 @@ export async function gerarDocumento(
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, '')
   return { nomeArquivo: `${tipo.replace(/_/g, '-')}-${lote}.docx`, conteudo }
+}
+
+interface InformeBanco {
+  ano: number
+  contrato_numero: number
+  vendedora: { razao_social: string; cnpj: string | null; endereco: string | null }
+  comprador: { nome: string; cpf: string | null }
+  imovel: {
+    empreendimento: string
+    municipio: string | null
+    uf: string | null
+    endereco: string | null
+    quadra: string
+    lote: string
+    area_m2: number | null
+  }
+  venda: { data: string; preco: number }
+  pagamentos: { data: string; parcela: number; valor: number }[]
+  pago_ate_fim_do_ano: number
+  modelo: string | null
+}
+
+/**
+ * Informe de pagamentos do ano para o IR do comprador, com o modelo do cliente. Serve à gestão e
+ * ao portal (a função de banco confere quem pede). Nulo se o contrato não é visível.
+ */
+export async function gerarInforme(
+  db: ClienteBanco,
+  contratoId: string,
+  ano: number,
+  hoje: string,
+): Promise<{ nomeArquivo: string; conteudo: Uint8Array } | null> {
+  const { data, error } = await db.rpc('informe_pagamentos', { p_contrato: contratoId, p_ano: ano })
+  if (error?.code === '42501') return null
+  falhar(error)
+  const i = data as unknown as InformeBanco
+  const dados: DadosDocumento = {
+    vendedora_razao_social: i.vendedora.razao_social,
+    vendedora_cnpj: cnpj(i.vendedora.cnpj),
+    vendedora_endereco: i.vendedora.endereco ?? '—',
+    comprador_nome: i.comprador.nome,
+    comprador_cpf: cpf(i.comprador.cpf),
+    empreendimento_nome: i.imovel.empreendimento,
+    cidade: i.imovel.municipio
+      ? `${i.imovel.municipio}${i.imovel.uf ? `/${i.imovel.uf}` : ''}`
+      : '',
+    lote_quadra: i.imovel.quadra,
+    lote_numero: i.imovel.lote,
+    lote_area: String(i.imovel.area_m2 ?? '').replace('.', ','),
+    contrato_numero: String(i.contrato_numero),
+    venda_data: formatarData(i.venda.data),
+    venda_preco: moeda(i.venda.preco),
+    informe_ano: String(i.ano),
+    informe_pago_ano: moeda(i.pagamentos.reduce((t, p) => t + p.valor, 0)),
+    informe_pago_acumulado: moeda(i.pago_ate_fim_do_ano),
+    pagamentos: i.pagamentos.map((p) => ({
+      data: formatarData(p.data),
+      referencia: p.parcela === 0 ? 'Entrada' : `Parcela ${p.parcela}`,
+      valor: moeda(p.valor),
+    })),
+    hoje: formatarData(hoje),
+  }
+  let conteudo: Uint8Array
+  try {
+    conteudo = preencherModelo(
+      i.modelo ? deBase64(i.modelo) : modeloPadrao('informe_pagamentos'),
+      dados,
+    )
+  } catch (erro) {
+    if (erro instanceof ErroModelo) throw new ErroAplicacao(erro.message, 'invalido')
+    throw erro
+  }
+  return {
+    nomeArquivo: `informe-pagamentos-${ano}-contrato-${i.contrato_numero}.docx`,
+    conteudo,
+  }
 }
