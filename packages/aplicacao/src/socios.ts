@@ -57,7 +57,7 @@ export interface PainelSpe {
     observacao: string | null
     estornado: boolean
   }[]
-  todosSocios: { id: string; nome: string }[]
+  todosSocios: { id: string; nome: string; email: string | null; noPortal: boolean }[]
 }
 
 function limites(vigencia: string): { inicio: string; fim: string | null } {
@@ -87,7 +87,11 @@ export async function carregarPainelSpe(
       .select('id, socio_id, tipo, data, valor_centavos, observacao, estornado_em')
       .eq('spe_id', speId)
       .order('data'),
-    db.from('socios').select('id, nome').eq('tenant_id', spe.tenant_id).order('nome'),
+    db
+      .from('socios')
+      .select('id, nome, email, usuario_id')
+      .eq('tenant_id', spe.tenant_id)
+      .order('nome'),
   ])
   for (const r of [part, movs, socios]) falhar(r.error)
 
@@ -169,7 +173,12 @@ export async function carregarPainelSpe(
         estornado: m.estornado_em !== null,
       }))
       .reverse(),
-    todosSocios: socios.data ?? [],
+    todosSocios: (socios.data ?? []).map((s) => ({
+      id: s.id,
+      nome: s.nome,
+      email: s.email,
+      noPortal: s.usuario_id !== null,
+    })),
   }
 }
 

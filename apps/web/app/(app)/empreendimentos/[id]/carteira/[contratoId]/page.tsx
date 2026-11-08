@@ -4,6 +4,7 @@ import { Decimal, arredondarCentavos, somarMeses } from '@norteia/motor-financei
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { ConvitePortal } from '@/components/convite-portal'
 import { Cartao, Indicador, TituloPagina } from '@/components/ui/cartao'
 import { Alerta } from '@/components/ui/formulario'
 import { exigirContexto, temPapel } from '@/lib/contexto'
@@ -561,6 +562,18 @@ export default async function PaginaContrato({
           </table>
         </div>
       </Cartao>
+
+      {c.compradorPortal && temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor') && (
+        <Cartao className="flex flex-col gap-3">
+          <h2 className="font-semibold">Portal do comprador</h2>
+          <ConvitePortal
+            tipo="comprador"
+            alvoId={c.compradorPortal.id}
+            email={c.compradorPortal.email}
+            ativo={c.compradorPortal.ativo}
+          />
+        </Cartao>
+      )}
     </>
   )
 }

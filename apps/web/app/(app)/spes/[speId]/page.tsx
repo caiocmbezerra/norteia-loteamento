@@ -4,6 +4,7 @@ import { arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { ConvitePortal } from '@/components/convite-portal'
 import { Cartao, Indicador, TituloPagina } from '@/components/ui/cartao'
 import { Alerta } from '@/components/ui/formulario'
 import { exigirContexto, temPapel } from '@/lib/contexto'
@@ -170,6 +171,32 @@ export default async function PaginaSpe({ params }: { params: Promise<{ speId: s
               <FormularioSocio speId={speId} />
             </div>
           </details>
+          {p.todosSocios.length > 0 && (
+            <details>
+              <summary className="cursor-pointer font-semibold">Portal dos sócios</summary>
+              <ul className="mt-3 flex flex-col divide-y">
+                {p.todosSocios.map((s) => (
+                  <li key={s.id} className="py-3">
+                    <details>
+                      <summary className="cursor-pointer text-sm font-medium">
+                        {s.nome}
+                        {s.noPortal ? ' · já acessa o portal' : ''}
+                      </summary>
+                      <div className="mt-3">
+                        <ConvitePortal
+                          tipo="socio"
+                          id={`convite-${s.id}`}
+                          alvoId={s.id}
+                          email={s.email}
+                          ativo={s.noPortal}
+                        />
+                      </div>
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </Cartao>
       )}
     </>

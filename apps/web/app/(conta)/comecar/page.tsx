@@ -1,14 +1,17 @@
+import { carregarMeuPortal, temPortal } from '@norteia/aplicacao'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { clientesDoUsuario, exigirUsuario } from '@/lib/contexto'
-import { mesAtualSaoPaulo } from '@/lib/datas'
+import { hojeSaoPaulo, mesAtualSaoPaulo } from '@/lib/datas'
 import { FormularioComecar } from './formulario-comecar'
 
 export const metadata: Metadata = { title: 'Começar' }
 
 export default async function PaginaComecar() {
-  const { usuario } = await exigirUsuario()
+  const { db, usuario } = await exigirUsuario()
   if ((await clientesDoUsuario()).length > 0) redirect('/painel')
+  // Comprador, sócio ou permutante convidado: vai direto para o portal.
+  if (temPortal(await carregarMeuPortal(db, hojeSaoPaulo()))) redirect('/portal')
   const primeiroNome = usuario.nome.split(' ')[0]
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-4 py-10">
