@@ -1,9 +1,10 @@
-# Pendências legais, contábeis e tributárias
+# Roteiro de configuração jurídica, contábil e tributária
 
-> Itens que **não serão decididos pela equipe de software**. Até a validação, o sistema os trata como parâmetros configuráveis, com valores padrão marcados como provisórios.
-> No código, cada ponto é marcado com `// VALIDAR COM CONTADOR` ou `// VALIDAR COM ADVOGADO` e cita o identificador abaixo.
+> Itens que **não são decididos pelo produto**: cada loteadora responde com o **seu** advogado e o **seu** contador, porque regime tributário, empresas e SPEs do grupo, distribuição de resultados e política comercial variam de cliente para cliente (D-059).
+> No sistema, cada resposta é um parâmetro com vigência em **Configurações → Parâmetros**, por loteadora, empresa, SPE ou empreendimento. Enquanto o cliente não define, vale a sugestão da plataforma, exibida como "sugestão não confirmada".
+> No código, cada ponto é marcado com `// VALIDAR COM CONTADOR` ou `// VALIDAR COM ADVOGADO` e cita o identificador abaixo. Itens que viram texto (contratos, termos) serão modelos editáveis por cliente.
 
-| ID    | Tema                            | Pergunta a responder                                                                                                                                                                         | Responsável | Regra relacionada    | Status |
+| ID    | Tema                            | Pergunta a responder (por cliente)                                                                                                                                                           | Responsável | Regra relacionada    | Status |
 | ----- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------- | ------ |
 | PL-01 | Venda antes do registro         | O bloqueio deve ser absoluto, ou existe alguma exceção legítima (ex.: reserva sem contrato, promessa condicionada)?                                                                          | Advogado    | RN-C01               | aberta |
 | PL-02 | Distrato (art. 32-A, Lei 6.766) | Valores padrão e limites para cláusula penal e despesas administrativas, taxa de fruição, encargos, prazo e número de parcelas da devolução. Como a jurisprudência atual trata cada ponto?   | Advogado    | RN-D01 a RN-D04      | aberta |

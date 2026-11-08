@@ -17,6 +17,11 @@ const SECOES = [
     texto: 'Estrutura societária dos empreendimentos.',
   },
   {
+    href: '/configuracoes/parametros',
+    titulo: 'Parâmetros',
+    texto: 'Multa, juros, reajuste, tributos e regras comerciais da sua loteadora.',
+  },
+  {
     href: '/configuracoes/integracoes',
     titulo: 'Integrações',
     texto: 'Boleto e Pix pelo Asaas, com baixa automática.',
