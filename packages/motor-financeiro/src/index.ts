@@ -54,3 +54,11 @@ export {
 } from './viabilidade'
 export { type Choque, aplicarChoques, estressar, matrizSensibilidade } from './estresse'
 export { CASO_REFERENCIA, TMA_REFERENCIA } from './caso-referencia'
+export {
+  type Encargos,
+  type RegraEncargos,
+  calcularEncargos,
+  diasEntre,
+  somarMeses,
+} from './encargos'
+export { type CondicoesContrato, type ParcelaContrato, gerarParcelasContrato } from './contrato'
