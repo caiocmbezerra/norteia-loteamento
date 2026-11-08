@@ -2,6 +2,7 @@ import type { ClienteBanco } from '@norteia/db'
 import { premissasParaMotor } from '@norteia/dominio'
 import {
   Decimal,
+  type Lancamento,
   type ResumoViabilidade,
   projetarViabilidade,
   resumirViabilidade,
@@ -24,6 +25,8 @@ export interface PainelCustos {
   custos: ProjecaoCustos
   plano: ResumoViabilidade | null
   atual: ResumoViabilidade | null
+  /** Lançamentos do fluxo atual (mês 0 = mês da data-base), para consolidações. */
+  lancamentosAtuais: Lancamento[] | null
   custoPorLote: Decimal | null
   custoPorM2: Decimal | null
   nomesCentros: Record<string, string>
@@ -115,6 +118,7 @@ export async function carregarPainelCustos(
 
   let resumoPlano: ResumoViabilidade | null = null
   let resumoAtual: ResumoViabilidade | null = null
+  let lancamentosAtuais: Lancamento[] | null = null
   if (premissas && plano.data) {
     const tma = { base: premissas.base, mensal: new Decimal(String(plano.data.tma_mensal)) }
     resumoPlano = resumirViabilidade(projetarViabilidade(premissas), tma)
@@ -122,10 +126,14 @@ export async function carregarPainelCustos(
       vendasDoEmpreendimento(db, empreendimentoId),
       permutasFinanceiras(db, empreendimentoId),
     ])
-    resumoAtual = resumirViabilidade(
-      projetarAtual(premissas, custos, { dataBase: emp.data!.data_base, hoje, vendas, permutas }),
-      tma,
-    )
+    const atual = projetarAtual(premissas, custos, {
+      dataBase: emp.data!.data_base,
+      hoje,
+      vendas,
+      permutas,
+    })
+    lancamentosAtuais = atual.lancamentos
+    resumoAtual = resumirViabilidade(atual, tma)
   }
 
   const listaLotes = lotes.data ?? []
@@ -138,6 +146,7 @@ export async function carregarPainelCustos(
     custos,
     plano: resumoPlano,
     atual: resumoAtual,
+    lancamentosAtuais,
     custoPorLote: listaLotes.length ? custoTotal.div(listaLotes.length) : null,
     custoPorM2: area.isZero() ? null : custoTotal.div(area),
     nomesCentros: Object.fromEntries((centros.data ?? []).map((c) => [c.codigo, c.nome])),

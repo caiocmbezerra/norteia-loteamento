@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Cartao, TituloPagina } from '@/components/ui/cartao'
 import { exigirContexto, temPapel } from '@/lib/contexto'
 import { FormularioEstrutura } from './formulario-estrutura'
@@ -32,7 +33,12 @@ export default async function Empresas() {
               <ul className="flex flex-col gap-2">
                 {e.spes.map((s) => (
                   <li key={s.id} className="rounded-lg border bg-background px-3 py-2 text-sm">
-                    <span className="font-medium">{s.razao_social}</span>
+                    <Link
+                      href={`/spes/${s.id}`}
+                      className="font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      {s.razao_social}
+                    </Link>
                     <span className="block text-xs text-muted-foreground">
                       SPE · {cnpj(s.cnpj)} · {s.empreendimentos.length} empreendimento(s)
                     </span>

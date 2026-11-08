@@ -70,3 +70,4 @@ export {
   calcularDistrato,
   fatorAcumulado,
 } from './distrato'
+export { type Participacao, SEM_SOCIO, ratearPorSocio } from './socios'
