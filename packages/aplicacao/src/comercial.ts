@@ -1,5 +1,6 @@
 import type { ClienteBanco } from '@norteia/db'
 import type { VendaReal } from '@norteia/projecao'
+import { type IndiceReajuste, gerarContrato, paginar, parcelasPorVenda } from './carteira'
 import { ErroAplicacao, traduzirErroBanco } from './erros'
 
 function falhar(error: { code?: string; message: string; hint?: string | null } | null) {
@@ -38,16 +39,22 @@ export interface DadosVenda {
   jurosMensal: string
   sistema: 'price' | 'sac'
   primeiraParcelaEm: string | null
+  /** Índice de reajuste do contrato (RN-K03); nulo = sem reajuste. */
+  indiceReajuste: IndiceReajuste | null
 }
 
-/** Cadastra (ou reaproveita pelo CPF) o comprador e registra a venda pela função do banco. */
+/**
+ * Cadastra (ou reaproveita pelo CPF) o comprador, registra a venda pela função do banco e gera
+ * o contrato com as parcelas do motor. Se o contrato falhar, a venda fica registrada e o
+ * contrato pode ser gerado depois pela carteira.
+ */
 export async function registrarVenda(
   db: ClienteBanco,
   tenantId: string,
   loteId: string,
   d: DadosVenda,
   justificativa?: string,
-): Promise<string> {
+): Promise<{ vendaId: string; contratoId: string | null }> {
   let compradorId: string | null = null
   if (d.comprador.cpf) {
     const { data, error } = await db
@@ -100,23 +107,31 @@ export async function registrarVenda(
     ...(justificativa ? { p_justificativa: justificativa } : {}),
   })
   falhar(error)
-  return data!
+  const vendaId = data!
+  const contratoId = await gerarContrato(db, vendaId, d.indiceReajuste).catch(() => null)
+  return { vendaId, contratoId }
 }
 
-/** Vendas ativas do empreendimento no formato da projeção. */
+/** Vendas ativas do empreendimento no formato da projeção, com as parcelas dos contratos. */
 export async function vendasDoEmpreendimento(
   db: ClienteBanco,
   empreendimentoId: string,
 ): Promise<VendaReal[]> {
-  const { data, error } = await db
-    .from('vendas')
-    .select(
-      'data_venda, preco_centavos, entrada_centavos, parcelas, juros_mensal, sistema, primeira_parcela_em, comissao_percentual, comissao_modo',
-    )
-    .eq('empreendimento_id', empreendimentoId)
-    .eq('situacao', 'ativa')
-  falhar(error)
-  return (data ?? []).map((v) => ({
+  const [data, contratos] = await Promise.all([
+    paginar((de, ate) =>
+      db
+        .from('vendas')
+        .select(
+          'id, data_venda, preco_centavos, entrada_centavos, parcelas, juros_mensal, sistema, primeira_parcela_em, comissao_percentual, comissao_modo',
+        )
+        .eq('empreendimento_id', empreendimentoId)
+        .eq('situacao', 'ativa')
+        .order('id')
+        .range(de, ate),
+    ),
+    parcelasPorVenda(db, empreendimentoId),
+  ])
+  return data.map((v) => ({
     dataVenda: v.data_venda,
     precoCentavos: v.preco_centavos,
     entradaCentavos: v.entrada_centavos,
@@ -126,5 +141,6 @@ export async function vendasDoEmpreendimento(
     primeiraParcelaEm: v.primeira_parcela_em,
     comissaoPercentual: String(v.comissao_percentual),
     comissaoModo: v.comissao_modo as 'ato' | 'recebido',
+    ...(contratos.has(v.id) ? { contrato: contratos.get(v.id)! } : {}),
   }))
 }

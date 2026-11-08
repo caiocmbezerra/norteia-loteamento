@@ -79,6 +79,19 @@ export default async function PaginaEmpreendimento({
                 </Button>
               </>
             )}
+            {temPapel(
+              ctx,
+              'dono',
+              'financeiro',
+              'contador',
+              'comercial_gestor',
+              'engenharia',
+              'socio_leitura',
+            ) && (
+              <Button asChild variant="secondary">
+                <Link href={`/empreendimentos/${id}/carteira`}>Carteira</Link>
+              </Button>
+            )}
             {podeEditar && (
               <Button asChild variant="outline">
                 <Link href={`/empreendimentos/${id}/editar`}>Editar dados</Link>

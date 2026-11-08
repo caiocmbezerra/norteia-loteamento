@@ -58,7 +58,7 @@ test('reserva, simulação e venda de um lote', async ({ page }, info) => {
   await page.getByLabel('Entrada (R$)').fill('9.000,00')
   await expect(page.getByLabel('Corretor')).toHaveValue(/.+/)
   await page.getByRole('button', { name: 'Registrar venda' }).click()
-  await expect(page.getByText('Venda registrada.')).toBeVisible()
+  await expect(page.getByText(/Venda registrada com o contrato/)).toBeVisible()
   await expect(page.getByText('Joana Compradora')).toBeVisible()
 
   // Painel comercial

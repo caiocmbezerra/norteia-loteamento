@@ -10,7 +10,27 @@ import {
 } from '@norteia/motor-financeiro'
 import { mesDoFluxo } from './datas'
 
-/** Venda registrada (Fase 4). Os recebimentos reais entram na Fase 5 (cobrança). */
+/** Recebimento não estornado de uma parcela do contrato. */
+export interface RecebimentoReal {
+  data: string
+  principalCentavos: number
+  /** Multa + juros de mora − desconto. */
+  encargosCentavos: number
+}
+
+/** Parcela do contrato (Fase 5), com o que já foi recebido. */
+export interface ParcelaReal {
+  /** 0 = entrada. */
+  numero: number
+  vencimento: string
+  valorCentavos: number
+  amortizacaoCentavos: number
+  jurosCentavos: number
+  situacao: 'aberta' | 'paga' | 'cancelada'
+  recebimentos: readonly RecebimentoReal[]
+}
+
+/** Venda registrada (Fase 4). Com contrato, as parcelas reais substituem a tabela da venda. */
 export interface VendaReal {
   dataVenda: string
   precoCentavos: number
@@ -21,6 +41,8 @@ export interface VendaReal {
   primeiraParcelaEm: string | null
   comissaoPercentual: string
   comissaoModo: 'ato' | 'recebido'
+  /** Parcelas do contrato (Fase 5). Sem contrato, a tabela é recalculada a partir da venda. */
+  contrato?: readonly ParcelaReal[]
 }
 
 export interface EntradaReceitas {
@@ -34,9 +56,11 @@ export interface EntradaReceitas {
 const UM = new Decimal(1)
 
 /**
- * Receitas do empreendimento a partir das vendas reais (natureza "carteira") e do estoque
- * restante projetado no ritmo do plano, nunca antes do mês atual (natureza "projetado").
- * Comissões no ato ou proporcionais ao recebido (RN-C06); tributos sobre o recebido (RN-F14).
+ * Receitas do empreendimento a partir das vendas reais e do estoque restante projetado no
+ * ritmo do plano, nunca antes do mês atual (natureza "projetado"). Vendas com contrato: o
+ * recebido entra como "realizado" no mês do pagamento (encargos como receita de juros) e o
+ * saldo em aberto como "carteira" no vencimento — as vencidas, no mês atual. Comissões no ato
+ * ou proporcionais ao recebido (RN-C06); tributos sobre o recebido (RN-F14).
  */
 export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
   const p = e.premissas
@@ -47,9 +71,9 @@ export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
     valor: Decimal,
     categoria: Lancamento['categoria'],
     centro: string,
+    natureza: Lancamento['natureza'] = 'carteira',
   ) => {
-    if (!valor.isZero())
-      lancamentos.push({ mes, valor, categoria, natureza: 'carteira', centroCusto: centro })
+    if (!valor.isZero()) lancamentos.push({ mes, valor, categoria, natureza, centroCusto: centro })
   }
   const recebe = UM.minus(p.inadimplencia)
   const recebeEntrada = p.inadimplenciaNaEntrada ? recebe : UM
@@ -64,17 +88,70 @@ export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
     const comissao = new Decimal(v.comissaoPercentual)
     const porRecebido = v.comissaoModo === 'recebido'
 
-    const entrada = new Decimal(v.entradaCentavos).times(recebeEntrada)
-    lancar(mesVenda, entrada, 'receita_imobiliaria', 'vendas')
-    if (porRecebido)
-      lancar(mesVenda, entrada.times(comissao).negated(), 'comissao', 'comercial.comissao')
-    else
+    const lancarComissaoNoAto = () =>
       lancar(
         mesVenda,
         new Decimal(v.precoCentavos).times(comissao).negated(),
         'comissao',
         'comercial.comissao',
       )
+    if (v.contrato) {
+      if (!porRecebido) lancarComissaoNoAto()
+      for (const pc of v.contrato) {
+        if (pc.situacao === 'cancelada') continue
+        const fracao = new Decimal(pc.amortizacaoCentavos).div(pc.valorCentavos)
+        const centro = pc.numero === 0 ? 'vendas' : 'carteira'
+        const parte = (
+          mes: number,
+          principal: Decimal,
+          encargos: Decimal,
+          natureza: Lancamento['natureza'],
+        ) => {
+          const amortizacao = principal.times(fracao)
+          lancar(mes, amortizacao, 'receita_imobiliaria', centro, natureza)
+          lancar(
+            mes,
+            principal.minus(amortizacao).plus(encargos),
+            'receita_juros',
+            centro,
+            natureza,
+          )
+          if (porRecebido)
+            lancar(
+              mes,
+              amortizacao.times(comissao).negated(),
+              'comissao',
+              'comercial.comissao',
+              natureza === 'realizado' ? 'comprometido' : natureza,
+            )
+        }
+        let pago = 0
+        for (const r of pc.recebimentos) {
+          pago += r.principalCentavos
+          parte(
+            mesDoFluxo(e.dataBase, r.data),
+            new Decimal(r.principalCentavos),
+            new Decimal(r.encargosCentavos),
+            'realizado',
+          )
+        }
+        const saldo = new Decimal(pc.valorCentavos - pago)
+        if (saldo.gt(0))
+          parte(
+            Math.max(mesDoFluxo(e.dataBase, pc.vencimento), mesAtual),
+            saldo.times(pc.numero === 0 ? recebeEntrada : recebe),
+            new Decimal(0),
+            'carteira',
+          )
+      }
+      continue
+    }
+
+    const entrada = new Decimal(v.entradaCentavos).times(recebeEntrada)
+    lancar(mesVenda, entrada, 'receita_imobiliaria', 'vendas')
+    if (porRecebido)
+      lancar(mesVenda, entrada.times(comissao).negated(), 'comissao', 'comercial.comissao')
+    else lancarComissaoNoAto()
 
     if (v.parcelas > 0 && v.primeiraParcelaEm) {
       const primeira = mesDoFluxo(e.dataBase, v.primeiraParcelaEm)
@@ -95,13 +172,18 @@ export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
     }
   }
 
-  // Tributos sobre o que as vendas reais devem trazer de caixa
-  for (const [mes, recebido] of agregarPorMes(
-    lancamentos,
-    p.base,
-    CATEGORIAS_DE_RECEITA,
-  ).valores.entries()) {
-    lancar(mes, recebido.times(p.aliquotaSobreRecebido).negated(), 'tributo', 'tributos')
+  // Tributos sobre o que as vendas reais trazem de caixa (o já recebido fica comprometido)
+  for (const [natureza, tributo] of [
+    ['carteira', 'carteira'],
+    ['realizado', 'comprometido'],
+  ] as const) {
+    const receitas = agregarPorMes(
+      lancamentos.filter((l) => l.natureza === natureza),
+      p.base,
+      CATEGORIAS_DE_RECEITA,
+    )
+    for (const [mes, recebido] of receitas.valores.entries())
+      lancar(mes, recebido.times(p.aliquotaSobreRecebido).negated(), 'tributo', 'tributos', tributo)
   }
 
   // Estoque restante no ritmo do plano

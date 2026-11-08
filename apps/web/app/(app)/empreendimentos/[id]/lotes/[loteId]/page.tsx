@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Cartao, TituloPagina } from '@/components/ui/cartao'
 import { Alerta } from '@/components/ui/formulario'
 import { exigirContexto, temPapel } from '@/lib/contexto'
+import { FormularioGerarContrato } from '../../carteira/formularios'
 import { FormularioLote } from './formulario-lote'
 import { FormularioCancelarReserva, FormularioReserva } from './formularios-comerciais'
 
@@ -25,9 +26,9 @@ export default async function PaginaLote({
   searchParams,
 }: {
   params: Promise<{ id: string; loteId: string }>
-  searchParams: Promise<{ vendido?: string }>
+  searchParams: Promise<{ vendido?: string; semContrato?: string }>
 }) {
-  const [{ id, loteId }, { vendido }] = await Promise.all([params, searchParams])
+  const [{ id, loteId }, { vendido, semContrato }] = await Promise.all([params, searchParams])
   const ctx = await exigirContexto()
   const { data: lote } = await ctx.db
     .from('lotes')
@@ -41,6 +42,16 @@ export default async function PaginaLote({
 
   const gestor = temPapel(ctx, 'dono', 'comercial_gestor')
   const podeReservar = gestor || temPapel(ctx, 'corretor')
+  const verCarteira = temPapel(
+    ctx,
+    'dono',
+    'financeiro',
+    'contador',
+    'comercial_gestor',
+    'engenharia',
+    'socio_leitura',
+  )
+  const podeGerarContrato = temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor')
   const podeEditarCadastro = temPapel(ctx, 'dono', 'engenharia', 'comercial_gestor')
 
   const [{ data: reserva }, { data: venda }, { data: corretores }, { data: prazo }] =
@@ -55,7 +66,7 @@ export default async function PaginaLote({
       ctx.db
         .from('vendas')
         .select(
-          'id, data_venda, preco_centavos, entrada_centavos, parcelas, compradores(nome), corretores(nome)',
+          'id, data_venda, preco_centavos, entrada_centavos, parcelas, compradores(nome), corretores(nome), contratos(id)',
         )
         .eq('lote_id', loteId)
         .eq('situacao', 'ativa')
@@ -93,7 +104,11 @@ export default async function PaginaLote({
       />
       {vendido && (
         <Alerta tipo="sucesso">
-          Venda registrada. O fluxo do empreendimento já considera esta venda.
+          Venda registrada
+          {semContrato
+            ? '. O contrato não foi gerado; gere-o abaixo.'
+            : ' com o contrato e as parcelas.'}{' '}
+          O fluxo do empreendimento já considera esta venda.
         </Alerta>
       )}
 
@@ -160,6 +175,25 @@ export default async function PaginaLote({
               </dd>
               <dt className="text-muted-foreground">Corretor</dt>
               <dd>{venda.corretores?.nome ?? '—'}</dd>
+              {verCarteira && (
+                <>
+                  <dt className="text-muted-foreground">Contrato</dt>
+                  <dd>
+                    {venda.contratos[0] ? (
+                      <Link
+                        href={`/empreendimentos/${id}/carteira/${venda.contratos[0].id}`}
+                        className="text-primary underline-offset-4 hover:underline"
+                      >
+                        Ver parcelas
+                      </Link>
+                    ) : podeGerarContrato ? (
+                      <FormularioGerarContrato empreendimentoId={id} vendaId={venda.id} />
+                    ) : (
+                      'Não gerado'
+                    )}
+                  </dd>
+                </>
+              )}
             </dl>
           ) : (
             <p className="text-sm text-muted-foreground">Lote vendido.</p>
