@@ -1,6 +1,6 @@
 import { carregarContrato } from '@norteia/aplicacao'
 import { formatarData, formatarMoeda, formatarPercentual } from '@norteia/dominio'
-import { Decimal, arredondarCentavos } from '@norteia/motor-financeiro'
+import { Decimal, arredondarCentavos, somarMeses } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -9,11 +9,13 @@ import { Alerta } from '@/components/ui/formulario'
 import { exigirContexto, temPapel } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
 import {
+  FormularioAntecipacao,
   FormularioCancelarCobranca,
   FormularioEmitirCobranca,
   FormularioEstornoRecebimento,
   FormularioReajuste,
   FormularioRecebimento,
+  FormularioRenegociacao,
 } from '../formularios'
 
 export const metadata: Metadata = { title: 'Contrato' }
@@ -38,6 +40,8 @@ export default async function PaginaContrato({
     reajustado?: string
     cobranca?: string
     cobrancaCancelada?: string
+    renegociado?: string
+    antecipado?: string
   }>
 }) {
   const [{ id, contratoId }, avisos] = await Promise.all([params, searchParams])
@@ -59,6 +63,14 @@ export default async function PaginaContrato({
   if (!c || c.empreendimentoId !== id) notFound()
   const podeReceber = temPapel(ctx, 'dono', 'financeiro') && c.situacao === 'vigente'
   const proxima = c.parcelas.find((p) => p.situacao === 'aberta')
+  const abertas = c.parcelas
+    .filter((p) => p.situacao === 'aberta')
+    .map((p) => ({
+      id: p.id,
+      numero: p.numero,
+      vencimento: p.vencimento,
+      saldoCentavos: p.saldoCentavos,
+    }))
   const regra = {
     multa: c.regra.multa.toString(),
     jurosMoraMensal: c.regra.jurosMoraMensal.toString(),
@@ -83,6 +95,23 @@ export default async function PaginaContrato({
         <Alerta tipo="sucesso">Boleto/Pix emitido no Asaas. Envie o link ao comprador.</Alerta>
       )}
       {avisos.cobrancaCancelada && <Alerta tipo="sucesso">Cobrança cancelada no Asaas.</Alerta>}
+      {avisos.renegociado && (
+        <Alerta tipo="sucesso">
+          Aditivo de renegociação registrado. As parcelas antigas ficam no histórico.
+        </Alerta>
+      )}
+      {avisos.antecipado && <Alerta tipo="sucesso">Antecipação registrada.</Alerta>}
+      {c.situacao === 'quitado' && (
+        <Alerta tipo="sucesso">
+          Contrato quitado.{' '}
+          <Link
+            href={`/empreendimentos/${id}/carteira/${c.id}/quitacao`}
+            className="font-medium underline underline-offset-4"
+          >
+            Emitir termo de quitação
+          </Link>
+        </Alerta>
+      )}
       {avisos.reajustado !== undefined && (
         <Alerta tipo={avisos.reajustado === '0' ? 'aviso' : 'sucesso'}>
           {avisos.reajustado === '0'
@@ -132,6 +161,58 @@ export default async function PaginaContrato({
             regra={regra}
             hoje={hoje}
           />
+        </Cartao>
+      )}
+
+      {podeReceber && abertas.length > 0 && (
+        <Cartao className="flex flex-col gap-3">
+          <details>
+            <summary className="cursor-pointer font-semibold">Antecipar parcelas</summary>
+            <div className="mt-3">
+              <FormularioAntecipacao
+                empreendimentoId={id}
+                contratoId={c.id}
+                abertas={abertas}
+                jurosMensal={c.jurosMensal}
+                hoje={hoje}
+              />
+            </div>
+          </details>
+          <details>
+            <summary className="cursor-pointer font-semibold">Renegociar (aditivo)</summary>
+            <div className="mt-3">
+              <FormularioRenegociacao
+                empreendimentoId={id}
+                contratoId={c.id}
+                abertas={abertas}
+                regra={regra}
+                jurosMensal={c.jurosMensal}
+                sistema={c.sistema}
+                hoje={hoje}
+                primeiraParcela={somarMeses(hoje, 1)}
+              />
+            </div>
+          </details>
+        </Cartao>
+      )}
+
+      {c.aditivos.length > 0 && (
+        <Cartao className="flex flex-col gap-3">
+          <h2 className="font-semibold">Aditivos</h2>
+          <ul className="divide-y text-sm">
+            {c.aditivos.map((a) => (
+              <li key={a.id} className="flex flex-col gap-1 py-2">
+                <span>
+                  {formatarData(a.data)} · renegociação de {a.parcelasAnteriores} parcela(s):{' '}
+                  {moeda(a.saldoAnteriorCentavos)}
+                  {a.encargosCentavos > 0 && ` + encargos ${moeda(a.encargosCentavos)}`}
+                  {a.descontoCentavos > 0 && ` − desconto ${moeda(a.descontoCentavos)}`} ={' '}
+                  <strong>{moeda(a.novoSaldoCentavos)}</strong>
+                </span>
+                <span className="text-xs text-muted-foreground">Motivo: {a.motivo}</span>
+              </li>
+            ))}
+          </ul>
         </Cartao>
       )}
 
@@ -228,7 +309,7 @@ export default async function PaginaContrato({
                       {p.situacao === 'paga' ? (
                         'Paga'
                       ) : p.situacao === 'cancelada' ? (
-                        'Cancelada'
+                        'Renegociada'
                       ) : atrasada ? (
                         <span className="font-medium text-destructive">
                           Em atraso · {p.encargosHoje.diasAtraso} dias

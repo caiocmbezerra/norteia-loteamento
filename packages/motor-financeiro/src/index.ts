@@ -62,3 +62,4 @@ export {
   somarMeses,
 } from './encargos'
 export { type CondicoesContrato, type ParcelaContrato, gerarParcelasContrato } from './contrato'
+export { descontoAntecipacao } from './antecipacao'

@@ -96,7 +96,7 @@ select is(public.webhook_asaas(testes.id('tenant'), current_setting('teste.token
 select is(public.webhook_asaas(testes.id('tenant'), current_setting('teste.token'),
   '{"id":"evt_2","event":"PAYMENT_CONFIRMED","payment":{"id":"pay_1"}}'), 'ja_processada', 'outro aviso do mesmo pagamento não baixa de novo (RN-K05)');
 reset role;
-select is((select count(*) || ' ' || min(principal_centavos) || ' ' || min(origem) || ' ' || min(referencia_externa) from public.recebimentos),
+select is((select count(*) || ' ' || min(principal_centavos) || ' ' || min(origem) || ' ' || min(referencia_externa) from public.recebimentos where tenant_id = testes.id('tenant')),
   '1 45000 asaas pay_1', 'um recebimento, com o valor conferido no Asaas');
 
 -- Pagamento com acréscimo e varredura de segurança

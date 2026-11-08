@@ -20,6 +20,12 @@
 - Boleto + Pix por parcela no contrato, com multa e juros do contrato; cancelamento com motivo.
 - Baixa automática pelo webhook (conferindo o pagamento no Asaas) e varredura a cada 6 horas.
 
+## Feito (5c-1)
+
+- Renegociação por aditivo com prévia do novo plano, encargos incorporados opcionalmente e histórico das parcelas substituídas (RN-K07).
+- Antecipação de parcelas a vencer com desconto dos juros não decorridos (RN-K08); quitação antecipada.
+- Termo de quitação para imprimir/PDF (texto-modelo, PL-17).
+
 ## Critérios
 
 | Critério                                                               | Situação                                           |
@@ -36,6 +42,7 @@
 ## Pendente
 
 - Validar no sandbox os campos do pagamento em atraso (`value`, `originalValue`, `interestValue`) — marcado `VALIDAR NO SANDBOX` no código.
-- Crédito por pagamento a maior; régua de cobrança com envio automático dos links (5c).
+- Crédito por pagamento a maior.
 - Conferir o código do INCC no SGS e ativar a série.
-- **5c:** régua de cobrança (e-mail/WhatsApp, opt-out — RN-K10), renegociação e antecipação por aditivo (RN-K07, RN-K08), cessão, termo de quitação, modelos de contrato e assinatura eletrônica (PL-06).
+- **5c-2:** régua de cobrança (e-mail/WhatsApp, opt-out — RN-K10), com envio dos links do Asaas.
+- **5c-3:** cessão de contrato e troca de lote por aditivo, modelos de contrato (DOCX) e assinatura eletrônica (PL-06).

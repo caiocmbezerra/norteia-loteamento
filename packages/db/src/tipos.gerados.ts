@@ -3,6 +3,72 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      aditivos: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          condicoes: NonNullable<Json>
+          contrato_id: string
+          criado_em: string
+          criado_por: string | null
+          data: string
+          desconto_centavos: number
+          encargos_incorporados_centavos: number
+          id: string
+          motivo: string
+          novo_saldo_centavos: number
+          parcelas_anteriores: NonNullable<Json>
+          saldo_anterior_centavos: number
+          tenant_id: string
+          tipo: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          condicoes: NonNullable<Json>
+          contrato_id: string
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          desconto_centavos?: number
+          encargos_incorporados_centavos?: number
+          id?: string
+          motivo: string
+          novo_saldo_centavos: number
+          parcelas_anteriores: NonNullable<Json>
+          saldo_anterior_centavos: number
+          tenant_id: string
+          tipo: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          condicoes?: NonNullable<Json>
+          contrato_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          desconto_centavos?: number
+          encargos_incorporados_centavos?: number
+          id?: string
+          motivo?: string
+          novo_saldo_centavos?: number
+          parcelas_anteriores?: NonNullable<Json>
+          saldo_anterior_centavos?: number
+          tenant_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'aditivos_tenant_id_contrato_id_fkey'
+            columns: ['tenant_id', 'contrato_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       asaas_clientes: {
         Row: {
           asaas_id: string
@@ -1521,6 +1587,8 @@ export type Database = {
       }
       parcelas: {
         Row: {
+          aditivo_cancelamento_id: string | null
+          aditivo_origem_id: string | null
           amortizacao_centavos: number
           atualizado_em: string
           atualizado_por: string | null
@@ -1539,6 +1607,8 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          aditivo_cancelamento_id?: string | null
+          aditivo_origem_id?: string | null
           amortizacao_centavos: number
           atualizado_em?: string
           atualizado_por?: string | null
@@ -1556,6 +1626,8 @@ export type Database = {
           vencimento: string
         }
         Update: {
+          aditivo_cancelamento_id?: string | null
+          aditivo_origem_id?: string | null
           amortizacao_centavos?: number
           atualizado_em?: string
           atualizado_por?: string | null
@@ -1573,6 +1645,20 @@ export type Database = {
           vencimento?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'parcelas_aditivo_cancelamento_fk'
+            columns: ['tenant_id', 'aditivo_cancelamento_id']
+            isOneToOne: false
+            referencedRelation: 'aditivos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'parcelas_aditivo_origem_fk'
+            columns: ['tenant_id', 'aditivo_origem_id']
+            isOneToOne: false
+            referencedRelation: 'aditivos'
+            referencedColumns: ['tenant_id', 'id']
+          },
           {
             foreignKeyName: 'parcelas_tenant_id_contrato_id_fkey'
             columns: ['tenant_id', 'contrato_id']
@@ -2248,6 +2334,10 @@ export type Database = {
     }
     Functions: {
       aceitar_convite: { Args: { p_token: string }; Returns: string }
+      antecipar_parcelas: {
+        Args: { p_contrato: string; p_data: string; p_itens: Json }
+        Returns: number
+      }
       aprovar_viabilidade: {
         Args: { p_motivo?: string; p_resumo: Json; p_viabilidade: string }
         Returns: number
@@ -2333,6 +2423,18 @@ export type Database = {
           p_parcela: string
           p_principal: number
           p_referencia?: string
+        }
+        Returns: string
+      }
+      renegociar_contrato: {
+        Args: {
+          p_condicoes: Json
+          p_contrato: string
+          p_data: string
+          p_desconto: number
+          p_encargos: number
+          p_motivo: string
+          p_parcelas: Json
         }
         Returns: string
       }

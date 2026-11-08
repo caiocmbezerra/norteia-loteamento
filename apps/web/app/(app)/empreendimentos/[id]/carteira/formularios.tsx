@@ -1,12 +1,28 @@
 'use client'
 
 import { formatarMoeda, lerMoeda } from '@norteia/dominio'
-import { Decimal, arredondarCentavos, calcularEncargos, centavos } from '@norteia/motor-financeiro'
+import {
+  Decimal,
+  arredondarCentavos,
+  calcularEncargos,
+  centavos,
+  descontoAntecipacao,
+  gerarParcelasContrato,
+} from '@norteia/motor-financeiro'
 import { useActionState, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alerta, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/formulario'
 import type { EstadoFormulario } from '@/lib/acao'
-import { cancelarCobrancaAcao, emitirCobranca, estornar, gerar, reajustar, receber } from './acoes'
+import {
+  antecipar,
+  cancelarCobrancaAcao,
+  emitirCobranca,
+  estornar,
+  gerar,
+  reajustar,
+  receber,
+  renegociar,
+} from './acoes'
 
 const moeda = (c: number) => formatarMoeda(arredondarCentavos(String(c)))
 const emTexto = (c: number) => moeda(c).replace(/^R\$\s/, '')
@@ -266,6 +282,294 @@ export function FormularioCancelarCobranca({
           {estado.erro}
         </p>
       )}
+    </form>
+  )
+}
+
+type ParcelaAberta = { id: string; numero: number; vencimento: string; saldoCentavos: number }
+
+/** Renegociação por aditivo com prévia do novo plano pelo mesmo motor do servidor (RN-K07). */
+export function FormularioRenegociacao({
+  empreendimentoId,
+  contratoId,
+  abertas,
+  regra,
+  jurosMensal,
+  sistema,
+  hoje,
+  primeiraParcela,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  abertas: ParcelaAberta[]
+  regra: { multa: string; jurosMoraMensal: string }
+  jurosMensal: string
+  sistema: 'price' | 'sac'
+  hoje: string
+  primeiraParcela: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    renegociar.bind(null, empreendimentoId, contratoId),
+    {},
+  )
+  const er = estado.erros ?? {}
+  const v = (k: string, padrao: string) => estado.valores?.[k] ?? padrao
+  const [campos, setCampos] = useState({
+    data: v('data', hoje),
+    encargos: estado.valores ? estado.valores.encargos === 'on' : true,
+    desconto: v('desconto', ''),
+    parcelas: v('parcelas', String(Math.max(1, abertas.length))),
+    juros: v('juros', new Decimal(jurosMensal).times(100).toString().replace('.', ',')),
+    sistema: v('sistema', sistema) as 'price' | 'sac',
+    primeiraParcela: v('primeiraParcela', primeiraParcela),
+  })
+  const previa = useMemo(() => {
+    const desconto = lerCentavos(campos.desconto)
+    const n = Number(campos.parcelas)
+    const data = /^\d{4}-\d{2}-\d{2}$/.test(campos.data) ? campos.data : null
+    const taxa = /^\d{1,2}(,\d{1,4})?$/.test(campos.juros)
+      ? new Decimal(campos.juros.replace(',', '.')).div(100)
+      : null
+    if (desconto === null || !data || !taxa || !Number.isInteger(n) || n < 1 || n > 480) return null
+    const r = {
+      multa: new Decimal(regra.multa),
+      jurosMoraMensal: new Decimal(regra.jurosMoraMensal),
+    }
+    const saldo = abertas.reduce((t, p) => t + p.saldoCentavos, 0)
+    const encargos = campos.encargos
+      ? abertas.reduce((t, p) => {
+          const e = calcularEncargos(centavos(p.saldoCentavos), p.vencimento, data, r)
+          return t + e.multa + e.jurosMora
+        }, 0)
+      : 0
+    const novo = saldo + encargos - desconto
+    if (novo <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(campos.primeiraParcela))
+      return { saldo, encargos, novo, plano: null }
+    const plano = gerarParcelasContrato({
+      precoCentavos: centavos(novo),
+      entradaCentavos: centavos(0),
+      dataEntrada: data,
+      parcelas: n,
+      jurosMensal: taxa,
+      sistema: campos.sistema,
+      primeiraParcelaEm: campos.primeiraParcela,
+    })
+    return { saldo, encargos, novo, plano }
+  }, [campos, abertas, regra])
+  const mudar =
+    (k: keyof typeof campos) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setCampos({
+        ...campos,
+        [k]:
+          e.target instanceof HTMLInputElement && e.target.type === 'checkbox'
+            ? e.target.checked
+            : e.target.value,
+      })
+
+  return (
+    <form action={acao} className="flex flex-col gap-3" noValidate>
+      {estado.erro && <Alerta>{estado.erro}</Alerta>}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Campo id="ren-data" rotulo="Data do aditivo" erro={er.data}>
+          <Entrada
+            {...aria('ren', 'data', er.data)}
+            type="date"
+            max={hoje}
+            value={campos.data}
+            onChange={mudar('data')}
+          />
+        </Campo>
+        <Campo id="ren-desconto" rotulo="Desconto (R$)" erro={er.desconto}>
+          <Entrada
+            {...aria('ren', 'desconto', er.desconto)}
+            inputMode="decimal"
+            placeholder="0,00"
+            value={campos.desconto}
+            onChange={mudar('desconto')}
+          />
+        </Campo>
+        <Campo id="ren-parcelas" rotulo="Parcelas" erro={er.parcelas}>
+          <Entrada
+            {...aria('ren', 'parcelas', er.parcelas)}
+            inputMode="numeric"
+            value={campos.parcelas}
+            onChange={mudar('parcelas')}
+          />
+        </Campo>
+        <Campo id="ren-juros" rotulo="Juros ao mês (%)" erro={er.juros}>
+          <Entrada
+            {...aria('ren', 'juros', er.juros)}
+            inputMode="decimal"
+            value={campos.juros}
+            onChange={mudar('juros')}
+          />
+        </Campo>
+        <Campo id="ren-sistema" rotulo="Sistema">
+          <Selecao
+            id="ren-sistema"
+            name="sistema"
+            value={campos.sistema}
+            onChange={mudar('sistema')}
+          >
+            <option value="price">Price</option>
+            <option value="sac">SAC</option>
+          </Selecao>
+        </Campo>
+        <Campo id="ren-primeiraParcela" rotulo="1ª parcela" erro={er.primeiraParcela}>
+          <Entrada
+            {...aria('ren', 'primeiraParcela', er.primeiraParcela)}
+            type="date"
+            value={campos.primeiraParcela}
+            onChange={mudar('primeiraParcela')}
+          />
+        </Campo>
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="encargos"
+          checked={campos.encargos}
+          onChange={mudar('encargos')}
+          className="size-4"
+        />
+        Incorporar multa e juros de mora das parcelas vencidas
+      </label>
+      <Campo id="ren-motivo" rotulo="Motivo (fica no aditivo e na auditoria)" erro={er.motivo}>
+        <Entrada {...aria('ren', 'motivo', er.motivo)} defaultValue={estado.valores?.motivo} />
+      </Campo>
+      <output aria-live="polite" className="rounded-lg border bg-muted/50 p-3 text-sm">
+        {previa ? (
+          <>
+            <span className="block">
+              Saldo {moeda(previa.saldo)}
+              {previa.encargos > 0 && ` + encargos ${moeda(previa.encargos)}`}
+              {lerCentavos(campos.desconto)
+                ? ` − desconto ${moeda(lerCentavos(campos.desconto)!)}`
+                : ''}{' '}
+              = <strong>{moeda(previa.novo)}</strong>
+            </span>
+            {previa.plano ? (
+              <span className="block text-xs text-muted-foreground">
+                {campos.sistema === 'price'
+                  ? `${previa.plano.length} × ${moeda(previa.plano[0]!.valor)}`
+                  : `de ${moeda(previa.plano[0]!.valor)} a ${moeda(previa.plano.at(-1)!.valor)}`}{' '}
+                · total {moeda(previa.plano.reduce((t, p) => t + p.valor, 0))}
+              </span>
+            ) : (
+              <span className="block text-xs text-destructive">
+                O desconto não pode zerar o saldo.
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="text-muted-foreground">
+            Preencha as condições para ver o novo plano.
+          </span>
+        )}
+      </output>
+      <Button type="submit" disabled={enviando} className="self-start">
+        {enviando ? 'Registrando…' : 'Registrar aditivo de renegociação'}
+      </Button>
+    </form>
+  )
+}
+
+/** Antecipação das parcelas a vencer com desconto dos juros não decorridos (RN-K08). */
+export function FormularioAntecipacao({
+  empreendimentoId,
+  contratoId,
+  abertas,
+  jurosMensal,
+  hoje,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  abertas: ParcelaAberta[]
+  jurosMensal: string
+  hoje: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    antecipar.bind(null, empreendimentoId, contratoId),
+    {},
+  )
+  const [data, setData] = useState(estado.valores?.data ?? hoje)
+  const aVencer = abertas.filter((p) => p.vencimento > data)
+  const [escolhidas, setEscolhidas] = useState<Set<string>>(new Set())
+  const taxa = new Decimal(jurosMensal)
+  const lista = aVencer.filter((p) => escolhidas.has(p.id))
+  const saldo = lista.reduce((t, p) => t + p.saldoCentavos, 0)
+  const desconto = /^\d{4}-\d{2}-\d{2}$/.test(data)
+    ? lista.reduce(
+        (t, p) => t + descontoAntecipacao(centavos(p.saldoCentavos), p.vencimento, data, taxa),
+        0,
+      )
+    : 0
+  const alternar = (id: string) => {
+    const novo = new Set(escolhidas)
+    if (novo.has(id)) novo.delete(id)
+    else novo.add(id)
+    setEscolhidas(novo)
+  }
+  return (
+    <form action={acao} className="flex flex-col gap-3" noValidate>
+      {estado.erro && <Alerta>{estado.erro}</Alerta>}
+      <Campo id="ant-data" rotulo="Data da antecipação" erro={estado.erros?.data}>
+        <Entrada
+          {...aria('ant', 'data', estado.erros?.data)}
+          type="date"
+          max={hoje}
+          value={data}
+          onChange={(e) => setData(e.target.value)}
+          className="sm:w-48"
+        />
+      </Campo>
+      {aVencer.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhuma parcela a vencer nesta data.</p>
+      ) : (
+        <fieldset className="flex flex-col gap-1 text-sm">
+          <legend className="mb-1 text-sm font-medium">Parcelas a antecipar</legend>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              className="size-4"
+              checked={lista.length === aVencer.length}
+              onChange={(e) =>
+                setEscolhidas(new Set(e.target.checked ? aVencer.map((p) => p.id) : []))
+              }
+            />
+            Todas (quitação antecipada)
+          </label>
+          {aVencer.map((p) => (
+            <label key={p.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="parcela"
+                value={p.id}
+                className="size-4"
+                checked={escolhidas.has(p.id)}
+                onChange={() => alternar(p.id)}
+              />
+              Parcela {p.numero} · vence {p.vencimento.split('-').reverse().join('/')} ·{' '}
+              {moeda(p.saldoCentavos)}
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <output aria-live="polite" className="rounded-lg border bg-muted/50 p-3 text-sm">
+        {lista.length > 0 ? (
+          <>
+            <span className="font-medium">A receber: {moeda(saldo - desconto)}</span>
+            <span className="block text-xs text-muted-foreground">
+              Saldo {moeda(saldo)} − desconto dos juros não decorridos {moeda(desconto)}
+            </span>
+          </>
+        ) : (
+          <span className="text-muted-foreground">Escolha as parcelas.</span>
+        )}
+      </output>
+      <Button type="submit" disabled={enviando || lista.length === 0} className="self-start">
+        {enviando ? 'Registrando…' : 'Registrar antecipação'}
+      </Button>
     </form>
   )
 }

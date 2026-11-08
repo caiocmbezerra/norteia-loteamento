@@ -79,3 +79,63 @@ test('contrato, recebimentos com encargos e estorno', async ({ page }, info) => 
   await page.goto(`${empreendimento}/carteira`)
   await expect(page.getByRole('row', { name: /Carla Compradora/ })).toContainText('2 em atraso')
 })
+
+// Fase 5c-1: renegociação por aditivo, antecipação e termo de quitação.
+test('renegociação, antecipação e termo de quitação', async ({ page }, info) => {
+  await page.goto('/cadastrar')
+  await page.getByLabel('Seu nome').fill('Rê Renegocia')
+  await page.getByLabel('E-mail').fill(`aditivo.${Date.now()}.${info.project.name}@exemplo.com.br`)
+  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await page.getByLabel('Nome da sua loteadora').fill('Loteadora Aditivo')
+  await page.getByLabel('Nome do empreendimento').fill('Jardim Aditivo')
+  await page.getByLabel('Município').fill('Goiânia')
+  await page.getByLabel('UF').selectOption('GO')
+  await page.getByLabel('Lotes por quadra').fill('1')
+  await page.getByLabel('Preço de cada lote (R$)').fill('90.000,00')
+  await page.getByRole('button', { name: 'Criar meu loteamento' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jardim Aditivo')
+  const empreendimento = page.url().split('?')[0]!
+  await page.goto(`${empreendimento}/editar`)
+  await page.getByLabel('Situação').selectOption('em_vendas')
+  await page.getByLabel('Data do registro').fill('2026-01-02')
+  await page.getByRole('button', { name: 'Salvar' }).click()
+
+  // Entrada 9.000 + 2 parcelas a 1% a.m.; a 1ª já venceu
+  await page.getByRole('link', { name: /Quadra A, lote 1:/ }).click()
+  await page.getByRole('link', { name: 'Registrar venda' }).click()
+  await page.getByLabel('Nome completo').fill('Rita Renegociada')
+  await page.getByLabel('Entrada (R$)').fill('9.000,00')
+  await page.getByLabel('Parcelas').fill('2')
+  await page.getByLabel('Juros ao mês (%)').fill('1')
+  await page.getByLabel('Data da venda').fill(dia(-40))
+  await page.getByLabel('1ª parcela').fill(dia(-10))
+  await page.getByRole('button', { name: 'Registrar venda' }).click()
+  await page.getByRole('link', { name: 'Ver parcelas' }).click()
+  await page.getByLabel('Data do pagamento').fill(dia(-40))
+  await page.getByRole('button', { name: 'Registrar recebimento' }).click()
+  await expect(page.getByText('Recebimento registrado.')).toBeVisible()
+
+  // Renegociação: saldo + encargos da vencida em 1 parcela
+  await page.getByText('Renegociar (aditivo)').click()
+  await page.getByLabel('Parcelas', { exact: true }).last().fill('1')
+  await page.getByLabel('1ª parcela').fill(dia(30))
+  await page
+    .getByLabel('Motivo (fica no aditivo e na auditoria)')
+    .fill('Acordo de prazo com a compradora')
+  await expect(page.getByText(/\+ encargos R\$/)).toBeVisible()
+  await page.getByRole('button', { name: 'Registrar aditivo de renegociação' }).click()
+  await expect(page.getByText(/Aditivo de renegociação registrado/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Aditivos' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: 'Renegociada' }).first()).toBeVisible()
+
+  // Antecipação da parcela nova (com desconto dos juros) → quitação
+  await page.getByText('Antecipar parcelas').click()
+  await page.getByLabel('Todas (quitação antecipada)').check()
+  await expect(page.getByText(/desconto dos juros não decorridos R\$\s[1-9]/)).toBeVisible()
+  await page.getByRole('button', { name: 'Registrar antecipação' }).click()
+  await expect(page.getByText('Antecipação registrada.')).toBeVisible()
+  await page.getByRole('link', { name: 'Emitir termo de quitação' }).click()
+  await expect(page.getByRole('heading', { name: 'Termo de quitação' })).toBeVisible()
+  await expect(page.getByText(/Rita Renegociada/)).toBeVisible()
+})
