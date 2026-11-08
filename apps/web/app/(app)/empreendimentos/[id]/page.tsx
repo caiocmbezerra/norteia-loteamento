@@ -66,6 +66,9 @@ export default async function PaginaEmpreendimento({
         }
         acoes={
           <>
+            <Button asChild variant="secondary">
+              <Link href={`/empreendimentos/${id}/comercial`}>Comercial</Link>
+            </Button>
             {temPapel(ctx, 'dono', 'financeiro', 'engenharia', 'contador', 'socio_leitura') && (
               <>
                 <Button asChild>

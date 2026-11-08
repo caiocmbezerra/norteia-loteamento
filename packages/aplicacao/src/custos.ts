@@ -13,6 +13,7 @@ import {
   projetarAtual,
   projetarCustos,
 } from '@norteia/projecao'
+import { vendasDoEmpreendimento } from './comercial'
 import { ErroAplicacao, traduzirErroBanco } from './erros'
 
 export interface PainelCustos {
@@ -116,7 +117,11 @@ export async function carregarPainelCustos(
   if (premissas && plano.data) {
     const tma = { base: premissas.base, mensal: new Decimal(String(plano.data.tma_mensal)) }
     resumoPlano = resumirViabilidade(projetarViabilidade(premissas), tma)
-    resumoAtual = resumirViabilidade(projetarAtual(premissas, custos), tma)
+    const vendas = await vendasDoEmpreendimento(db, empreendimentoId)
+    resumoAtual = resumirViabilidade(
+      projetarAtual(premissas, custos, { dataBase: emp.data!.data_base, hoje, vendas }),
+      tma,
+    )
   }
 
   const listaLotes = lotes.data ?? []
