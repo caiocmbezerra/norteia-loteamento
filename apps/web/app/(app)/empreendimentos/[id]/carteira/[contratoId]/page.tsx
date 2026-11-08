@@ -1,6 +1,6 @@
 import { carregarContrato } from '@norteia/aplicacao'
 import { formatarData, formatarMoeda, formatarPercentual } from '@norteia/dominio'
-import { arredondarCentavos } from '@norteia/motor-financeiro'
+import { Decimal, arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -8,7 +8,11 @@ import { Cartao, Indicador, TituloPagina } from '@/components/ui/cartao'
 import { Alerta } from '@/components/ui/formulario'
 import { exigirContexto, temPapel } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
-import { FormularioEstornoRecebimento, FormularioRecebimento } from '../formularios'
+import {
+  FormularioEstornoRecebimento,
+  FormularioReajuste,
+  FormularioRecebimento,
+} from '../formularios'
 
 export const metadata: Metadata = { title: 'Contrato' }
 
@@ -25,7 +29,12 @@ export default async function PaginaContrato({
   searchParams,
 }: {
   params: Promise<{ id: string; contratoId: string }>
-  searchParams: Promise<{ novo?: string; recebido?: string; estornado?: string }>
+  searchParams: Promise<{
+    novo?: string
+    recebido?: string
+    estornado?: string
+    reajustado?: string
+  }>
 }) {
   const [{ id, contratoId }, avisos] = await Promise.all([params, searchParams])
   const ctx = await exigirContexto()
@@ -66,6 +75,13 @@ export default async function PaginaContrato({
       {avisos.novo && <Alerta tipo="sucesso">Contrato gerado com as parcelas da venda.</Alerta>}
       {avisos.recebido && <Alerta tipo="sucesso">Recebimento registrado.</Alerta>}
       {avisos.estornado && <Alerta tipo="sucesso">Recebimento estornado.</Alerta>}
+      {avisos.reajustado !== undefined && (
+        <Alerta tipo={avisos.reajustado === '0' ? 'aviso' : 'sucesso'}>
+          {avisos.reajustado === '0'
+            ? 'Nenhum reajuste a aplicar agora: aniversário ainda não chegou ou índices não publicados.'
+            : `${avisos.reajustado} reajuste(s) aplicado(s).`}
+        </Alerta>
+      )}
 
       <section aria-label="Resumo do contrato" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Indicador rotulo="Total do contrato" valor={moeda(c.totais.valorCentavos)} />
@@ -111,6 +127,44 @@ export default async function PaginaContrato({
         </Cartao>
       )}
 
+      {c.indiceReajuste && (
+        <Cartao className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-semibold">Reajuste ({c.indiceReajuste})</h2>
+            {podeReceber && <FormularioReajuste empreendimentoId={id} contratoId={c.id} />}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            A cada {c.regrasReajuste.periodicidadeMeses} meses da venda, pelo acumulado do índice
+            até {c.regrasReajuste.defasagemMeses} meses antes do aniversário (só índices
+            publicados). Deflação:{' '}
+            {c.regrasReajuste.negativo === 'ignorar'
+              ? 'não reduz as parcelas'
+              : 'reduz as parcelas'}
+            .
+          </p>
+          {c.reajustes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum reajuste aplicado ainda.</p>
+          ) : (
+            <ul className="divide-y text-sm">
+              {c.reajustes.map((r) => (
+                <li key={r.aniversario} className="flex flex-wrap justify-between gap-2 py-2">
+                  <span>
+                    {formatarData(r.aniversario)} · {r.indice}{' '}
+                    {formatarData(r.competenciaInicial).slice(3)} a{' '}
+                    {formatarData(r.competenciaFinal).slice(3)}:{' '}
+                    {formatarPercentual(new Decimal(r.fator).minus(1).toString(), 2)}
+                    {r.fatorAplicado !== r.fator && ' (deflação ignorada)'}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {r.parcelas} parcela(s) · {moeda(r.diferencaCentavos)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Cartao>
+      )}
+
       <Cartao className="flex flex-col gap-3">
         <h2 className="font-semibold">Parcelas</h2>
         <div className="overflow-x-auto">
@@ -131,7 +185,14 @@ export default async function PaginaContrato({
                   <tr key={p.id} className="border-t align-top">
                     <td className="py-2">{p.numero === 0 ? 'Entrada' : p.numero}</td>
                     <td className="py-2">{formatarData(p.vencimento)}</td>
-                    <td className="py-2 text-right">{moeda(p.valorCentavos)}</td>
+                    <td className="py-2 text-right">
+                      {moeda(p.valorCentavos)}
+                      {p.correcaoCentavos !== 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          reajuste {moeda(p.correcaoCentavos)}
+                        </div>
+                      )}
+                    </td>
                     <td className="py-2 text-right">
                       {p.pagoCentavos > 0 ? moeda(p.pagoCentavos) : '—'}
                       {p.recebimentos.map((r) => (

@@ -94,6 +94,7 @@ export interface ParcelaContratoDetalhe {
   valorCentavos: number
   amortizacaoCentavos: number
   jurosCentavos: number
+  correcaoCentavos: number
   pagoCentavos: number
   saldoCentavos: number
   situacao: 'aberta' | 'paga' | 'cancelada'
@@ -112,6 +113,17 @@ export interface ContratoDetalhe {
   comprador: string | null
   indiceReajuste: string | null
   regra: RegraEncargos
+  regrasReajuste: { periodicidadeMeses: number; defasagemMeses: number; negativo: string }
+  reajustes: {
+    aniversario: string
+    indice: string
+    competenciaInicial: string
+    competenciaFinal: string
+    fator: string
+    fatorAplicado: string
+    parcelas: number
+    diferencaCentavos: number
+  }[]
   situacao: string
   quitadoEm: string | null
   parcelas: ParcelaContratoDetalhe[]
@@ -140,7 +152,7 @@ export async function carregarContrato(
   const { data: c, error } = await db
     .from('contratos')
     .select(
-      'id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome)',
+      'id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos)',
     )
     .eq('id', contratoId)
     .maybeSingle()
@@ -151,7 +163,7 @@ export async function carregarContrato(
       db
         .from('parcelas')
         .select(
-          'id, numero, vencimento, valor_centavos, amortizacao_centavos, juros_centavos, pago_centavos, situacao',
+          'id, numero, vencimento, valor_centavos, amortizacao_centavos, juros_centavos, correcao_centavos, pago_centavos, situacao',
         )
         .eq('contrato_id', contratoId)
         .order('numero')
@@ -179,6 +191,7 @@ export async function carregarContrato(
       valorCentavos: p.valor_centavos,
       amortizacaoCentavos: p.amortizacao_centavos,
       jurosCentavos: p.juros_centavos,
+      correcaoCentavos: p.correcao_centavos,
       pagoCentavos: p.pago_centavos,
       saldoCentavos: saldo,
       situacao: p.situacao as ParcelaContratoDetalhe['situacao'],
@@ -211,6 +224,23 @@ export async function carregarContrato(
     comprador: c.compradores?.nome ?? null,
     indiceReajuste: c.indice_reajuste,
     regra,
+    regrasReajuste: {
+      periodicidadeMeses: c.reajuste_periodicidade_meses,
+      defasagemMeses: c.reajuste_defasagem_meses,
+      negativo: c.reajuste_negativo,
+    },
+    reajustes: [...(c.reajustes ?? [])]
+      .sort((a, b) => a.aniversario.localeCompare(b.aniversario))
+      .map((r) => ({
+        aniversario: r.aniversario,
+        indice: r.indice,
+        competenciaInicial: r.competencia_inicial,
+        competenciaFinal: r.competencia_final,
+        fator: String(r.fator),
+        fatorAplicado: String(r.fator_aplicado),
+        parcelas: r.parcelas,
+        diferencaCentavos: r.diferenca_centavos,
+      })),
     situacao: c.situacao,
     quitadoEm: c.quitado_em,
     parcelas: lista,
@@ -268,6 +298,13 @@ export async function registrarRecebimento(
   })
   falhar(erro)
   return { id: data!, encargos }
+}
+
+/** Aplica os reajustes vencidos do contrato (a rotina diária faz o mesmo para todos). */
+export async function reajustarContrato(db: ClienteBanco, contratoId: string): Promise<number> {
+  const { data, error } = await db.rpc('reajustar_contrato', { p_contrato: contratoId })
+  falhar(error)
+  return data ?? 0
 }
 
 export async function estornarRecebimento(db: ClienteBanco, recebimentoId: string, motivo: string) {
@@ -413,7 +450,7 @@ export async function parcelasPorVenda(
       db
         .from('parcelas')
         .select(
-          'id, numero, vencimento, valor_centavos, amortizacao_centavos, juros_centavos, situacao, contratos!inner(venda_id, empreendimento_id)',
+          'id, numero, vencimento, valor_centavos, amortizacao_centavos, juros_centavos, correcao_centavos, situacao, contratos!inner(venda_id, empreendimento_id)',
         )
         .eq('contratos.empreendimento_id', empreendimentoId)
         .order('id')
@@ -451,6 +488,7 @@ export async function parcelasPorVenda(
       valorCentavos: p.valor_centavos,
       amortizacaoCentavos: p.amortizacao_centavos,
       jurosCentavos: p.juros_centavos,
+      correcaoCentavos: p.correcao_centavos,
       situacao: p.situacao as ParcelaReal['situacao'],
       recebimentos: porParcela.get(p.id) ?? [],
     })

@@ -43,5 +43,6 @@ export {
   carregarContrato,
   estornarRecebimento,
   gerarContrato,
+  reajustarContrato,
   registrarRecebimento,
 } from './carteira'

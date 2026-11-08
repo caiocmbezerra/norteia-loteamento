@@ -71,6 +71,11 @@ test('contrato, recebimentos com encargos e estorno', async ({ page }, info) => 
   await linha.getByRole('button', { name: 'Estornar' }).click()
   await expect(page.getByText('Recebimento estornado.')).toBeVisible()
   await expect(page.getByRole('heading', { name: /Receber a parcela 1/ })).toBeVisible()
+
+  // Reajuste IPCA: aniversário ainda não chegou
+  await expect(page.getByRole('heading', { name: 'Reajuste (IPCA)' })).toBeVisible()
+  await page.getByRole('button', { name: 'Aplicar reajustes pendentes' }).click()
+  await expect(page.getByText(/Nenhum reajuste a aplicar agora/)).toBeVisible()
   await page.goto(`${empreendimento}/carteira`)
   await expect(page.getByRole('row', { name: /Carla Compradora/ })).toContainText('2 em atraso')
 })

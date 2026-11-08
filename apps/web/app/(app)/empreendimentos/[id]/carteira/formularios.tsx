@@ -6,7 +6,7 @@ import { useActionState, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alerta, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/formulario'
 import type { EstadoFormulario } from '@/lib/acao'
-import { estornar, gerar, receber } from './acoes'
+import { estornar, gerar, reajustar, receber } from './acoes'
 
 const moeda = (c: number) => formatarMoeda(arredondarCentavos(String(c)))
 const emTexto = (c: number) => moeda(c).replace(/^R\$\s/, '')
@@ -178,6 +178,31 @@ export function FormularioEstornoRecebimento({
       </Button>
       {estado.erro && (
         <p role="alert" className="w-full text-xs text-destructive">
+          {estado.erro}
+        </p>
+      )}
+    </form>
+  )
+}
+
+export function FormularioReajuste({
+  empreendimentoId,
+  contratoId,
+}: {
+  empreendimentoId: string
+  contratoId: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    reajustar.bind(null, empreendimentoId, contratoId),
+    {},
+  )
+  return (
+    <form action={acao} className="flex flex-col items-end gap-1">
+      <Button type="submit" size="sm" variant="outline" disabled={enviando}>
+        {enviando ? 'Verificando…' : 'Aplicar reajustes pendentes'}
+      </Button>
+      {estado.erro && (
+        <p role="alert" className="text-xs text-destructive">
           {estado.erro}
         </p>
       )}
