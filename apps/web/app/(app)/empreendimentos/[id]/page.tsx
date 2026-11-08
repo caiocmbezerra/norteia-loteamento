@@ -77,6 +77,9 @@ export default async function PaginaEmpreendimento({
                 <Button asChild variant="secondary">
                   <Link href={`/empreendimentos/${id}/custos`}>Custos e obra</Link>
                 </Button>
+                <Button asChild variant="secondary">
+                  <Link href={`/empreendimentos/${id}/permutas`}>Permutas</Link>
+                </Button>
               </>
             )}
             {temPapel(

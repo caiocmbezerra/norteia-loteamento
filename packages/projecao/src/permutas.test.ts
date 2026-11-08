@@ -88,7 +88,15 @@ describe('apurarRepasses (RN-T03 a RN-T05)', () => {
     ).toBe(4_000)
     expect(apurarRepasses(permuta({ inicio: '2026-04-01' }), [venda()], hoje).linhas).toEqual([])
     expect(
-      apurarRepasses(permuta(), [venda({ contrato: undefined, rotulo: undefined })], hoje).linhas,
+      apurarRepasses(
+        permuta(),
+        [
+          Object.fromEntries(
+            Object.entries(venda()).filter(([k]) => k !== 'contrato' && k !== 'rotulo'),
+          ) as unknown as VendaReal,
+        ],
+        hoje,
+      ).linhas,
     ).toEqual([])
   })
 

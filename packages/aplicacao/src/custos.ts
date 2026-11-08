@@ -14,6 +14,7 @@ import {
   projetarCustos,
 } from '@norteia/projecao'
 import { vendasDoEmpreendimento } from './comercial'
+import { permutasFinanceiras } from './permutas'
 import { ErroAplicacao, traduzirErroBanco } from './erros'
 
 export interface PainelCustos {
@@ -117,9 +118,12 @@ export async function carregarPainelCustos(
   if (premissas && plano.data) {
     const tma = { base: premissas.base, mensal: new Decimal(String(plano.data.tma_mensal)) }
     resumoPlano = resumirViabilidade(projetarViabilidade(premissas), tma)
-    const vendas = await vendasDoEmpreendimento(db, empreendimentoId)
+    const [vendas, permutas] = await Promise.all([
+      vendasDoEmpreendimento(db, empreendimentoId),
+      permutasFinanceiras(db, empreendimentoId),
+    ])
     resumoAtual = resumirViabilidade(
-      projetarAtual(premissas, custos, { dataBase: emp.data!.data_base, hoje, vendas }),
+      projetarAtual(premissas, custos, { dataBase: emp.data!.data_base, hoje, vendas, permutas }),
       tma,
     )
   }

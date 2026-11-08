@@ -55,7 +55,7 @@ export interface VendaReal {
   /** Parcelas do contrato (Fase 5). Sem contrato, a tabela é recalculada a partir da venda. */
   contrato?: readonly ParcelaReal[]
   /** Distrato executado: a venda sai do VGV, o lote volta ao estoque e a devolução é saída. */
-  distrato?: { data?: string; devolucoes: readonly DevolucaoReal[] }
+  distrato?: { data?: string | null; devolucoes: readonly DevolucaoReal[] }
   /** Identificação para extratos (ex.: "Quadra A · Lote 1"). */
   rotulo?: string
 }

@@ -141,7 +141,7 @@ export async function vendasDoEmpreendimento(
       db
         .from('vendas')
         .select(
-          'id, situacao, data_venda, preco_centavos, entrada_centavos, parcelas, juros_mensal, sistema, primeira_parcela_em, comissao_percentual, comissao_modo',
+          'id, situacao, data_venda, preco_centavos, entrada_centavos, parcelas, juros_mensal, sistema, primeira_parcela_em, comissao_percentual, comissao_modo, lotes(numero, quadras(codigo)), contratos(distratos(data))',
         )
         .eq('empreendimento_id', empreendimentoId)
         .in('situacao', ['ativa', 'distratada'])
@@ -161,6 +161,7 @@ export async function vendasDoEmpreendimento(
     ),
   ])
   return data.map((v) => ({
+    rotulo: `Quadra ${v.lotes?.quadras?.codigo ?? '?'} · Lote ${v.lotes?.numero ?? '?'}`,
     dataVenda: v.data_venda,
     precoCentavos: v.preco_centavos,
     entradaCentavos: v.entrada_centavos,
@@ -174,6 +175,11 @@ export async function vendasDoEmpreendimento(
     ...(v.situacao === 'distratada'
       ? {
           distrato: {
+            data: (() => {
+              const c = Array.isArray(v.contratos) ? v.contratos[0] : v.contratos
+              const d = c && (Array.isArray(c.distratos) ? c.distratos[0] : c.distratos)
+              return d?.data ?? null
+            })(),
             devolucoes: devolucoes
               .filter((d) => d.distratos.contratos.venda_id === v.id)
               .map((d) => ({
