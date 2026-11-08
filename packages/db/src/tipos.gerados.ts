@@ -523,6 +523,7 @@ export type Database = {
           juros_mora_mensal: number
           lote_id: string
           multa_atraso: number
+          numero: number
           quitado_em: string | null
           reajuste_defasagem_meses: number
           reajuste_negativo: string
@@ -544,6 +545,7 @@ export type Database = {
           juros_mora_mensal: number
           lote_id: string
           multa_atraso: number
+          numero: number
           quitado_em?: string | null
           reajuste_defasagem_meses: number
           reajuste_negativo: string
@@ -564,6 +566,7 @@ export type Database = {
           juros_mora_mensal?: number
           lote_id?: string
           multa_atraso?: number
+          numero?: number
           quitado_em?: string | null
           reajuste_defasagem_meses?: number
           reajuste_negativo?: string
@@ -983,13 +986,16 @@ export type Database = {
           area_vendavel_m2: number | null
           atualizado_em: string
           atualizado_por: string | null
+          cep: string | null
           criado_em: string
           criado_por: string | null
           data_base: string
           data_registro: string | null
+          endereco: string | null
           gleba_id: string | null
           id: string
           municipio: string | null
+          municipio_rfb: string | null
           nome: string
           observacao: string | null
           registro_matricula: string | null
@@ -997,6 +1003,7 @@ export type Database = {
           spe_id: string
           tenant_id: string
           tipo: Database['public']['Enums']['empreendimento_tipo']
+          tipo_imovel: string
           uf: string | null
         }
         ComputedFields: never
@@ -1005,13 +1012,16 @@ export type Database = {
           area_vendavel_m2?: number | null
           atualizado_em?: string
           atualizado_por?: string | null
+          cep?: string | null
           criado_em?: string
           criado_por?: string | null
           data_base: string
           data_registro?: string | null
+          endereco?: string | null
           gleba_id?: string | null
           id?: string
           municipio?: string | null
+          municipio_rfb?: string | null
           nome: string
           observacao?: string | null
           registro_matricula?: string | null
@@ -1019,6 +1029,7 @@ export type Database = {
           spe_id: string
           tenant_id: string
           tipo?: Database['public']['Enums']['empreendimento_tipo']
+          tipo_imovel?: string
           uf?: string | null
         }
         Update: {
@@ -1026,13 +1037,16 @@ export type Database = {
           area_vendavel_m2?: number | null
           atualizado_em?: string
           atualizado_por?: string | null
+          cep?: string | null
           criado_em?: string
           criado_por?: string | null
           data_base?: string
           data_registro?: string | null
+          endereco?: string | null
           gleba_id?: string | null
           id?: string
           municipio?: string | null
+          municipio_rfb?: string | null
           nome?: string
           observacao?: string | null
           registro_matricula?: string | null
@@ -1040,6 +1054,7 @@ export type Database = {
           spe_id?: string
           tenant_id?: string
           tipo?: Database['public']['Enums']['empreendimento_tipo']
+          tipo_imovel?: string
           uf?: string | null
         }
         Relationships: [
@@ -1417,6 +1432,46 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      leiautes_declaracao: {
+        Row: {
+          anos: unknown
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          declaracao: string
+          fonte: string
+          id: string
+          registros: NonNullable<Json>
+          versao: string
+        }
+        ComputedFields: never
+        Insert: {
+          anos: unknown
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          declaracao: string
+          fonte: string
+          id?: string
+          registros: NonNullable<Json>
+          versao: string
+        }
+        Update: {
+          anos?: unknown
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          declaracao?: string
+          fonte?: string
+          id?: string
+          registros?: NonNullable<Json>
+          versao?: string
+        }
+        Relationships: []
       }
       lotes: {
         Row: {
@@ -2714,35 +2769,47 @@ export type Database = {
           atualizado_em: string
           atualizado_por: string | null
           cnpj: string | null
+          cpf_responsavel: string | null
           criado_em: string
           criado_por: string | null
           empresa_id: string
+          endereco: string | null
           id: string
+          municipio_rfb: string | null
           razao_social: string
           tenant_id: string
+          uf: string | null
         }
         ComputedFields: never
         Insert: {
           atualizado_em?: string
           atualizado_por?: string | null
           cnpj?: string | null
+          cpf_responsavel?: string | null
           criado_em?: string
           criado_por?: string | null
           empresa_id: string
+          endereco?: string | null
           id?: string
+          municipio_rfb?: string | null
           razao_social: string
           tenant_id: string
+          uf?: string | null
         }
         Update: {
           atualizado_em?: string
           atualizado_por?: string | null
           cnpj?: string | null
+          cpf_responsavel?: string | null
           criado_em?: string
           criado_por?: string | null
           empresa_id?: string
+          endereco?: string | null
           id?: string
+          municipio_rfb?: string | null
           razao_social?: string
           tenant_id?: string
+          uf?: string | null
         }
         Relationships: [
           {
@@ -3021,6 +3088,7 @@ export type Database = {
         Args: { p_cnpj?: string; p_nome: string; p_razao_social?: string }
         Returns: string
       }
+      dados_dimob: { Args: { p_ano: number; p_spe: string }; Returns: Json }
       definir_parametro: {
         Args: {
           p_chave: string

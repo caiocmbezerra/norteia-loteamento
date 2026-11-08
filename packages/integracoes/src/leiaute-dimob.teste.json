@@ -1,0 +1,67 @@
+{
+  "cabecalho": [
+    { "campo": "sistema", "tipo": "C", "tamanho": 5, "fixo": "DIMOB" },
+    { "campo": "reservado", "tipo": "C", "tamanho": 369 }
+  ],
+  "R01": [
+    { "campo": "tipo", "tipo": "C", "tamanho": 3, "fixo": "R01" },
+    { "campo": "cnpj", "tipo": "C", "tamanho": 14 },
+    { "campo": "ano_apuracao", "tipo": "N", "tamanho": 4 },
+    { "campo": "retificadora", "tipo": "N", "tamanho": 1 },
+    { "campo": "numero_recibo", "tipo": "N", "tamanho": 10 },
+    { "campo": "situacao_especial", "tipo": "N", "tamanho": 1 },
+    { "campo": "data_situacao_especial", "tipo": "N", "tamanho": 8 },
+    { "campo": "codigo_situacao_especial", "tipo": "N", "tamanho": 2 },
+    { "campo": "nome_empresarial", "tipo": "C", "tamanho": 60 },
+    { "campo": "cpf_representante", "tipo": "N", "tamanho": 11 },
+    { "campo": "endereco", "tipo": "C", "tamanho": 120 },
+    { "campo": "uf", "tipo": "C", "tamanho": 2 },
+    { "campo": "cod_municipio", "tipo": "N", "tamanho": 4 },
+    { "campo": "reservado_municipio", "tipo": "C", "tamanho": 20 },
+    { "campo": "reservado", "tipo": "C", "tamanho": 10 }
+  ],
+  "R03": [
+    { "campo": "tipo", "tipo": "C", "tamanho": 3, "fixo": "R03" },
+    { "campo": "cnpj", "tipo": "C", "tamanho": 14 },
+    { "campo": "ano_apuracao", "tipo": "N", "tamanho": 4 },
+    { "campo": "sequencial", "tipo": "N", "tamanho": 7 },
+    { "campo": "cpf_cnpj_comprador", "tipo": "C", "tamanho": 14 },
+    { "campo": "nome_empresarial_comprador", "tipo": "C", "tamanho": 60 },
+    { "campo": "numero_contrato", "tipo": "C", "tamanho": 6 },
+    { "campo": "data_contrato", "tipo": "N", "tamanho": 8 },
+    { "campo": "valor_operacao", "tipo": "N", "tamanho": 14, "decimais": 2 },
+    { "campo": "valor_pago", "tipo": "N", "tamanho": 14, "decimais": 2 },
+    { "campo": "tipo_imovel", "tipo": "C", "tamanho": 1 },
+    { "campo": "endereco_imovel", "tipo": "C", "tamanho": 60 },
+    { "campo": "cep_imovel", "tipo": "N", "tamanho": 8 },
+    { "campo": "cod_municipio_imovel", "tipo": "N", "tamanho": 4 },
+    { "campo": "reservado_municipio", "tipo": "C", "tamanho": 20 },
+    { "campo": "uf_imovel", "tipo": "C", "tamanho": 2 },
+    { "campo": "reservado", "tipo": "C", "tamanho": 10 }
+  ],
+  "R04": [
+    { "campo": "tipo", "tipo": "C", "tamanho": 3, "fixo": "R04" },
+    { "campo": "cnpj", "tipo": "C", "tamanho": 14 },
+    { "campo": "ano_apuracao", "tipo": "N", "tamanho": 4 },
+    { "campo": "sequencial", "tipo": "N", "tamanho": 7 },
+    { "campo": "cpf_cnpj_comprador", "tipo": "C", "tamanho": 14 },
+    { "campo": "nome_empresarial_comprador", "tipo": "C", "tamanho": 60 },
+    { "campo": "cpf_cnpj_vendedor", "tipo": "C", "tamanho": 14 },
+    { "campo": "nome_empresarial_vendedor", "tipo": "C", "tamanho": 60 },
+    { "campo": "numero_contrato", "tipo": "C", "tamanho": 6 },
+    { "campo": "data_contrato", "tipo": "N", "tamanho": 8 },
+    { "campo": "valor_venda", "tipo": "N", "tamanho": 14, "decimais": 2 },
+    { "campo": "valor_comissao", "tipo": "N", "tamanho": 14, "decimais": 2 },
+    { "campo": "tipo_imovel", "tipo": "C", "tamanho": 1 },
+    { "campo": "endereco_imovel", "tipo": "C", "tamanho": 60 },
+    { "campo": "cep_imovel", "tipo": "N", "tamanho": 8 },
+    { "campo": "cod_municipio_imovel", "tipo": "N", "tamanho": 4 },
+    { "campo": "reservado_municipio", "tipo": "C", "tamanho": 20 },
+    { "campo": "uf_imovel", "tipo": "C", "tamanho": 2 },
+    { "campo": "reservado", "tipo": "C", "tamanho": 10 }
+  ],
+  "T9": [
+    { "campo": "tipo", "tipo": "C", "tamanho": 2, "fixo": "T9" },
+    { "campo": "reservado", "tipo": "C", "tamanho": 100 }
+  ]
+}

@@ -46,6 +46,16 @@ export default async function PaginaSpe({ params }: { params: Promise<{ speId: s
       <TituloPagina
         titulo={p.razaoSocial}
         subtitulo="Sócios, participações, aportes, distribuições e resultado rateado."
+        acoes={
+          temPapel(ctx, 'dono', 'financeiro', 'contador') && (
+            <Link
+              href={`/spes/${speId}/dimob`}
+              className="rounded-md border px-3 py-2 text-sm hover:bg-muted"
+            >
+              DIMOB
+            </Link>
+          )
+        }
       />
       <section aria-label="Resultado da SPE" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Indicador
