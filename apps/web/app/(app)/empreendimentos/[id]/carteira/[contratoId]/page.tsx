@@ -15,7 +15,9 @@ import {
   FormularioEstornoRecebimento,
   FormularioReajuste,
   FormularioRecebimento,
+  FormularioCessao,
   FormularioRenegociacao,
+  FormularioTrocaLote,
 } from '../formularios'
 
 export const metadata: Metadata = { title: 'Contrato' }
@@ -42,6 +44,8 @@ export default async function PaginaContrato({
     cobrancaCancelada?: string
     renegociado?: string
     antecipado?: string
+    cedido?: string
+    trocado?: string
   }>
 }) {
   const [{ id, contratoId }, avisos] = await Promise.all([params, searchParams])
@@ -63,6 +67,27 @@ export default async function PaginaContrato({
   if (!c || c.empreendimentoId !== id) notFound()
   const podeReceber = temPapel(ctx, 'dono', 'financeiro') && c.situacao === 'vigente'
   const proxima = c.parcelas.find((p) => p.situacao === 'aberta')
+  const podeCeder =
+    temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor') && c.situacao === 'vigente'
+  const podeTrocar = temPapel(ctx, 'dono', 'comercial_gestor') && c.situacao === 'vigente'
+  const [{ data: venda }, { data: lotesLivres }] = await Promise.all([
+    ctx.db.from('vendas').select('preco_centavos').eq('id', c.vendaId).single(),
+    podeTrocar
+      ? ctx.db
+          .from('lotes')
+          .select('id, numero, preco_base_centavos, quadras(codigo)')
+          .eq('empreendimento_id', id)
+          .eq('status', 'disponivel')
+          .order('numero')
+      : Promise.resolve({
+          data: [] as {
+            id: string
+            numero: string
+            preco_base_centavos: number | null
+            quadras: { codigo: string } | null
+          }[],
+        }),
+  ])
   const abertas = c.parcelas
     .filter((p) => p.situacao === 'aberta')
     .map((p) => ({
@@ -101,6 +126,12 @@ export default async function PaginaContrato({
         </Alerta>
       )}
       {avisos.antecipado && <Alerta tipo="sucesso">Antecipação registrada.</Alerta>}
+      {avisos.cedido && (
+        <Alerta tipo="sucesso">Cessão registrada: o contrato agora é do cessionário.</Alerta>
+      )}
+      {avisos.trocado && (
+        <Alerta tipo="sucesso">Troca de lote registrada: o lote anterior voltou ao estoque.</Alerta>
+      )}
       {c.situacao === 'quitado' && (
         <Alerta tipo="sucesso">
           Contrato quitado.{' '}
@@ -164,6 +195,41 @@ export default async function PaginaContrato({
         </Cartao>
       )}
 
+      {(podeCeder || podeTrocar) && abertas.length > 0 && (
+        <Cartao className="flex flex-col gap-3">
+          {podeCeder && (
+            <details>
+              <summary className="cursor-pointer font-semibold">Ceder contrato (aditivo)</summary>
+              <div className="mt-3">
+                <FormularioCessao empreendimentoId={id} contratoId={c.id} hoje={hoje} />
+              </div>
+            </details>
+          )}
+          {podeTrocar && (
+            <details>
+              <summary className="cursor-pointer font-semibold">Trocar de lote (aditivo)</summary>
+              <div className="mt-3">
+                <FormularioTrocaLote
+                  empreendimentoId={id}
+                  contratoId={c.id}
+                  lotes={(lotesLivres ?? []).map((l) => ({
+                    id: l.id,
+                    rotulo: `Quadra ${l.quadras?.codigo ?? '?'} · Lote ${l.numero}`,
+                    precoCentavos: l.preco_base_centavos,
+                  }))}
+                  saldoCentavos={c.totais.saldoCentavos}
+                  precoAtualCentavos={venda?.preco_centavos ?? 0}
+                  jurosMensal={c.jurosMensal}
+                  sistema={c.sistema}
+                  hoje={hoje}
+                  primeiraParcela={somarMeses(hoje, 1)}
+                />
+              </div>
+            </details>
+          )}
+        </Cartao>
+      )}
+
       {podeReceber && abertas.length > 0 && (
         <Cartao className="flex flex-col gap-3">
           <details>
@@ -202,13 +268,25 @@ export default async function PaginaContrato({
           <ul className="divide-y text-sm">
             {c.aditivos.map((a) => (
               <li key={a.id} className="flex flex-col gap-1 py-2">
-                <span>
-                  {formatarData(a.data)} · renegociação de {a.parcelasAnteriores} parcela(s):{' '}
-                  {moeda(a.saldoAnteriorCentavos)}
-                  {a.encargosCentavos > 0 && ` + encargos ${moeda(a.encargosCentavos)}`}
-                  {a.descontoCentavos > 0 && ` − desconto ${moeda(a.descontoCentavos)}`} ={' '}
-                  <strong>{moeda(a.novoSaldoCentavos)}</strong>
-                </span>
+                {a.tipo === 'cessao' ? (
+                  <span>
+                    {formatarData(a.data)} · cessão do contrato · saldo cedido{' '}
+                    {moeda(a.saldoAnteriorCentavos)}
+                  </span>
+                ) : (
+                  <span>
+                    {formatarData(a.data)} ·{' '}
+                    {a.tipo === 'troca_lote'
+                      ? 'troca de lote'
+                      : `renegociação de ${a.parcelasAnteriores} parcela(s)`}
+                    : {moeda(a.saldoAnteriorCentavos)}
+                    {a.encargosCentavos > 0 &&
+                      ` + ${a.tipo === 'troca_lote' ? 'diferença de preço' : 'encargos'} ${moeda(a.encargosCentavos)}`}
+                    {a.descontoCentavos > 0 &&
+                      ` − ${a.tipo === 'troca_lote' ? 'diferença de preço' : 'desconto'} ${moeda(a.descontoCentavos)}`}{' '}
+                    = <strong>{moeda(a.novoSaldoCentavos)}</strong>
+                  </span>
+                )}
                 <span className="text-xs text-muted-foreground">Motivo: {a.motivo}</span>
               </li>
             ))}
