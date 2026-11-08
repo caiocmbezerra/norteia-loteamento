@@ -3,6 +3,7 @@ import {
   TIPOS_DOCUMENTO,
   type TipoDocumento,
   gerarDocumento,
+  gerarInforme,
 } from '@norteia/aplicacao'
 import { exigirContexto, temPapel } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
@@ -20,8 +21,20 @@ export async function GET(
     return new Response('Sem permissão.', { status: 403 })
   if (!(TIPOS_DOCUMENTO as readonly string[]).includes(tipo))
     return new Response('Documento desconhecido.', { status: 404 })
-  const aditivo = new URL(requisicao.url).searchParams.get('aditivo') ?? undefined
+  const q = new URL(requisicao.url).searchParams
+  const aditivo = q.get('aditivo') ?? undefined
   try {
+    if (tipo === 'informe_pagamentos') {
+      const informe = await gerarInforme(ctx.db, contratoId, Number(q.get('ano')), hojeSaoPaulo())
+      if (!informe) return new Response('Contrato não encontrado.', { status: 404 })
+      return new Response(Buffer.from(informe.conteudo), {
+        headers: {
+          'Content-Type': DOCX,
+          'Content-Disposition': `attachment; filename="${informe.nomeArquivo}"`,
+          'Cache-Control': 'no-store',
+        },
+      })
+    }
     const doc = await gerarDocumento(
       ctx.db,
       ctx.tenant.id,

@@ -8,6 +8,7 @@ export const TIPOS_DOCUMENTO = [
   'aditivo_renegociacao',
   'aditivo_cessao',
   'aditivo_troca_lote',
+  'informe_pagamentos',
 ] as const
 export type TipoDocumento = (typeof TIPOS_DOCUMENTO)[number]
 
@@ -15,11 +16,8 @@ export class ErroModelo extends Error {
   override readonly name = 'ErroModelo'
 }
 
-/** Valores de um documento: textos já formatados e a lista de parcelas. */
-export type DadosDocumento = Record<
-  string,
-  string | { numero: string; vencimento: string; valor: string }[]
->
+/** Valores de um documento: textos já formatados e listas (parcelas, pagamentos). */
+export type DadosDocumento = Record<string, string | Record<string, string>[]>
 
 export function modeloPadrao(tipo: TipoDocumento): Uint8Array {
   return Uint8Array.from(atob(MODELOS_PADRAO[tipo]), (c) => c.charCodeAt(0))
