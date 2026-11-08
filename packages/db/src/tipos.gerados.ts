@@ -377,6 +377,7 @@ export type Database = {
           nome: string
           telefone: string | null
           tenant_id: string
+          usuario_id: string | null
         }
         ComputedFields: never
         Insert: {
@@ -390,6 +391,7 @@ export type Database = {
           nome: string
           telefone?: string | null
           tenant_id: string
+          usuario_id?: string | null
         }
         Update: {
           atualizado_em?: string
@@ -402,6 +404,7 @@ export type Database = {
           nome?: string
           telefone?: string | null
           tenant_id?: string
+          usuario_id?: string | null
         }
         Relationships: [
           {
@@ -409,6 +412,13 @@ export type Database = {
             columns: ['tenant_id']
             isOneToOne: false
             referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'compradores_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'perfis'
             referencedColumns: ['id']
           },
         ]
@@ -730,6 +740,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'convites_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      convites_portal: {
+        Row: {
+          aceito_em: string | null
+          aceito_por: string | null
+          alvo_id: string
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          email: string
+          expira_em: string
+          id: string
+          tenant_id: string
+          tipo: string
+          token_hash: string
+        }
+        ComputedFields: never
+        Insert: {
+          aceito_em?: string | null
+          aceito_por?: string | null
+          alvo_id: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          email: string
+          expira_em?: string
+          id?: string
+          tenant_id: string
+          tipo: string
+          token_hash: string
+        }
+        Update: {
+          aceito_em?: string | null
+          aceito_por?: string | null
+          alvo_id?: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          email?: string
+          expira_em?: string
+          id?: string
+          tenant_id?: string
+          tipo?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'convites_portal_tenant_id_fkey'
             columns: ['tenant_id']
             isOneToOne: false
             referencedRelation: 'tenants'
@@ -2895,6 +2962,7 @@ export type Database = {
     }
     Functions: {
       aceitar_convite: { Args: { p_token: string }; Returns: string }
+      aceitar_convite_portal: { Args: { p_token: string }; Returns: string }
       antecipar_parcelas: {
         Args: { p_contrato: string; p_data: string; p_itens: Json }
         Returns: number
@@ -2927,6 +2995,10 @@ export type Database = {
           p_tenant: string
           p_validade_dias?: number
         }
+        Returns: string
+      }
+      criar_convite_portal: {
+        Args: { p_alvo: string; p_email: string; p_tenant: string; p_tipo: string }
         Returns: string
       }
       criar_empreendimento_com_lotes: {
@@ -2981,6 +3053,7 @@ export type Database = {
         Returns: undefined
       }
       estornar_repasse: { Args: { p_motivo: string; p_repasse: string }; Returns: undefined }
+      eventos_permuta: { Args: { p_permuta: string }; Returns: Json }
       executar_distrato: {
         Args: {
           p_contrato: string
@@ -2995,6 +3068,7 @@ export type Database = {
       expirar_reservas: { Args: Record<PropertyKey, never>; Returns: number }
       gerar_cobranca: { Args: { p_parcela: string }; Returns: string }
       importar_indices: { Args: Record<PropertyKey, never>; Returns: number }
+      meu_portal: { Args: { p_hoje?: string }; Returns: Json }
       pagar_devolucao: { Args: { p_data: string; p_devolucao: string }; Returns: undefined }
       painel_consolidado: { Args: { p_hoje?: string; p_tenant: string }; Returns: Json }
       parametro_vigente: {
@@ -3007,6 +3081,7 @@ export type Database = {
         }
         Returns: Json
       }
+      portal_contrato: { Args: { p_contrato: string }; Returns: Json }
       publicar_modelo: {
         Args: { p_conteudo: string; p_nome: string; p_tenant: string; p_tipo: string }
         Returns: string
@@ -3057,6 +3132,7 @@ export type Database = {
         Args: { p_cliente_nome: string; p_corretor?: string; p_horas?: number; p_lote: string }
         Returns: string
       }
+      segunda_via: { Args: { p_parcela: string }; Returns: string }
       trocar_lote: {
         Args: {
           p_condicoes: Json
