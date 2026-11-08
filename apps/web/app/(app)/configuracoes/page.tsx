@@ -22,6 +22,11 @@ const SECOES = [
     texto: 'Multa, juros, reajuste, tributos e regras comerciais da sua loteadora.',
   },
   {
+    href: '/configuracoes/modelos',
+    titulo: 'Modelos de documentos',
+    texto: 'Contrato, termo de quitação e aditivos em Word, com o seu texto.',
+  },
+  {
     href: '/configuracoes/integracoes',
     titulo: 'Integrações',
     texto: 'Boleto e Pix pelo Asaas, com baixa automática.',

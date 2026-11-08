@@ -12,6 +12,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@norteia/dominio": "workspace:*"
+    "@norteia/dominio": "workspace:*",
+    "docxtemplater": "3.71.1",
+    "pizzip": "3.3.0"
   }
 }

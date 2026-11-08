@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import PizZip from 'pizzip'
 
 /** Data AAAA-MM-DD deslocada em dias a partir de hoje (fuso de São Paulo). */
 function dia(deslocamento: number) {
@@ -190,4 +191,22 @@ test('cessão do contrato e troca de lote', async ({ page }, info) => {
   await expect(page.getByText(/Troca de lote registrada/)).toBeVisible()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Quadra A · Lote 2')
   await expect(page.getByText(/troca de lote:/)).toBeVisible()
+
+  // Documentos em Word preenchidos com o modelo em uso
+  const contrato = await page.request.get(
+    (await page.getByRole('link', { name: 'Contrato', exact: true }).getAttribute('href'))!,
+  )
+  expect(contrato.status()).toBe(200)
+  expect(contrato.headers()['content-disposition']).toContain('contrato-quadra-a-lote-2.docx')
+  const xml = new PizZip(await contrato.body()).file('word/document.xml')!.asText()
+  const texto = xml.replace(/<[^>]+>/g, '')
+  expect(texto).toContain('Caio Cessionário')
+  expect(texto).toContain('Lote 2 da Quadra A')
+  expect(texto).toContain('R$\u00a090.000,00')
+  expect(texto).not.toMatch(/\{[a-z_]+\}/)
+  const aditivo = await page.request.get(
+    (await page.getByRole('link', { name: 'baixar aditivo (Word)' }).last().getAttribute('href'))!,
+  )
+  expect(aditivo.status()).toBe(200)
+  expect(aditivo.headers()['content-disposition']).toContain('aditivo-')
 })

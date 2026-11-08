@@ -72,3 +72,15 @@ export {
   textoDoValor,
   valorDoTexto,
 } from './parametros'
+export {
+  MARCADORES,
+  type ModeloCliente,
+  NOMES_DOCUMENTO,
+  TIPOS_DOCUMENTO,
+  type TipoDocumento,
+  carregarModelos,
+  enviarModelo,
+  gerarDocumento,
+  modeloEmUso,
+  usarModeloPadrao,
+} from './documentos'
