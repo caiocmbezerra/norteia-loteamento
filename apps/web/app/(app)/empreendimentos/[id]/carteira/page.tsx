@@ -35,7 +35,22 @@ export default async function PaginaCarteira({ params }: { params: Promise<{ id:
     .maybeSingle()
   if (!e) notFound()
   const hoje = hojeSaoPaulo()
-  const painel = await carregarCarteira(ctx.db, id, hoje)
+  const [painel, ...ultimos] = await Promise.all([
+    carregarCarteira(ctx.db, id, hoje),
+    ...['IPCA', 'IGP-M', 'INCC'].map((codigo) =>
+      ctx.db
+        .from('indice_valores')
+        .select('competencia')
+        .eq('codigo', codigo)
+        .order('competencia', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ),
+  ])
+  const indices = ['IPCA', 'IGP-M', 'INCC'].map((codigo, i) => {
+    const c = ultimos[i]?.data?.competencia
+    return `${codigo} ${c ? formatarData(c).slice(3) : 'sem dados'}`
+  })
   const podeGerar = temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor')
   const t = painel.totais
 
@@ -48,6 +63,9 @@ export default async function PaginaCarteira({ params }: { params: Promise<{ id:
         ← {e.nome}
       </Link>
       <TituloPagina titulo="Carteira" subtitulo="Contratos, parcelas a receber e inadimplência." />
+      <p className="text-xs text-muted-foreground">
+        Últimos índices publicados (BCB): {indices.join(' · ')}. Reajustes aplicados diariamente.
+      </p>
 
       <section aria-label="Resumo da carteira" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Indicador

@@ -4,6 +4,7 @@ import {
   INDICES_REAJUSTE,
   estornarRecebimento,
   gerarContrato,
+  reajustarContrato,
   registrarRecebimento,
 } from '@norteia/aplicacao'
 import { lerMoeda } from '@norteia/dominio'
@@ -103,4 +104,21 @@ export async function estornar(
   }
   revalidar(empreendimentoId, contratoId)
   redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?estornado=1`)
+}
+
+export async function reajustar(
+  empreendimentoId: string,
+  contratoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  let n: number
+  try {
+    n = await reajustarContrato(ctx.db, contratoId)
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?reajustado=${n}`)
 }
