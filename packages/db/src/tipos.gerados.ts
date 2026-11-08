@@ -808,6 +808,108 @@ export type Database = {
           },
         ]
       }
+      devolucoes: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          distrato_id: string
+          id: string
+          numero: number
+          pago_em: string | null
+          tenant_id: string
+          valor_centavos: number
+          vencimento: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          distrato_id: string
+          id?: string
+          numero: number
+          pago_em?: string | null
+          tenant_id: string
+          valor_centavos: number
+          vencimento: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          distrato_id?: string
+          id?: string
+          numero?: number
+          pago_em?: string | null
+          tenant_id?: string
+          valor_centavos?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'devolucoes_tenant_id_distrato_id_fkey'
+            columns: ['tenant_id', 'distrato_id']
+            isOneToOne: false
+            referencedRelation: 'distratos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      distratos: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          contrato_id: string
+          criado_em: string
+          criado_por: string | null
+          data: string
+          devolucao_centavos: number
+          id: string
+          motivo: string
+          resumo: NonNullable<Json>
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          contrato_id: string
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          devolucao_centavos: number
+          id?: string
+          motivo: string
+          resumo: NonNullable<Json>
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          contrato_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          devolucao_centavos?: number
+          id?: string
+          motivo?: string
+          resumo?: NonNullable<Json>
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'distratos_tenant_id_contrato_id_fkey'
+            columns: ['tenant_id', 'contrato_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       empreendimentos: {
         Row: {
           area_total_m2: number | null
@@ -2449,10 +2551,21 @@ export type Database = {
         Args: { p_motivo: string; p_recebimento: string }
         Returns: undefined
       }
+      executar_distrato: {
+        Args: {
+          p_contrato: string
+          p_data: string
+          p_devolucoes: Json
+          p_motivo: string
+          p_resumo: Json
+        }
+        Returns: string
+      }
       executar_reajustes: { Args: { p_data?: string }; Returns: number }
       expirar_reservas: { Args: Record<PropertyKey, never>; Returns: number }
       gerar_cobranca: { Args: { p_parcela: string }; Returns: string }
       importar_indices: { Args: Record<PropertyKey, never>; Returns: number }
+      pagar_devolucao: { Args: { p_data: string; p_devolucao: string }; Returns: undefined }
       parametro_vigente: {
         Args: {
           p_chave: string
