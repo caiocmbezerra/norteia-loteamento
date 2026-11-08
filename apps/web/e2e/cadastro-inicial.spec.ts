@@ -36,6 +36,7 @@ test('pequeno loteador cria conta, loteamento e ajusta um lote', async ({ page }
   // Ajusta um lote: vira permuta e sai do VGV de tabela.
   await page.getByRole('link', { name: /Quadra A, lote 1:/ }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Quadra A · Lote 1')
+  await page.getByText('Cadastro do lote').click()
   await page.getByLabel('Situação').selectOption('permuta')
   await page.getByLabel('Área (m²)').fill('312,50')
   await page.getByRole('button', { name: 'Salvar lote' }).click()

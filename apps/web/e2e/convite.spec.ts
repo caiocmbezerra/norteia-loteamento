@@ -51,11 +51,12 @@ test('dona convida corretor; corretor aceita e só consulta', async ({ browser }
   await corretor.getByRole('heading', { name: 'Jardim das Flores' }).click()
   await expect(corretor.getByRole('link', { name: 'Editar dados' })).toHaveCount(0)
 
-  // Mesmo forçando a edição, o banco recusa.
+  // Corretor não edita o cadastro do lote, mas pode reservar (RN-C07).
   await corretor.getByRole('link', { name: /Quadra A, lote 1:/ }).click()
-  await corretor.getByLabel('Área (m²)').fill('999')
-  await corretor.getByRole('button', { name: 'Salvar lote' }).click()
-  await expect(corretor.getByText('Você não tem permissão para alterar este lote.')).toBeVisible()
+  await expect(corretor.getByText('Cadastro do lote')).toHaveCount(0)
+  await corretor.getByLabel('Nome do cliente').fill('Cliente do Caio')
+  await corretor.getByRole('button', { name: 'Reservar lote' }).click()
+  await expect(corretor.getByText(/Reservado para Cliente do Caio/)).toBeVisible()
 
   // A dona vê o corretor como membro e a ação na auditoria.
   await dona.goto('/configuracoes/membros')
