@@ -9,3 +9,8 @@ export function mesAtualSaoPaulo(agora = new Date()): string {
   const mes = partes.find((p) => p.type === 'month')?.value
   return `${ano}-${mes}`
 }
+
+/** Data de hoje em São Paulo (AAAA-MM-DD): a referência para projeções (o motor não lê o relógio). */
+export function hojeSaoPaulo(agora = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(agora)
+}
