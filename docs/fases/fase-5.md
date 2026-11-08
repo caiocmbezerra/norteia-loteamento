@@ -31,6 +31,11 @@
 - Cessão do contrato a outro comprador por aditivo (adimplência exigida conforme parâmetro do cliente).
 - Troca de lote por aditivo, com a diferença de preço no novo plano e o lote anterior de volta ao estoque.
 
+## Feito (5c-3b)
+
+- Modelos de documentos em Word por cliente (Configurações → Modelos de documentos): contrato, termo de quitação e aditivos; baixar, editar no Word, enviar (conferido) e voltar ao padrão.
+- Contrato, termo e aditivos baixados em Word já preenchidos, na página do contrato.
+
 ## Critérios
 
 | Critério                                                               | Situação                                           |
@@ -50,4 +55,4 @@
 - Crédito por pagamento a maior.
 - Conferir o código do INCC no SGS e ativar a série.
 - **5c-2:** régua de cobrança (e-mail/WhatsApp, opt-out — RN-K10), com envio dos links do Asaas.
-- **5c-3b:** modelos de contrato e de termos (DOCX) editáveis por cliente e assinatura eletrônica (PL-06).
+- Assinatura eletrônica dos documentos (Clicksign/D4Sign — PL-06), quando o cliente tiver conta.

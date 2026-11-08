@@ -67,6 +67,8 @@ export default async function PaginaContrato({
   if (!c || c.empreendimentoId !== id) notFound()
   const podeReceber = temPapel(ctx, 'dono', 'financeiro') && c.situacao === 'vigente'
   const proxima = c.parcelas.find((p) => p.situacao === 'aberta')
+  const podeDocumentos = temPapel(ctx, 'dono', 'financeiro', 'contador', 'comercial_gestor')
+  const baseDocs = `/empreendimentos/${id}/carteira/${contratoId}/documentos`
   const podeCeder =
     temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor') && c.situacao === 'vigente'
   const podeTrocar = temPapel(ctx, 'dono', 'comercial_gestor') && c.situacao === 'vigente'
@@ -165,6 +167,32 @@ export default async function PaginaContrato({
           }
         />
       </section>
+
+      {podeDocumentos && (
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <span className="text-muted-foreground">Documentos (Word):</span>
+          <a
+            href={`${baseDocs}/contrato`}
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Contrato
+          </a>
+          {c.situacao === 'quitado' && (
+            <a
+              href={`${baseDocs}/quitacao`}
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Termo de quitação
+            </a>
+          )}
+          <Link
+            href="/configuracoes/modelos"
+            className="text-muted-foreground underline-offset-4 hover:underline"
+          >
+            modelos
+          </Link>
+        </p>
+      )}
 
       <p className="text-sm text-muted-foreground">
         Reajuste: {c.indiceReajuste ?? 'sem reajuste'} · multa{' '}
@@ -287,7 +315,20 @@ export default async function PaginaContrato({
                     = <strong>{moeda(a.novoSaldoCentavos)}</strong>
                   </span>
                 )}
-                <span className="text-xs text-muted-foreground">Motivo: {a.motivo}</span>
+                <span className="text-xs text-muted-foreground">
+                  Motivo: {a.motivo}
+                  {podeDocumentos && (
+                    <>
+                      {' · '}
+                      <a
+                        href={`${baseDocs}/aditivo_${a.tipo}?aditivo=${a.id}`}
+                        className="text-primary underline-offset-4 hover:underline"
+                      >
+                        baixar aditivo (Word)
+                      </a>
+                    </>
+                  )}
+                </span>
               </li>
             ))}
           </ul>

@@ -1365,6 +1365,54 @@ export type Database = {
           },
         ]
       }
+      modelos_documento: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          conteudo_base64: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          nome_arquivo: string
+          tenant_id: string
+          tipo: string
+        }
+        ComputedFields: never
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          conteudo_base64: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome_arquivo: string
+          tenant_id: string
+          tipo: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          conteudo_base64?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome_arquivo?: string
+          tenant_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'modelos_documento_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       orcamento_itens: {
         Row: {
           atualizado_em: string
@@ -2415,6 +2463,10 @@ export type Database = {
         }
         Returns: Json
       }
+      publicar_modelo: {
+        Args: { p_conteudo: string; p_nome: string; p_tenant: string; p_tipo: string }
+        Returns: string
+      }
       reajustar_contrato: { Args: { p_contrato: string }; Returns: number }
       registrar_recebimento: {
         Args: {
@@ -2458,6 +2510,7 @@ export type Database = {
         }
         Returns: string
       }
+      usar_modelo_padrao: { Args: { p_tenant: string; p_tipo: string }; Returns: undefined }
       vender_lote: {
         Args: { p_justificativa?: string; p_lote: string; p_venda: Json }
         Returns: string

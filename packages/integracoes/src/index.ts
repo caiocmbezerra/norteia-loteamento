@@ -1,3 +1,10 @@
 // Portas (interfaces) e adaptadores de fornecedores externos.
-// Implementação prevista no roadmap (docs/roadmap.md).
-export {}
+export {
+  type DadosDocumento,
+  ErroModelo,
+  TIPOS_DOCUMENTO,
+  type TipoDocumento,
+  modeloPadrao,
+  preencherModelo,
+  textoDoDocumento,
+} from './documentos'

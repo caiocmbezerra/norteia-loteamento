@@ -17,11 +17,13 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:tipos": "supabase gen types typescript --local -s public > packages/db/src/tipos.gerados.ts && prettier --write packages/db/src/tipos.gerados.ts",
-    "db:lint": "supabase db lint -s public,privado --level warning --fail-on warning"
+    "db:lint": "supabase db lint -s public,privado --level warning --fail-on warning",
+    "modelos:gerar": "node scripts/gerar-modelos-padrao.mjs && prettier --write packages/integracoes/src/modelos-padrao.gerado.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@vitest/coverage-v8": "5.1.0",
+    "docx": "9.15.3",
     "eslint": "10.14.0",
     "globals": "^17.14.0",
     "prettier": "^3.9.10",
