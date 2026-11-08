@@ -31,7 +31,7 @@ export default async function Configuracoes() {
         titulo="Configurações"
         subtitulo={`${ctx.tenant.nome} · plano ${ctx.tenant.plano}`}
       />
-      <ul className="grid gap-4 sm:grid-cols-3">
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {SECOES.map((s) => (
           <li key={s.href}>
             <Link

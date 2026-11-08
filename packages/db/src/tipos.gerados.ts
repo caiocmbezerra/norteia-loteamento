@@ -94,6 +94,215 @@ export type Database = {
         }
         Relationships: []
       }
+      centros_custo: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          codigo: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          nome: string
+          ordem: number
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          codigo: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          tenant_id: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          codigo?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'centros_custo_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      contas_pagar: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          cancelada_em: string | null
+          centro_codigo: string
+          contrato_id: string | null
+          criado_em: string
+          criado_por: string | null
+          descricao: string
+          documento_numero: string | null
+          empreendimento_id: string
+          fornecedor_id: string | null
+          id: string
+          motivo_cancelamento: string | null
+          tenant_id: string
+          valor_centavos: number
+          vencimento: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cancelada_em?: string | null
+          centro_codigo: string
+          contrato_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          descricao: string
+          documento_numero?: string | null
+          empreendimento_id: string
+          fornecedor_id?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          tenant_id: string
+          valor_centavos: number
+          vencimento: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cancelada_em?: string | null
+          centro_codigo?: string
+          contrato_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string
+          documento_numero?: string | null
+          empreendimento_id?: string
+          fornecedor_id?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          tenant_id?: string
+          valor_centavos?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contas_pagar_tenant_id_centro_codigo_fkey'
+            columns: ['tenant_id', 'centro_codigo']
+            isOneToOne: false
+            referencedRelation: 'centros_custo'
+            referencedColumns: ['tenant_id', 'codigo']
+          },
+          {
+            foreignKeyName: 'contas_pagar_tenant_id_empreendimento_id_contrato_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id', 'contrato_id']
+            isOneToOne: false
+            referencedRelation: 'contratos_fornecedor'
+            referencedColumns: ['tenant_id', 'empreendimento_id', 'id']
+          },
+          {
+            foreignKeyName: 'contas_pagar_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'contas_pagar_tenant_id_fornecedor_id_fkey'
+            columns: ['tenant_id', 'fornecedor_id']
+            isOneToOne: false
+            referencedRelation: 'fornecedores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      contratos_fornecedor: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          centro_codigo: string
+          criado_em: string
+          criado_por: string | null
+          data_fim_prevista: string
+          data_inicio: string
+          descricao: string
+          empreendimento_id: string
+          fornecedor_id: string
+          id: string
+          situacao: string
+          tenant_id: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          centro_codigo: string
+          criado_em?: string
+          criado_por?: string | null
+          data_fim_prevista: string
+          data_inicio: string
+          descricao: string
+          empreendimento_id: string
+          fornecedor_id: string
+          id?: string
+          situacao?: string
+          tenant_id: string
+          valor_centavos: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          centro_codigo?: string
+          criado_em?: string
+          criado_por?: string | null
+          data_fim_prevista?: string
+          data_inicio?: string
+          descricao?: string
+          empreendimento_id?: string
+          fornecedor_id?: string
+          id?: string
+          situacao?: string
+          tenant_id?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contratos_fornecedor_tenant_id_centro_codigo_fkey'
+            columns: ['tenant_id', 'centro_codigo']
+            isOneToOne: false
+            referencedRelation: 'centros_custo'
+            referencedColumns: ['tenant_id', 'codigo']
+          },
+          {
+            foreignKeyName: 'contratos_fornecedor_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'contratos_fornecedor_tenant_id_fornecedor_id_fkey'
+            columns: ['tenant_id', 'fornecedor_id']
+            isOneToOne: false
+            referencedRelation: 'fornecedores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       convites: {
         Row: {
           aceito_em: string | null
@@ -326,6 +535,54 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'empreendimentos'
             referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      fornecedores: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          documento: string | null
+          email: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fornecedores_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -573,6 +830,121 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'perfis'
             referencedColumns: ['id']
+          },
+        ]
+      }
+      orcamento_itens: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          centro_codigo: string
+          criado_em: string
+          criado_por: string | null
+          descricao: string
+          empreendimento_id: string
+          id: string
+          mes_fim: number
+          mes_inicio: number
+          tenant_id: string
+          tipo: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          centro_codigo: string
+          criado_em?: string
+          criado_por?: string | null
+          descricao: string
+          empreendimento_id: string
+          id?: string
+          mes_fim: number
+          mes_inicio: number
+          tenant_id: string
+          tipo?: string
+          valor_centavos: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          centro_codigo?: string
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string
+          empreendimento_id?: string
+          id?: string
+          mes_fim?: number
+          mes_inicio?: number
+          tenant_id?: string
+          tipo?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'orcamento_itens_tenant_id_centro_codigo_fkey'
+            columns: ['tenant_id', 'centro_codigo']
+            isOneToOne: false
+            referencedRelation: 'centros_custo'
+            referencedColumns: ['tenant_id', 'codigo']
+          },
+          {
+            foreignKeyName: 'orcamento_itens_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      pagamentos: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          conta_id: string
+          criado_em: string
+          criado_por: string | null
+          data_pagamento: string
+          estornado_em: string | null
+          id: string
+          motivo_estorno: string | null
+          tenant_id: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          conta_id: string
+          criado_em?: string
+          criado_por?: string | null
+          data_pagamento: string
+          estornado_em?: string | null
+          id?: string
+          motivo_estorno?: string | null
+          tenant_id: string
+          valor_centavos: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          conta_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          data_pagamento?: string
+          estornado_em?: string | null
+          id?: string
+          motivo_estorno?: string | null
+          tenant_id?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pagamentos_tenant_id_conta_id_fkey'
+            columns: ['tenant_id', 'conta_id']
+            isOneToOne: false
+            referencedRelation: 'contas_pagar'
+            referencedColumns: ['tenant_id', 'id']
           },
         ]
       }

@@ -53,6 +53,9 @@ importers:
       '@norteia/motor-financeiro':
         specifier: workspace:*
         version: link:../../packages/motor-financeiro
+      '@norteia/projecao':
+        specifier: workspace:*
+        version: link:../../packages/projecao
       '@norteia/ui':
         specifier: workspace:*
         version: link:../../packages/ui
