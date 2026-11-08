@@ -3,7 +3,8 @@ import { createServerClient } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 import { configSupabase } from '@/lib/env'
 
-const PREFIXOS_PUBLICOS = ['/entrar', '/cadastrar', '/auth', '/convite']
+// /api/webhooks: avisos de serviços externos, autenticados pelo token de cada integração.
+const PREFIXOS_PUBLICOS = ['/entrar', '/cadastrar', '/auth', '/convite', '/api/webhooks']
 
 function ehPublica(caminho: string) {
   return (

@@ -3,6 +3,87 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      asaas_clientes: {
+        Row: {
+          asaas_id: string
+          atualizado_em: string
+          atualizado_por: string | null
+          comprador_id: string
+          criado_em: string
+          criado_por: string | null
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          asaas_id: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          comprador_id: string
+          criado_em?: string
+          criado_por?: string | null
+          tenant_id: string
+        }
+        Update: {
+          asaas_id?: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          comprador_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'asaas_clientes_tenant_id_comprador_id_fkey'
+            columns: ['tenant_id', 'comprador_id']
+            isOneToOne: true
+            referencedRelation: 'compradores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      asaas_eventos: {
+        Row: {
+          asaas_evento_id: string | null
+          asaas_pagamento_id: string | null
+          evento: string
+          id: string
+          payload: NonNullable<Json>
+          recebido_em: string
+          resultado: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          asaas_evento_id?: string | null
+          asaas_pagamento_id?: string | null
+          evento: string
+          id?: string
+          payload: NonNullable<Json>
+          recebido_em?: string
+          resultado: string
+          tenant_id: string
+        }
+        Update: {
+          asaas_evento_id?: string | null
+          asaas_pagamento_id?: string | null
+          evento?: string
+          id?: string
+          payload?: NonNullable<Json>
+          recebido_em?: string
+          resultado?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'asaas_eventos_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       atribuicoes_papel: {
         Row: {
           atualizado_em: string
@@ -139,6 +220,82 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'tenants'
             referencedColumns: ['id']
+          },
+        ]
+      }
+      cobrancas: {
+        Row: {
+          asaas_id: string
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          id: string
+          link_boleto: string | null
+          link_fatura: string | null
+          motivo: string | null
+          parcela_id: string
+          recebimento_id: string | null
+          retorno: Json | null
+          situacao: string
+          tenant_id: string
+          valor_centavos: number
+          vencimento: string
+          verificado_em: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          asaas_id: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          link_boleto?: string | null
+          link_fatura?: string | null
+          motivo?: string | null
+          parcela_id: string
+          recebimento_id?: string | null
+          retorno?: Json | null
+          situacao?: string
+          tenant_id: string
+          valor_centavos: number
+          vencimento: string
+          verificado_em?: string | null
+        }
+        Update: {
+          asaas_id?: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          link_boleto?: string | null
+          link_fatura?: string | null
+          motivo?: string | null
+          parcela_id?: string
+          recebimento_id?: string | null
+          retorno?: Json | null
+          situacao?: string
+          tenant_id?: string
+          valor_centavos?: number
+          vencimento?: string
+          verificado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'cobrancas_tenant_id_parcela_id_fkey'
+            columns: ['tenant_id', 'parcela_id']
+            isOneToOne: false
+            referencedRelation: 'parcelas'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'cobrancas_tenant_id_recebimento_id_fkey'
+            columns: ['tenant_id', 'recebimento_id']
+            isOneToOne: false
+            referencedRelation: 'recebimentos'
+            referencedColumns: ['tenant_id', 'id']
           },
         ]
       }
@@ -977,6 +1134,54 @@ export type Database = {
           serie_sgs?: number | null
         }
         Relationships: []
+      }
+      integracoes_asaas: {
+        Row: {
+          ambiente: string
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          segredo_id: string
+          tenant_id: string
+          ultimo_webhook_em: string | null
+          webhook_token_hash: string
+        }
+        ComputedFields: never
+        Insert: {
+          ambiente: string
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          segredo_id: string
+          tenant_id: string
+          ultimo_webhook_em?: string | null
+          webhook_token_hash: string
+        }
+        Update: {
+          ambiente?: string
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          segredo_id?: string
+          tenant_id?: string
+          ultimo_webhook_em?: string | null
+          webhook_token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'integracoes_asaas_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: true
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
       }
       lotes: {
         Row: {
@@ -2047,7 +2252,13 @@ export type Database = {
         Args: { p_motivo?: string; p_resumo: Json; p_viabilidade: string }
         Returns: number
       }
+      cancelar_cobranca: { Args: { p_cobranca: string; p_motivo: string }; Returns: undefined }
       cancelar_reserva: { Args: { p_motivo: string; p_reserva: string }; Returns: undefined }
+      conciliar_cobrancas: { Args: { p_limite?: number }; Returns: number }
+      configurar_asaas: {
+        Args: { p_ambiente: string; p_chave: string; p_tenant: string }
+        Returns: string
+      }
       criar_contrato: {
         Args: { p_indice?: string; p_parcelas: Json; p_venda: string }
         Returns: string
@@ -2091,12 +2302,14 @@ export type Database = {
         }
         Returns: string
       }
+      desativar_asaas: { Args: { p_tenant: string }; Returns: undefined }
       estornar_recebimento: {
         Args: { p_motivo: string; p_recebimento: string }
         Returns: undefined
       }
       executar_reajustes: { Args: { p_data?: string }; Returns: number }
       expirar_reservas: { Args: Record<PropertyKey, never>; Returns: number }
+      gerar_cobranca: { Args: { p_parcela: string }; Returns: string }
       importar_indices: { Args: Record<PropertyKey, never>; Returns: number }
       parametro_vigente: {
         Args: {
@@ -2129,6 +2342,10 @@ export type Database = {
       }
       vender_lote: {
         Args: { p_justificativa?: string; p_lote: string; p_venda: Json }
+        Returns: string
+      }
+      webhook_asaas: {
+        Args: { p_evento: Json; p_tenant: string; p_token: string }
         Returns: string
       }
     }
