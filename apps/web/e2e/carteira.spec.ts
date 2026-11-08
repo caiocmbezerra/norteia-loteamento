@@ -79,6 +79,20 @@ test('contrato, recebimentos com encargos e estorno', async ({ page }, info) => 
   await expect(page.getByText(/Nenhum reajuste a aplicar agora/)).toBeVisible()
   await page.goto(`${empreendimento}/carteira`)
   await expect(page.getByRole('row', { name: /Carla Compradora/ })).toContainText('2 em atraso')
+
+  // Cessão da carteira: sem taxa nem perda, vale o nominal (3 parcelas abertas após o estorno)
+  await page.getByLabel('Taxa de desconto (% ao mês)').fill('0')
+  await page.getByLabel('Perda esperada (%)').fill('0')
+  await page.getByRole('button', { name: 'Simular' }).click()
+  const cessao = page.getByRole('region', { name: 'Resultado da cessão' })
+  await expect(cessao).toContainText(/Valor da cessão\s*R\$\s81\.000,00/)
+
+  // Painel consolidado da loteadora
+  await page.goto('/painel')
+  const consolidado = page.getByRole('region', { name: 'Consolidado' })
+  await expect(consolidado).toContainText(/VGV vendido\s*R\$\s90\.000,00/)
+  await expect(consolidado).toContainText(/Carteira a receber\s*R\$\s81\.000,00/)
+  await expect(page.getByRole('row', { name: /Jardim Carteira/ })).toContainText('sem plano')
 })
 
 // Fase 5c-1: renegociação por aditivo, antecipação e termo de quitação.

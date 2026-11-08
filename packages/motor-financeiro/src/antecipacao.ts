@@ -21,3 +21,44 @@ export function descontoAntecipacao(
   const presente = new Decimal(saldo).div(fator).toDecimalPlaces(0)
   return centavos(saldo - Number(presente.toFixed(0)))
 }
+
+export interface SimulacaoCessaoCarteira {
+  nominalCentavos: Centavos
+  presenteCentavos: Centavos
+  desagioCentavos: Centavos
+  parcelas: number
+}
+
+/**
+ * Cessão de carteira: valor presente das parcelas em aberto à taxa de desconto do comprador
+ * dos recebíveis (pro rata die, mês de 30 dias), descontada a perda esperada. Vencidas valem
+ * o saldo (sem desconto de prazo).
+ */
+export function simularCessaoCarteira(
+  parcelas: readonly { vencimento: string; saldoCentavos: Centavos }[],
+  data: string,
+  taxaMensal: Decimal,
+  perdaEsperada: Decimal,
+): SimulacaoCessaoCarteira {
+  if (taxaMensal.isNegative() || perdaEsperada.isNegative() || perdaEsperada.gte(1))
+    throw new ErroMotor('Taxa e perda esperada inválidas.')
+  const fator = new Decimal(1).minus(perdaEsperada)
+  let nominal = 0
+  let presente = new Decimal(0)
+  for (const p of parcelas) {
+    nominal += p.saldoCentavos
+    const dias = Math.max(0, diasEntre(data, p.vencimento))
+    presente = presente.plus(
+      new Decimal(p.saldoCentavos).div(
+        new Decimal(1).plus(taxaMensal).pow(new Decimal(dias).div(30)),
+      ),
+    )
+  }
+  const vp = centavos(Number(presente.times(fator).toDecimalPlaces(0).toFixed(0)))
+  return {
+    nominalCentavos: centavos(nominal),
+    presenteCentavos: vp,
+    desagioCentavos: centavos(nominal - vp),
+    parcelas: parcelas.length,
+  }
+}
