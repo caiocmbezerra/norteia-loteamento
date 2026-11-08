@@ -8,6 +8,7 @@ insert into public.papel_permissoes (papel, permissao) values
   ('contador', 'carteira.ler'),
   ('comercial_gestor', 'carteira.ler'),
   ('socio_leitura', 'carteira.ler'),
+  ('engenharia', 'carteira.ler'),
   ('dono', 'carteira.receber'),
   ('financeiro', 'carteira.receber');
 

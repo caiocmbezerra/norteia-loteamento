@@ -30,3 +30,18 @@ export {
   reservarLote,
   vendasDoEmpreendimento,
 } from './comercial'
+export {
+  type ContratoDetalhe,
+  type ContratoNaCarteira,
+  type DadosRecebimento,
+  INDICES_REAJUSTE,
+  type IndiceReajuste,
+  type PainelCarteira,
+  type ParcelaContratoDetalhe,
+  type RecebimentoContrato,
+  carregarCarteira,
+  carregarContrato,
+  estornarRecebimento,
+  gerarContrato,
+  registrarRecebimento,
+} from './carteira'

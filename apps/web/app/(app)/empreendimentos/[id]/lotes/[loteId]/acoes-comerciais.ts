@@ -1,6 +1,12 @@
 'use server'
 
-import { ErroAplicacao, cancelarReserva, registrarVenda, reservarLote } from '@norteia/aplicacao'
+import {
+  ErroAplicacao,
+  INDICES_REAJUSTE,
+  cancelarReserva,
+  registrarVenda,
+  reservarLote,
+} from '@norteia/aplicacao'
 import { lerMoeda } from '@norteia/dominio'
 import { Decimal } from '@norteia/motor-financeiro'
 import { revalidatePath } from 'next/cache'
@@ -103,6 +109,7 @@ const esquemaVenda = z
       .transform((v) => new Decimal(v.replace(',', '.')).div(100).toString()),
     sistema: z.enum(['price', 'sac']),
     primeiraParcela: z.string(),
+    indice: z.union([z.literal(''), z.enum(INDICES_REAJUSTE)]),
     justificativa: z.string().trim().max(500),
   })
   .refine((v) => v.entrada <= v.preco, {
@@ -125,9 +132,10 @@ export async function vender(
   form: FormData,
 ): Promise<EstadoFormulario> {
   const ctx = await exigirContexto()
+  let resultado: { vendaId: string; contratoId: string | null }
   try {
     const v = esquemaVenda.parse(valoresDoFormulario(form))
-    await registrarVenda(
+    resultado = await registrarVenda(
       ctx.db,
       ctx.tenant.id,
       loteId,
@@ -146,6 +154,7 @@ export async function vender(
         jurosMensal: v.juros,
         sistema: v.sistema,
         primeiraParcelaEm: v.parcelas > 0 ? v.primeiraParcela : null,
+        indiceReajuste: v.indice || null,
       },
       v.justificativa || undefined,
     )
@@ -160,5 +169,8 @@ export async function vender(
     return estadoDeErro(e, form)
   }
   revalidar(empreendimentoId, loteId)
-  redirect(`/empreendimentos/${empreendimentoId}/lotes/${loteId}?vendido=1`)
+  revalidatePath(`/empreendimentos/${empreendimentoId}/carteira`)
+  redirect(
+    `/empreendimentos/${empreendimentoId}/lotes/${loteId}?vendido=1${resultado.contratoId ? '' : '&semContrato=1'}`,
+  )
 }
