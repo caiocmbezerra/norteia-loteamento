@@ -63,3 +63,10 @@ export {
 } from './encargos'
 export { type CondicoesContrato, type ParcelaContrato, gerarParcelasContrato } from './contrato'
 export { descontoAntecipacao } from './antecipacao'
+export {
+  type EntradaDistrato,
+  type RegrasDistrato,
+  type ResultadoDistrato,
+  calcularDistrato,
+  fatorAcumulado,
+} from './distrato'

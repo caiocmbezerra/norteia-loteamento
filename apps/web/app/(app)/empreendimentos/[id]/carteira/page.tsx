@@ -152,6 +152,10 @@ export default async function PaginaCarteira({ params }: { params: Promise<{ id:
                   <td className="py-2 text-right">
                     {c.situacao === 'quitado' ? (
                       'Quitado'
+                    ) : c.situacao === 'distratado' ? (
+                      'Distratado'
+                    ) : c.situacao === 'cedido' ? (
+                      'Cedido'
                     ) : c.maiorAtraso > 0 ? (
                       <span className="font-medium text-destructive">
                         {c.parcelasVencidas} em atraso · {c.maiorAtraso} dias

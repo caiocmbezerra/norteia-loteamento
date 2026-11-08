@@ -14,9 +14,13 @@ import { Button } from '@/components/ui/button'
 import { Alerta, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/formulario'
 import type { EstadoFormulario } from '@/lib/acao'
 import {
+  type EstadoDistrato,
   antecipar,
   cancelarCobrancaAcao,
   ceder,
+  executarDistratoAcao,
+  pagarDevolucaoAcao,
+  simularDistratoAcao,
   emitirCobranca,
   estornar,
   gerar,
@@ -796,6 +800,179 @@ export function FormularioTrocaLote({
       <Button type="submit" disabled={enviando} className="self-start">
         {enviando ? 'Registrando…' : 'Registrar aditivo de troca de lote'}
       </Button>
+    </form>
+  )
+}
+
+/** Distrato (art. 32-A): simula com as regras do cliente (ajustáveis neste contrato) e executa. */
+export function FormularioDistrato({
+  empreendimentoId,
+  contratoId,
+  hoje,
+  padrao,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  hoje: string
+  padrao: { clausula: string; fruicao: string; parcelas: string; carencia: string }
+}) {
+  const [sim, simular, simulando] = useActionState<EstadoDistrato, FormData>(
+    simularDistratoAcao.bind(null, empreendimentoId, contratoId),
+    {},
+  )
+  const [exe, executar, executando] = useActionState<EstadoDistrato, FormData>(
+    executarDistratoAcao.bind(null, empreendimentoId, contratoId),
+    {},
+  )
+  const er = { ...(sim.erros ?? {}), ...(exe.erros ?? {}) }
+  const v = (k: string, d: string) => exe.valores?.[k] ?? sim.valores?.[k] ?? d
+  const s = sim.simulacao
+  const linha = (rotulo: string, valor: number, sinal = '') =>
+    valor ? (
+      <tr className="border-t">
+        <td className="py-1">{rotulo}</td>
+        <td className="py-1 text-right">
+          {sinal}
+          {moeda(valor)}
+        </td>
+      </tr>
+    ) : null
+  return (
+    <form className="flex flex-col gap-3" noValidate>
+      {(sim.erro || exe.erro) && <Alerta>{sim.erro ?? exe.erro}</Alerta>}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Campo id="dis-data" rotulo="Data do distrato" erro={er.data}>
+          <Entrada
+            {...aria('dis', 'data', er.data)}
+            type="date"
+            max={hoje}
+            defaultValue={v('data', hoje)}
+          />
+        </Campo>
+        <Campo id="dis-posse" rotulo="Posse desde (se houve)" erro={er.posse}>
+          <Entrada {...aria('dis', 'posse', er.posse)} type="date" defaultValue={v('posse', '')} />
+        </Campo>
+        <Campo id="dis-outros" rotulo="Outros débitos (R$)" erro={er.outros}>
+          <Entrada
+            {...aria('dis', 'outros', er.outros)}
+            inputMode="decimal"
+            placeholder="0,00"
+            defaultValue={v('outros', '')}
+          />
+        </Campo>
+        <Campo id="dis-clausula" rotulo="Cláusula penal (%)" erro={er.clausula}>
+          <Entrada
+            {...aria('dis', 'clausula', er.clausula)}
+            inputMode="decimal"
+            defaultValue={v('clausula', padrao.clausula)}
+          />
+        </Campo>
+        <Campo id="dis-fruicao" rotulo="Fruição (% ao mês)" erro={er.fruicao}>
+          <Entrada
+            {...aria('dis', 'fruicao', er.fruicao)}
+            inputMode="decimal"
+            defaultValue={v('fruicao', padrao.fruicao)}
+          />
+        </Campo>
+        <Campo id="dis-parcelas" rotulo="Parcelas da devolução" erro={er.parcelas}>
+          <Entrada
+            {...aria('dis', 'parcelas', er.parcelas)}
+            inputMode="numeric"
+            defaultValue={v('parcelas', padrao.parcelas)}
+          />
+        </Campo>
+        <Campo id="dis-carencia" rotulo="Carência (meses)" erro={er.carencia}>
+          <Entrada
+            {...aria('dis', 'carencia', er.carencia)}
+            inputMode="numeric"
+            defaultValue={v('carencia', padrao.carencia)}
+          />
+        </Campo>
+      </div>
+      <Button
+        type="submit"
+        formAction={simular}
+        variant="outline"
+        disabled={simulando}
+        className="self-start"
+      >
+        {simulando ? 'Calculando…' : 'Simular distrato'}
+      </Button>
+      {s && (
+        <div
+          className="flex flex-col gap-3 rounded-lg border bg-muted/50 p-3 text-sm"
+          aria-live="polite"
+        >
+          <table className="w-full">
+            <tbody>
+              <tr>
+                <td className="py-1">
+                  Pago pelo comprador{s.indice ? ` (corrigido pelo ${s.indice})` : ''}
+                </td>
+                <td className="py-1 text-right">{moeda(s.pagoAtualizadoCentavos)}</td>
+              </tr>
+              {linha('Cláusula penal e despesas', s.deducoes.clausulaPenal, '− ')}
+              {linha(`Fruição (${s.mesesPosse} meses de posse)`, s.deducoes.fruicao, '− ')}
+              {linha('Encargos moratórios pagos', s.deducoes.encargosMoratorios, '− ')}
+              {linha('Comissão de corretagem', s.deducoes.comissao, '− ')}
+              {linha('Outros débitos', s.deducoes.outrosDebitos, '− ')}
+              <tr className="border-t font-semibold">
+                <td className="py-1">Devolução ao comprador</td>
+                <td className="py-1 text-right">{moeda(s.devolucaoCentavos)}</td>
+              </tr>
+            </tbody>
+          </table>
+          {s.parcelas.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {s.parcelas.length} parcela(s) de {moeda(s.parcelas[0]!.valorCentavos)}, a 1ª em{' '}
+              {s.parcelas[0]!.vencimento.split('-').reverse().join('/')}.
+            </p>
+          )}
+          <Campo id="dis-motivo" rotulo="Motivo do distrato" erro={er.motivo}>
+            <Entrada {...aria('dis', 'motivo', er.motivo)} defaultValue={v('motivo', '')} />
+          </Campo>
+          <Button
+            type="submit"
+            formAction={executar}
+            variant="destructive"
+            disabled={executando}
+            className="self-start"
+          >
+            {executando ? 'Executando…' : 'Executar distrato'}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Ao executar: parcelas em aberto canceladas, lote de volta ao estoque e devolução lançada
+            no fluxo.
+          </p>
+        </div>
+      )}
+    </form>
+  )
+}
+
+export function FormularioPagarDevolucao({
+  empreendimentoId,
+  contratoId,
+  devolucaoId,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  devolucaoId: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    pagarDevolucaoAcao.bind(null, empreendimentoId, contratoId, devolucaoId),
+    {},
+  )
+  return (
+    <form action={acao} className="flex items-center gap-2">
+      <Button type="submit" size="sm" variant="outline" disabled={enviando}>
+        Registrar pagamento
+      </Button>
+      {estado.erro && (
+        <span role="alert" className="text-xs text-destructive">
+          {estado.erro}
+        </span>
+      )}
     </form>
   )
 }

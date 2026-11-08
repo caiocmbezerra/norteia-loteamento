@@ -210,3 +210,57 @@ test('cessão do contrato e troca de lote', async ({ page }, info) => {
   expect(aditivo.status()).toBe(200)
   expect(aditivo.headers()['content-disposition']).toContain('aditivo-')
 })
+
+// Fase 6a: distrato com simulação, execução e devolução parcelada.
+test('distrato: simulação, execução e devolução', async ({ page }, info) => {
+  await page.goto('/cadastrar')
+  await page.getByLabel('Seu nome').fill('Dani Distrato')
+  await page.getByLabel('E-mail').fill(`distrato.${Date.now()}.${info.project.name}@exemplo.com.br`)
+  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await page.getByLabel('Nome da sua loteadora').fill('Loteadora Distrato')
+  await page.getByLabel('Nome do empreendimento').fill('Jardim Distrato')
+  await page.getByLabel('Município').fill('Goiânia')
+  await page.getByLabel('UF').selectOption('GO')
+  await page.getByLabel('Lotes por quadra').fill('1')
+  await page.getByLabel('Preço de cada lote (R$)').fill('90.000,00')
+  await page.getByRole('button', { name: 'Criar meu loteamento' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jardim Distrato')
+  const empreendimento = page.url().split('?')[0]!
+  await page.goto(`${empreendimento}/editar`)
+  await page.getByLabel('Situação').selectOption('em_vendas')
+  await page.getByLabel('Data do registro').fill('2026-01-02')
+  await page.getByRole('button', { name: 'Salvar' }).click()
+
+  await page.getByRole('link', { name: /Quadra A, lote 1:/ }).click()
+  await page.getByRole('link', { name: 'Registrar venda' }).click()
+  await page.getByLabel('Nome completo').fill('Dora Desistente')
+  await page.getByLabel('Entrada (R$)').fill('9.000,00')
+  await page.getByLabel('Parcelas').fill('2')
+  await page.getByLabel('Juros ao mês (%)').fill('0')
+  await page.getByLabel('1ª parcela').fill(dia(20))
+  await page.getByRole('button', { name: 'Registrar venda' }).click()
+  await page.getByRole('link', { name: 'Ver parcelas' }).click()
+  await page.getByRole('button', { name: 'Registrar recebimento' }).click()
+  await expect(page.getByText('Recebimento registrado.')).toBeVisible()
+
+  // Simulação: pago 9.000 − cláusula de 5% sobre 90.000 = 4.500 em 12 parcelas
+  await page.getByText('Distrato (art. 32-A)').click()
+  await page.getByLabel('Cláusula penal (%)').fill('5')
+  await page.getByRole('button', { name: 'Simular distrato' }).click()
+  await expect(page.getByRole('row', { name: /Devolução ao comprador/ })).toContainText(
+    /R\$\s4\.500,00/,
+  )
+  await expect(page.getByText(/12 parcela\(s\) de R\$\s375,00/)).toBeVisible()
+  await page.getByLabel('Motivo do distrato').fill('Desistência da compradora')
+  await page.getByRole('button', { name: 'Executar distrato' }).click()
+  await expect(page.getByText(/Distrato executado/)).toBeVisible()
+  await expect(page.getByText(/contrato Distratado/)).toBeVisible()
+  await expect(page.getByText(/^Devolução \d+ · vence/)).toHaveCount(12)
+  await page.getByRole('button', { name: 'Registrar pagamento' }).first().click()
+  await expect(page.getByText(/paga em/)).toHaveCount(1)
+
+  // O lote volta ao estoque
+  await page.goto(empreendimento)
+  await expect(page.getByRole('link', { name: /Quadra A, lote 1: disponível/i })).toBeVisible()
+})
