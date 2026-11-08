@@ -291,6 +291,9 @@ export type Database = {
           lote_id: string
           multa_atraso: number
           quitado_em: string | null
+          reajuste_defasagem_meses: number
+          reajuste_negativo: string
+          reajuste_periodicidade_meses: number
           situacao: string
           tenant_id: string
           venda_id: string
@@ -309,6 +312,9 @@ export type Database = {
           lote_id: string
           multa_atraso: number
           quitado_em?: string | null
+          reajuste_defasagem_meses: number
+          reajuste_negativo: string
+          reajuste_periodicidade_meses: number
           situacao?: string
           tenant_id: string
           venda_id: string
@@ -326,6 +332,9 @@ export type Database = {
           lote_id?: string
           multa_atraso?: number
           quitado_em?: string | null
+          reajuste_defasagem_meses?: number
+          reajuste_negativo?: string
+          reajuste_periodicidade_meses?: number
           situacao?: string
           tenant_id?: string
           venda_id?: string
@@ -1311,6 +1320,7 @@ export type Database = {
           atualizado_em: string
           atualizado_por: string | null
           contrato_id: string
+          correcao_centavos: number
           criado_em: string
           criado_por: string | null
           id: string
@@ -1328,6 +1338,7 @@ export type Database = {
           atualizado_em?: string
           atualizado_por?: string | null
           contrato_id: string
+          correcao_centavos?: number
           criado_em?: string
           criado_por?: string | null
           id?: string
@@ -1344,6 +1355,7 @@ export type Database = {
           atualizado_em?: string
           atualizado_por?: string | null
           contrato_id?: string
+          correcao_centavos?: number
           criado_em?: string
           criado_por?: string | null
           id?: string
@@ -1558,6 +1570,76 @@ export type Database = {
             columns: ['tenant_id', 'empreendimento_id']
             isOneToOne: false
             referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      reajustes: {
+        Row: {
+          aniversario: string
+          atualizado_em: string
+          atualizado_por: string | null
+          competencia_final: string
+          competencia_inicial: string
+          contrato_id: string
+          criado_em: string
+          criado_por: string | null
+          diferenca_centavos: number
+          fator: number
+          fator_aplicado: number
+          id: string
+          indice: string
+          parcelas: number
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          aniversario: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          competencia_final: string
+          competencia_inicial: string
+          contrato_id: string
+          criado_em?: string
+          criado_por?: string | null
+          diferenca_centavos: number
+          fator: number
+          fator_aplicado: number
+          id?: string
+          indice: string
+          parcelas: number
+          tenant_id: string
+        }
+        Update: {
+          aniversario?: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          competencia_final?: string
+          competencia_inicial?: string
+          contrato_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          diferenca_centavos?: number
+          fator?: number
+          fator_aplicado?: number
+          id?: string
+          indice?: string
+          parcelas?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'reajustes_indice_fkey'
+            columns: ['indice']
+            isOneToOne: false
+            referencedRelation: 'indices_economicos'
+            referencedColumns: ['codigo']
+          },
+          {
+            foreignKeyName: 'reajustes_tenant_id_contrato_id_fkey'
+            columns: ['tenant_id', 'contrato_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
             referencedColumns: ['tenant_id', 'id']
           },
         ]
@@ -2013,7 +2095,9 @@ export type Database = {
         Args: { p_motivo: string; p_recebimento: string }
         Returns: undefined
       }
+      executar_reajustes: { Args: { p_data?: string }; Returns: number }
       expirar_reservas: { Args: Record<PropertyKey, never>; Returns: number }
+      importar_indices: { Args: Record<PropertyKey, never>; Returns: number }
       parametro_vigente: {
         Args: {
           p_chave: string
@@ -2024,6 +2108,7 @@ export type Database = {
         }
         Returns: Json
       }
+      reajustar_contrato: { Args: { p_contrato: string }; Returns: number }
       registrar_recebimento: {
         Args: {
           p_data: string
