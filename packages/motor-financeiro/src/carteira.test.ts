@@ -3,6 +3,7 @@ import {
   Decimal,
   ErroMotor,
   calcularEncargos,
+  descontoAntecipacao,
   centavos,
   diasEntre,
   gerarParcelasContrato,
@@ -125,5 +126,27 @@ describe('gerarParcelasContrato (RN-K01, RN-K02)', () => {
     )
     expect(() => gerarParcelasContrato({ ...base, parcelas: 0 })).toThrow(ErroMotor)
     expect(() => gerarParcelasContrato({ ...base, primeiraParcelaEm: null })).toThrow(ErroMotor)
+  })
+})
+
+describe('descontoAntecipacao (RN-K08)', () => {
+  const taxa = new Decimal('0.01')
+  it('traz o saldo a valor presente pela taxa do contrato', () => {
+    // R$ 1.000,00 a 30 dias, 1% a.m.: VP = 990,10 → desconto 9,90
+    expect(descontoAntecipacao(centavos(100_000), '2026-12-08', '2026-11-08', taxa)).toBe(990)
+    // 15 dias: 1,01^0,5 → VP 995,04 → desconto 4,96
+    expect(descontoAntecipacao(centavos(100_000), '2026-11-23', '2026-11-08', taxa)).toBe(496)
+  })
+
+  it('sem desconto para parcela vencida, no dia, sem juros ou sem saldo', () => {
+    expect(descontoAntecipacao(centavos(100_000), '2026-11-08', '2026-11-08', taxa)).toBe(0)
+    expect(descontoAntecipacao(centavos(100_000), '2026-10-08', '2026-11-08', taxa)).toBe(0)
+    expect(descontoAntecipacao(centavos(100_000), '2026-12-08', '2026-11-08', new Decimal(0))).toBe(
+      0,
+    )
+    expect(descontoAntecipacao(centavos(0), '2026-12-08', '2026-11-08', taxa)).toBe(0)
+    expect(() =>
+      descontoAntecipacao(centavos(1), '2026-12-08', '2026-11-08', new Decimal('-0.01')),
+    ).toThrow(ErroMotor)
   })
 })
