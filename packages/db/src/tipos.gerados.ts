@@ -1515,6 +1515,73 @@ export type Database = {
           },
         ]
       }
+      movimentos_socio: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          data: string
+          estornado_em: string | null
+          id: string
+          motivo_estorno: string | null
+          observacao: string | null
+          socio_id: string
+          spe_id: string
+          tenant_id: string
+          tipo: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          estornado_em?: string | null
+          id?: string
+          motivo_estorno?: string | null
+          observacao?: string | null
+          socio_id: string
+          spe_id: string
+          tenant_id: string
+          tipo: string
+          valor_centavos: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          estornado_em?: string | null
+          id?: string
+          motivo_estorno?: string | null
+          observacao?: string | null
+          socio_id?: string
+          spe_id?: string
+          tenant_id?: string
+          tipo?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'movimentos_socio_tenant_id_socio_id_fkey'
+            columns: ['tenant_id', 'socio_id']
+            isOneToOne: false
+            referencedRelation: 'socios'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'movimentos_socio_tenant_id_spe_id_fkey'
+            columns: ['tenant_id', 'spe_id']
+            isOneToOne: false
+            referencedRelation: 'spes'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       orcamento_itens: {
         Row: {
           atualizado_em: string
@@ -1814,6 +1881,64 @@ export type Database = {
             columns: ['tenant_id', 'contrato_id']
             isOneToOne: false
             referencedRelation: 'contratos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      participacoes: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          id: string
+          motivo: string | null
+          percentual: number
+          socio_id: string
+          spe_id: string
+          tenant_id: string
+          vigencia: unknown
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          motivo?: string | null
+          percentual: number
+          socio_id: string
+          spe_id: string
+          tenant_id: string
+          vigencia: unknown
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          motivo?: string | null
+          percentual?: number
+          socio_id?: string
+          spe_id?: string
+          tenant_id?: string
+          vigencia?: unknown
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'participacoes_tenant_id_socio_id_fkey'
+            columns: ['tenant_id', 'socio_id']
+            isOneToOne: false
+            referencedRelation: 'socios'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'participacoes_tenant_id_spe_id_fkey'
+            columns: ['tenant_id', 'spe_id']
+            isOneToOne: false
+            referencedRelation: 'spes'
             referencedColumns: ['tenant_id', 'id']
           },
         ]
@@ -2462,6 +2587,61 @@ export type Database = {
           },
         ]
       }
+      socios: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          documento: string | null
+          email: string | null
+          id: string
+          nome: string
+          tenant_id: string
+          usuario_id: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          tenant_id: string
+          usuario_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          tenant_id?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'socios_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'socios_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'perfis'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       spes: {
         Row: {
           atualizado_em: string
@@ -2781,7 +2961,21 @@ export type Database = {
         }
         Returns: string
       }
+      definir_participacao: {
+        Args: {
+          p_inicio: string
+          p_motivo: string
+          p_percentual: number
+          p_socio: string
+          p_spe: string
+        }
+        Returns: string
+      }
       desativar_asaas: { Args: { p_tenant: string }; Returns: undefined }
+      estornar_movimento_socio: {
+        Args: { p_motivo: string; p_movimento: string }
+        Returns: undefined
+      }
       estornar_recebimento: {
         Args: { p_motivo: string; p_recebimento: string }
         Returns: undefined
@@ -2817,6 +3011,17 @@ export type Database = {
         Returns: string
       }
       reajustar_contrato: { Args: { p_contrato: string }; Returns: number }
+      registrar_movimento_socio: {
+        Args: {
+          p_data: string
+          p_observacao?: string
+          p_socio: string
+          p_spe: string
+          p_tipo: string
+          p_valor: number
+        }
+        Returns: string
+      }
       registrar_recebimento: {
         Args: {
           p_data: string
