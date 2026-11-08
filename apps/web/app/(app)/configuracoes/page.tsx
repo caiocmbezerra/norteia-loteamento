@@ -17,6 +17,11 @@ const SECOES = [
     texto: 'Estrutura societária dos empreendimentos.',
   },
   {
+    href: '/configuracoes/integracoes',
+    titulo: 'Integrações',
+    texto: 'Boleto e Pix pelo Asaas, com baixa automática.',
+  },
+  {
     href: '/configuracoes/auditoria',
     titulo: 'Auditoria',
     texto: 'Quem alterou o quê, quando, antes e depois.',

@@ -6,7 +6,7 @@ import { useActionState, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alerta, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/formulario'
 import type { EstadoFormulario } from '@/lib/acao'
-import { estornar, gerar, reajustar, receber } from './acoes'
+import { cancelarCobrancaAcao, emitirCobranca, estornar, gerar, reajustar, receber } from './acoes'
 
 const moeda = (c: number) => formatarMoeda(arredondarCentavos(String(c)))
 const emTexto = (c: number) => moeda(c).replace(/^R\$\s/, '')
@@ -203,6 +203,66 @@ export function FormularioReajuste({
       </Button>
       {estado.erro && (
         <p role="alert" className="text-xs text-destructive">
+          {estado.erro}
+        </p>
+      )}
+    </form>
+  )
+}
+
+export function FormularioEmitirCobranca({
+  empreendimentoId,
+  contratoId,
+  parcelaId,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  parcelaId: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    emitirCobranca.bind(null, empreendimentoId, contratoId, parcelaId),
+    {},
+  )
+  return (
+    <form action={acao} className="mt-1 flex flex-col items-end gap-1">
+      <Button type="submit" size="sm" variant="outline" disabled={enviando}>
+        {enviando ? 'Emitindo…' : 'Gerar boleto/Pix'}
+      </Button>
+      {estado.erro && (
+        <p role="alert" className="text-xs text-destructive">
+          {estado.erro}
+        </p>
+      )}
+    </form>
+  )
+}
+
+export function FormularioCancelarCobranca({
+  empreendimentoId,
+  contratoId,
+  cobrancaId,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  cobrancaId: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    cancelarCobrancaAcao.bind(null, empreendimentoId, contratoId, cobrancaId),
+    {},
+  )
+  return (
+    <form action={acao} className="mt-1 flex flex-wrap items-end justify-end gap-2" noValidate>
+      <Entrada
+        name="motivo"
+        aria-label="Motivo do cancelamento da cobrança"
+        placeholder="Motivo"
+        className="h-8 w-32"
+      />
+      <Button type="submit" size="sm" variant="outline" disabled={enviando}>
+        Cancelar cobrança
+      </Button>
+      {estado.erro && (
+        <p role="alert" className="w-full text-xs text-destructive">
           {estado.erro}
         </p>
       )}

@@ -9,6 +9,8 @@ import { Alerta } from '@/components/ui/formulario'
 import { exigirContexto, temPapel } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
 import {
+  FormularioCancelarCobranca,
+  FormularioEmitirCobranca,
   FormularioEstornoRecebimento,
   FormularioReajuste,
   FormularioRecebimento,
@@ -34,6 +36,8 @@ export default async function PaginaContrato({
     recebido?: string
     estornado?: string
     reajustado?: string
+    cobranca?: string
+    cobrancaCancelada?: string
   }>
 }) {
   const [{ id, contratoId }, avisos] = await Promise.all([params, searchParams])
@@ -75,6 +79,10 @@ export default async function PaginaContrato({
       {avisos.novo && <Alerta tipo="sucesso">Contrato gerado com as parcelas da venda.</Alerta>}
       {avisos.recebido && <Alerta tipo="sucesso">Recebimento registrado.</Alerta>}
       {avisos.estornado && <Alerta tipo="sucesso">Recebimento estornado.</Alerta>}
+      {avisos.cobranca && (
+        <Alerta tipo="sucesso">Boleto/Pix emitido no Asaas. Envie o link ao comprador.</Alerta>
+      )}
+      {avisos.cobrancaCancelada && <Alerta tipo="sucesso">Cobrança cancelada no Asaas.</Alerta>}
       {avisos.reajustado !== undefined && (
         <Alerta tipo={avisos.reajustado === '0' ? 'aviso' : 'sucesso'}>
           {avisos.reajustado === '0'
@@ -228,6 +236,45 @@ export default async function PaginaContrato({
                       ) : (
                         'A vencer'
                       )}
+                      {p.cobranca?.situacao === 'pendente' && (
+                        <div className="mt-1 text-xs">
+                          {p.cobranca.linkFatura ? (
+                            <a
+                              href={p.cobranca.linkFatura}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary underline-offset-4 hover:underline"
+                            >
+                              Boleto/Pix de {moeda(p.cobranca.valorCentavos)}
+                            </a>
+                          ) : (
+                            'Cobrança emitida'
+                          )}{' '}
+                          · vence {formatarData(p.cobranca.vencimento)}
+                          {podeReceber && (
+                            <FormularioCancelarCobranca
+                              empreendimentoId={id}
+                              contratoId={c.id}
+                              cobrancaId={p.cobranca.id}
+                            />
+                          )}
+                        </div>
+                      )}
+                      {p.cobranca?.situacao === 'divergente' && (
+                        <div className="mt-1 text-xs text-destructive">
+                          Pagamento no Asaas a conferir: {p.cobranca.motivo}
+                        </div>
+                      )}
+                      {p.situacao === 'aberta' &&
+                        p.cobranca?.situacao !== 'pendente' &&
+                        podeReceber &&
+                        c.asaasAtivo && (
+                          <FormularioEmitirCobranca
+                            empreendimentoId={id}
+                            contratoId={c.id}
+                            parcelaId={p.id}
+                          />
+                        )}
                     </td>
                   </tr>
                 )

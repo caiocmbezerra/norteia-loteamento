@@ -46,3 +46,11 @@ export {
   reajustarContrato,
   registrarRecebimento,
 } from './carteira'
+export {
+  type IntegracaoAsaas,
+  cancelarCobranca,
+  carregarIntegracaoAsaas,
+  configurarAsaas,
+  desativarAsaas,
+  gerarCobranca,
+} from './integracoes'

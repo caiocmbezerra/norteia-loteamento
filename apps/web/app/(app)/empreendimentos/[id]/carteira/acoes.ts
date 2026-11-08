@@ -2,6 +2,8 @@
 
 import {
   INDICES_REAJUSTE,
+  cancelarCobranca,
+  gerarCobranca,
   estornarRecebimento,
   gerarContrato,
   reajustarContrato,
@@ -121,4 +123,38 @@ export async function reajustar(
   }
   revalidar(empreendimentoId, contratoId)
   redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?reajustado=${n}`)
+}
+
+export async function emitirCobranca(
+  empreendimentoId: string,
+  contratoId: string,
+  parcelaId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    await gerarCobranca(ctx.db, parcelaId)
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?cobranca=1`)
+}
+
+export async function cancelarCobrancaAcao(
+  empreendimentoId: string,
+  contratoId: string,
+  cobrancaId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    await cancelarCobranca(ctx.db, cobrancaId, String(form.get('motivo') ?? ''))
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?cobrancaCancelada=1`)
 }

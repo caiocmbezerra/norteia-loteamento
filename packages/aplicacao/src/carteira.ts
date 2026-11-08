@@ -101,6 +101,15 @@ export interface ParcelaContratoDetalhe {
   /** Encargos se o saldo for pago hoje (RN-K04). */
   encargosHoje: Encargos
   recebimentos: RecebimentoContrato[]
+  /** Cobrança do Asaas mais relevante: a pendente, senão a última divergente. */
+  cobranca: {
+    id: string
+    situacao: 'pendente' | 'paga' | 'cancelada' | 'divergente'
+    vencimento: string
+    valorCentavos: number
+    linkFatura: string | null
+    motivo: string | null
+  } | null
 }
 
 export interface ContratoDetalhe {
@@ -126,6 +135,8 @@ export interface ContratoDetalhe {
   }[]
   situacao: string
   quitadoEm: string | null
+  /** Integração com o Asaas ativa para emitir boleto/Pix. */
+  asaasAtivo: boolean
   parcelas: ParcelaContratoDetalhe[]
   totais: {
     valorCentavos: number
@@ -152,13 +163,13 @@ export async function carregarContrato(
   const { data: c, error } = await db
     .from('contratos')
     .select(
-      'id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos)',
+      'id, tenant_id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos)',
     )
     .eq('id', contratoId)
     .maybeSingle()
   falhar(error)
   if (!c) return null
-  const [parcelas, recebimentos] = await Promise.all([
+  const [parcelas, recebimentos, cobrancas, integracao] = await Promise.all([
     paginar((de, ate) =>
       db
         .from('parcelas')
@@ -180,6 +191,17 @@ export async function carregarContrato(
         .order('criado_em')
         .range(de, ate),
     ),
+    paginar((de, ate) =>
+      db
+        .from('cobrancas')
+        .select(
+          'id, parcela_id, situacao, vencimento, valor_centavos, link_fatura, motivo, criado_em, parcelas!inner(contrato_id)',
+        )
+        .eq('parcelas.contrato_id', contratoId)
+        .order('criado_em')
+        .range(de, ate),
+    ),
+    db.from('integracoes_asaas').select('ativo').eq('tenant_id', c.tenant_id).maybeSingle(),
   ])
   const regra = regraDe(c)
   const lista: ParcelaContratoDetalhe[] = parcelas.map((p) => {
@@ -196,6 +218,24 @@ export async function carregarContrato(
       saldoCentavos: saldo,
       situacao: p.situacao as ParcelaContratoDetalhe['situacao'],
       encargosHoje: calcularEncargos(centavos(saldo), p.vencimento, hoje, regra),
+      cobranca: (() => {
+        const daParcela = cobrancas.filter((x) => x.parcela_id === p.id)
+        const escolhida =
+          daParcela.find((x) => x.situacao === 'pendente') ??
+          daParcela.filter((x) => x.situacao === 'divergente').at(-1)
+        return escolhida
+          ? {
+              id: escolhida.id,
+              situacao: escolhida.situacao as NonNullable<
+                ParcelaContratoDetalhe['cobranca']
+              >['situacao'],
+              vencimento: escolhida.vencimento,
+              valorCentavos: escolhida.valor_centavos,
+              linkFatura: escolhida.link_fatura,
+              motivo: escolhida.motivo,
+            }
+          : null
+      })(),
       recebimentos: recebimentos
         .filter((r) => r.parcela_id === p.id)
         .map((r) => ({
@@ -243,6 +283,7 @@ export async function carregarContrato(
       })),
     situacao: c.situacao,
     quitadoEm: c.quitado_em,
+    asaasAtivo: integracao.data?.ativo ?? false,
     parcelas: lista,
     totais: {
       valorCentavos: soma((p) => (p.situacao === 'cancelada' ? 0 : p.valorCentavos)),
