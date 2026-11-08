@@ -32,6 +32,14 @@ export interface ParcelaReal {
   recebimentos: readonly RecebimentoReal[]
 }
 
+/** Parcela da devolução de um distrato (RN-D03). */
+export interface DevolucaoReal {
+  vencimento: string
+  valorCentavos: number
+  /** Data do pagamento; nula = a pagar. */
+  pagoEm: string | null
+}
+
 /** Venda registrada (Fase 4). Com contrato, as parcelas reais substituem a tabela da venda. */
 export interface VendaReal {
   dataVenda: string
@@ -45,6 +53,8 @@ export interface VendaReal {
   comissaoModo: 'ato' | 'recebido'
   /** Parcelas do contrato (Fase 5). Sem contrato, a tabela é recalculada a partir da venda. */
   contrato?: readonly ParcelaReal[]
+  /** Distrato executado: a venda sai do VGV, o lote volta ao estoque e a devolução é saída. */
+  distrato?: { devolucoes: readonly DevolucaoReal[] }
 }
 
 export interface EntradaReceitas {
@@ -84,9 +94,22 @@ export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
 
   for (const v of e.vendas) {
     const mesVenda = mesDoFluxo(e.dataBase, v.dataVenda)
-    while (vendasPorMes.length <= mesVenda) vendasPorMes.push(0)
-    vendasPorMes[mesVenda]!++
-    vgvReal = vgvReal.plus(v.precoCentavos)
+    if (v.distrato) {
+      for (const d of v.distrato.devolucoes)
+        lancar(
+          d.pagoEm
+            ? mesDoFluxo(e.dataBase, d.pagoEm)
+            : Math.max(mesDoFluxo(e.dataBase, d.vencimento), mesAtual),
+          new Decimal(d.valorCentavos).negated(),
+          'devolucao_distrato',
+          'carteira',
+          d.pagoEm ? 'realizado' : 'comprometido',
+        )
+    } else {
+      while (vendasPorMes.length <= mesVenda) vendasPorMes.push(0)
+      vendasPorMes[mesVenda]!++
+      vgvReal = vgvReal.plus(v.precoCentavos)
+    }
     const comissao = new Decimal(v.comissaoPercentual)
     const porRecebido = v.comissaoModo === 'recebido'
 
@@ -191,7 +214,7 @@ export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
   }
 
   // Estoque restante no ritmo do plano
-  const restantes = Math.max(0, p.lotesVendaveis - e.vendas.length)
+  const restantes = Math.max(0, p.lotesVendaveis - e.vendas.filter((v) => !v.distrato).length)
   const projetadas = projetarViabilidade({
     ...p,
     lotesVendaveis: restantes,

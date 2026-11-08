@@ -209,6 +209,65 @@ describe('projetarReceitas com contrato (Fase 5)', () => {
   })
 })
 
+describe('projetarReceitas com distrato (Fase 6)', () => {
+  it('distrato: sai do VGV, lote volta ao estoque, recebido fica e devolução é saída', () => {
+    const premissas = { ...CASO_REFERENCIA, lotesVendaveis: 2 }
+    const v = venda({
+      dataVenda: '2026-02-10',
+      precoCentavos: 100_000,
+      entradaCentavos: 10_000,
+      parcelas: 1,
+      contrato: [
+        {
+          numero: 0,
+          vencimento: '2026-02-10',
+          valorCentavos: 10_000,
+          amortizacaoCentavos: 10_000,
+          jurosCentavos: 0,
+          correcaoCentavos: 0,
+          situacao: 'paga',
+          recebimentos: [{ data: '2026-02-10', principalCentavos: 10_000, encargosCentavos: 0 }],
+        },
+        {
+          numero: 1,
+          vencimento: '2026-03-10',
+          valorCentavos: 90_000,
+          amortizacaoCentavos: 90_000,
+          jurosCentavos: 0,
+          correcaoCentavos: 0,
+          situacao: 'cancelada',
+          recebimentos: [],
+        },
+      ],
+      distrato: {
+        devolucoes: [
+          { vencimento: '2026-04-10', valorCentavos: 1_000, pagoEm: '2026-04-12' },
+          { vencimento: '2026-03-10', valorCentavos: 1_000, pagoEm: null },
+        ],
+      },
+    })
+    const r = projetarReceitas({
+      dataBase: '2026-01-01',
+      hoje: '2026-05-15',
+      premissas,
+      vendas: [v],
+    })
+    const t = totalPorCategoria(r.lancamentos)
+    expect(r.vgvVendido.toNumber()).toBe(2 * 9_000_000)
+    expect(r.vendasPorMes.reduce((a, b) => a + (b ?? 0), 0)).toBe(2)
+    expect(t.devolucao_distrato.toNumber()).toBe(-2_000)
+    const dev = r.lancamentos.filter((l) => l.categoria === 'devolucao_distrato')
+    expect(dev.map((l) => `${l.mes}:${l.natureza}`).sort()).toEqual([
+      '3:realizado',
+      '4:comprometido',
+    ])
+    const recebido = r.lancamentos.filter(
+      (l) => l.natureza === 'realizado' && l.categoria === 'receita_imobiliaria',
+    )
+    expect(recebido.reduce((s, l) => s + l.valor.toNumber(), 0)).toBe(10_000)
+  })
+})
+
 describe('fluxo atual com vendas reais', () => {
   it('vendas antecipadas nas condições do plano mantêm o lucro e elevam a TIR', () => {
     const custos = projetarCustos({

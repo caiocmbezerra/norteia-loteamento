@@ -84,3 +84,11 @@ export {
   modeloEmUso,
   usarModeloPadrao,
 } from './documentos'
+export {
+  type EntradaSimulacaoDistrato,
+  type SimulacaoDistrato,
+  executarDistrato,
+  pagarDevolucao,
+  regrasDistrato,
+  simularDistrato,
+} from './distrato'

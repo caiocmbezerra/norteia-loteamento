@@ -152,6 +152,20 @@ export interface ContratoDetalhe {
     novoSaldoCentavos: number
     parcelasAnteriores: number
   }[]
+  /** Distrato executado, com a devolução parcelada. */
+  distrato: {
+    data: string
+    motivo: string
+    devolucaoCentavos: number
+    resumo: Record<string, unknown>
+    devolucoes: {
+      id: string
+      numero: number
+      vencimento: string
+      valorCentavos: number
+      pagoEm: string | null
+    }[]
+  } | null
   /** Integração com o Asaas ativa para emitir boleto/Pix. */
   asaasAtivo: boolean
   parcelas: ParcelaContratoDetalhe[]
@@ -180,7 +194,7 @@ export async function carregarContrato(
   const { data: c, error } = await db
     .from('contratos')
     .select(
-      'id, tenant_id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos), vendas(juros_mensal, sistema), aditivos(id, tipo, data, motivo, condicoes, saldo_anterior_centavos, encargos_incorporados_centavos, desconto_centavos, novo_saldo_centavos, parcelas_anteriores)',
+      'id, tenant_id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos), vendas(juros_mensal, sistema), distratos(data, motivo, devolucao_centavos, resumo, devolucoes(id, numero, vencimento, valor_centavos, pago_em)), aditivos(id, tipo, data, motivo, condicoes, saldo_anterior_centavos, encargos_incorporados_centavos, desconto_centavos, novo_saldo_centavos, parcelas_anteriores)',
     )
     .eq('id', contratoId)
     .maybeSingle()
@@ -301,6 +315,26 @@ export async function carregarContrato(
     situacao: c.situacao,
     quitadoEm: c.quitado_em,
     asaasAtivo: integracao.data?.ativo ?? false,
+    distrato: (() => {
+      const d = Array.isArray(c.distratos) ? c.distratos[0] : c.distratos
+      return d
+        ? {
+            data: d.data,
+            motivo: d.motivo,
+            devolucaoCentavos: d.devolucao_centavos,
+            resumo: (d.resumo ?? {}) as Record<string, unknown>,
+            devolucoes: [...(d.devolucoes ?? [])]
+              .sort((a, b) => a.numero - b.numero)
+              .map((x) => ({
+                id: x.id,
+                numero: x.numero,
+                vencimento: x.vencimento,
+                valorCentavos: x.valor_centavos,
+                pagoEm: x.pago_em,
+              })),
+          }
+        : null
+    })(),
     jurosMensal: String(c.vendas?.juros_mensal ?? 0),
     sistema: (c.vendas?.sistema ?? 'price') as 'price' | 'sac',
     aditivos: [...(c.aditivos ?? [])]

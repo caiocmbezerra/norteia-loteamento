@@ -1,7 +1,12 @@
 'use server'
 
 import {
+  type EntradaSimulacaoDistrato,
   INDICES_REAJUSTE,
+  type SimulacaoDistrato,
+  executarDistrato,
+  pagarDevolucao,
+  simularDistrato,
   cederContrato,
   trocarLote,
   anteciparParcelas,
@@ -20,6 +25,7 @@ import { z } from 'zod'
 import { type EstadoFormulario, estadoDeErro, valoresDoFormulario } from '@/lib/acao'
 import { exigirContexto } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
+import { Decimal } from '@norteia/motor-financeiro'
 
 const dinheiro = (rotulo: string, minimo: number) =>
   z
@@ -324,4 +330,106 @@ export async function trocar(
   revalidar(empreendimentoId, contratoId)
   revalidatePath(`/empreendimentos/${empreendimentoId}`)
   redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?trocado=1`)
+}
+
+export interface EstadoDistrato extends EstadoFormulario {
+  simulacao?: SimulacaoDistrato
+}
+
+const pct = (rotulo: string) =>
+  z
+    .string()
+    .trim()
+    .regex(/^\d{1,2}(,\d{1,4})?$/, `${rotulo}: use um percentual como 10 ou 0,75.`)
+    .transform((v) => new Decimal(v.replace(',', '.')).div(100))
+
+function lerDistrato(form: FormData): EntradaSimulacaoDistrato {
+  const hoje = hojeSaoPaulo()
+  const r = z
+    .object({
+      data: z.iso
+        .date({ error: 'Data inválida.' })
+        .refine((d) => d <= hoje, 'A data do distrato não pode estar no futuro.'),
+      posse: z.union([z.literal(''), z.iso.date({ error: 'Data da posse inválida.' })]),
+      outros: dinheiro('Outros débitos', 0),
+      clausula: pct('Cláusula penal'),
+      fruicao: pct('Fruição'),
+      parcelas: z.coerce
+        .number()
+        .int()
+        .min(1, 'Parcelas: mínimo 1.')
+        .max(120, 'Parcelas: máximo 120.'),
+      carencia: z.coerce
+        .number()
+        .int()
+        .min(0, 'Carência: mínimo 0.')
+        .max(60, 'Carência: máximo 60 meses.'),
+    })
+    .parse(valoresDoFormulario(form))
+  return {
+    data: r.data,
+    posseDesde: r.posse || null,
+    outrosDebitosCentavos: r.outros,
+    ajustes: {
+      clausulaPenal: r.clausula,
+      fruicaoMensal: r.fruicao,
+      parcelasDevolucao: r.parcelas,
+      carenciaMeses: r.carencia,
+    },
+  }
+}
+
+export async function simularDistratoAcao(
+  _empreendimentoId: string,
+  contratoId: string,
+  _: EstadoDistrato,
+  form: FormData,
+): Promise<EstadoDistrato> {
+  const ctx = await exigirContexto()
+  try {
+    const simulacao = await simularDistrato(ctx.db, ctx.tenant.id, contratoId, lerDistrato(form))
+    return { simulacao, valores: valoresDoFormulario(form) }
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+}
+
+export async function executarDistratoAcao(
+  empreendimentoId: string,
+  contratoId: string,
+  _: EstadoDistrato,
+  form: FormData,
+): Promise<EstadoDistrato> {
+  const ctx = await exigirContexto()
+  try {
+    const motivo = String(form.get('motivo') ?? '').trim()
+    if (motivo.length < 5)
+      return {
+        erros: { motivo: 'Descreva o motivo (ao menos 5 caracteres).' },
+        valores: valoresDoFormulario(form),
+      }
+    await executarDistrato(ctx.db, ctx.tenant.id, contratoId, lerDistrato(form), motivo)
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  revalidatePath(`/empreendimentos/${empreendimentoId}`)
+  redirect(`/empreendimentos/${empreendimentoId}/carteira/${contratoId}?distratado=1`)
+}
+
+export async function pagarDevolucaoAcao(
+  empreendimentoId: string,
+  contratoId: string,
+  devolucaoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    await pagarDevolucao(ctx.db, devolucaoId, hojeSaoPaulo())
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  return { ok: 'Pagamento da devolução registrado.' }
 }

@@ -13,6 +13,7 @@ export {
 } from './custos'
 export { orcamentoDoPlano, projetarAtual } from './atual'
 export {
+  type DevolucaoReal,
   type EntradaReceitas,
   type ParcelaReal,
   type RecebimentoReal,

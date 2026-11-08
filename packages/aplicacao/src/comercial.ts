@@ -136,19 +136,29 @@ export async function vendasDoEmpreendimento(
   db: ClienteBanco,
   empreendimentoId: string,
 ): Promise<VendaReal[]> {
-  const [data, contratos] = await Promise.all([
+  const [data, contratos, devolucoes] = await Promise.all([
     paginar((de, ate) =>
       db
         .from('vendas')
         .select(
-          'id, data_venda, preco_centavos, entrada_centavos, parcelas, juros_mensal, sistema, primeira_parcela_em, comissao_percentual, comissao_modo',
+          'id, situacao, data_venda, preco_centavos, entrada_centavos, parcelas, juros_mensal, sistema, primeira_parcela_em, comissao_percentual, comissao_modo',
         )
         .eq('empreendimento_id', empreendimentoId)
-        .eq('situacao', 'ativa')
+        .in('situacao', ['ativa', 'distratada'])
         .order('id')
         .range(de, ate),
     ),
     parcelasPorVenda(db, empreendimentoId),
+    paginar((de, ate) =>
+      db
+        .from('devolucoes')
+        .select(
+          'vencimento, valor_centavos, pago_em, distratos!inner(contratos!inner(venda_id, empreendimento_id))',
+        )
+        .eq('distratos.contratos.empreendimento_id', empreendimentoId)
+        .order('id')
+        .range(de, ate),
+    ),
   ])
   return data.map((v) => ({
     dataVenda: v.data_venda,
@@ -161,5 +171,18 @@ export async function vendasDoEmpreendimento(
     comissaoPercentual: String(v.comissao_percentual),
     comissaoModo: v.comissao_modo as 'ato' | 'recebido',
     ...(contratos.has(v.id) ? { contrato: contratos.get(v.id)! } : {}),
+    ...(v.situacao === 'distratada'
+      ? {
+          distrato: {
+            devolucoes: devolucoes
+              .filter((d) => d.distratos.contratos.venda_id === v.id)
+              .map((d) => ({
+                vencimento: d.vencimento,
+                valorCentavos: d.valor_centavos,
+                pagoEm: d.pago_em,
+              })),
+          },
+        }
+      : {}),
   }))
 }

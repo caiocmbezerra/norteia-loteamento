@@ -1,4 +1,4 @@
-import { carregarContrato } from '@norteia/aplicacao'
+import { carregarContrato, regrasDistrato } from '@norteia/aplicacao'
 import { formatarData, formatarMoeda, formatarPercentual } from '@norteia/dominio'
 import { Decimal, arredondarCentavos, somarMeses } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
@@ -16,6 +16,8 @@ import {
   FormularioReajuste,
   FormularioRecebimento,
   FormularioCessao,
+  FormularioDistrato,
+  FormularioPagarDevolucao,
   FormularioRenegociacao,
   FormularioTrocaLote,
 } from '../formularios'
@@ -46,6 +48,7 @@ export default async function PaginaContrato({
     antecipado?: string
     cedido?: string
     trocado?: string
+    distratado?: string
   }>
 }) {
   const [{ id, contratoId }, avisos] = await Promise.all([params, searchParams])
@@ -67,6 +70,13 @@ export default async function PaginaContrato({
   if (!c || c.empreendimentoId !== id) notFound()
   const podeReceber = temPapel(ctx, 'dono', 'financeiro') && c.situacao === 'vigente'
   const proxima = c.parcelas.find((p) => p.situacao === 'aberta')
+  const podeDistratar =
+    temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor') && c.situacao === 'vigente'
+  const regras = podeDistratar
+    ? await regrasDistrato(ctx.db, ctx.tenant.id, id, hoje).catch(() => null)
+    : null
+  const pct = (d: { times: (n: number) => { toString: () => string } }) =>
+    d.times(100).toString().replace('.', ',')
   const podeDocumentos = temPapel(ctx, 'dono', 'financeiro', 'contador', 'comercial_gestor')
   const baseDocs = `/empreendimentos/${id}/carteira/${contratoId}/documentos`
   const podeCeder =
@@ -130,6 +140,11 @@ export default async function PaginaContrato({
       {avisos.antecipado && <Alerta tipo="sucesso">Antecipação registrada.</Alerta>}
       {avisos.cedido && (
         <Alerta tipo="sucesso">Cessão registrada: o contrato agora é do cessionário.</Alerta>
+      )}
+      {avisos.distratado && (
+        <Alerta tipo="sucesso">
+          Distrato executado: parcelas canceladas, lote de volta ao estoque e devolução no fluxo.
+        </Alerta>
       )}
       {avisos.trocado && (
         <Alerta tipo="sucesso">Troca de lote registrada: o lote anterior voltou ao estoque.</Alerta>
@@ -287,6 +302,69 @@ export default async function PaginaContrato({
               />
             </div>
           </details>
+        </Cartao>
+      )}
+
+      {podeDistratar && (
+        <Cartao className="flex flex-col gap-3">
+          <details>
+            <summary className="cursor-pointer font-semibold">Distrato (art. 32-A)</summary>
+            <div className="mt-3 flex flex-col gap-3">
+              <p className="text-sm text-muted-foreground">
+                Regras padrão da sua loteadora em{' '}
+                <Link
+                  href="/configuracoes/parametros"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  Parâmetros
+                </Link>
+                ; ajuste aqui só para este contrato.
+              </p>
+              <FormularioDistrato
+                empreendimentoId={id}
+                contratoId={c.id}
+                hoje={hoje}
+                padrao={{
+                  clausula: regras ? pct(regras.clausulaPenal) : '10',
+                  fruicao: regras ? pct(regras.fruicaoMensal) : '0,75',
+                  parcelas: String(regras?.parcelasDevolucao ?? 12),
+                  carencia: String(regras?.carenciaMeses ?? 12),
+                }}
+              />
+            </div>
+          </details>
+        </Cartao>
+      )}
+
+      {c.distrato && (
+        <Cartao className="flex flex-col gap-3">
+          <h2 className="font-semibold">Distrato em {formatarData(c.distrato.data)}</h2>
+          <p className="text-sm text-muted-foreground">
+            Motivo: {c.distrato.motivo} · devolução de {moeda(c.distrato.devolucaoCentavos)}
+          </p>
+          {c.distrato.devolucoes.length > 0 && (
+            <ul className="divide-y text-sm">
+              {c.distrato.devolucoes.map((d) => (
+                <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <span>
+                    Devolução {d.numero} · vence {formatarData(d.vencimento)} ·{' '}
+                    {moeda(d.valorCentavos)}
+                  </span>
+                  {d.pagoEm ? (
+                    <span className="text-muted-foreground">paga em {formatarData(d.pagoEm)}</span>
+                  ) : temPapel(ctx, 'dono', 'financeiro') ? (
+                    <FormularioPagarDevolucao
+                      empreendimentoId={id}
+                      contratoId={c.id}
+                      devolucaoId={d.id}
+                    />
+                  ) : (
+                    <span className="text-muted-foreground">a pagar</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </Cartao>
       )}
 
