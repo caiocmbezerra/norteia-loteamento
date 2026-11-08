@@ -142,7 +142,11 @@ describe('projetarReceitas com contrato (Fase 5)', () => {
           recebimentos: [{ data: '2026-04-02', principalCentavos: 23_000, encargosCentavos: 700 }],
         }),
         parcela({ numero: 2, vencimento: '2026-08-10' }),
-        parcela({ numero: 3, situacao: 'cancelada' }),
+        parcela({
+          numero: 3,
+          situacao: 'cancelada',
+          recebimentos: [{ data: '2026-05-02', principalCentavos: 1_000, encargosCentavos: 0 }],
+        }),
       ]),
     )
     const realizado = l.filter((x) => x.natureza === 'realizado')
@@ -153,6 +157,8 @@ describe('projetarReceitas com contrato (Fase 5)', () => {
     expect(soma(realizado.filter((x) => x.mes === 3 && x.categoria === 'receita_juros'))).toBe(
       1_200,
     )
+    // Parcela renegociada: o pago fica como realizado; o saldo não entra
+    expect(soma(realizado.filter((x) => x.mes === 4))).toBeCloseTo(1_000, 6)
     // Saldo vencido da parcela 1 cai no mês atual (4); a parcela 2, no vencimento (7)
     const carteira = l.filter(
       (x) => x.natureza === 'carteira' && x.categoria !== 'comissao' && x.categoria !== 'tributo',
@@ -162,7 +168,7 @@ describe('projetarReceitas com contrato (Fase 5)', () => {
     expect(carteira.some((x) => x.mes < 4)).toBe(false)
     // Tributos do recebido ficam comprometidos
     const tributoReal = l.filter((x) => x.categoria === 'tributo' && x.natureza === 'comprometido')
-    expect(soma(tributoReal)).toBeCloseTo(-(10_000 + 23_700) * 0.0593, 6)
+    expect(soma(tributoReal)).toBeCloseTo(-(10_000 + 23_700 + 1_000) * 0.0593, 6)
   })
 
   it('correção do reajuste entra como receita imobiliária', () => {

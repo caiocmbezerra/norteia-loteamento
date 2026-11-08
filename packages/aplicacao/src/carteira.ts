@@ -5,6 +5,7 @@ import {
   type RegraEncargos,
   calcularEncargos,
   centavos,
+  descontoAntecipacao,
   diasEntre,
   gerarParcelasContrato,
 } from '@norteia/motor-financeiro'
@@ -135,6 +136,19 @@ export interface ContratoDetalhe {
   }[]
   situacao: string
   quitadoEm: string | null
+  /** Juros e sistema da venda (taxa usada na antecipação e sugerida na renegociação). */
+  jurosMensal: string
+  sistema: 'price' | 'sac'
+  aditivos: {
+    id: string
+    data: string
+    motivo: string
+    saldoAnteriorCentavos: number
+    encargosCentavos: number
+    descontoCentavos: number
+    novoSaldoCentavos: number
+    parcelasAnteriores: number
+  }[]
   /** Integração com o Asaas ativa para emitir boleto/Pix. */
   asaasAtivo: boolean
   parcelas: ParcelaContratoDetalhe[]
@@ -163,7 +177,7 @@ export async function carregarContrato(
   const { data: c, error } = await db
     .from('contratos')
     .select(
-      'id, tenant_id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos)',
+      'id, tenant_id, empreendimento_id, venda_id, lote_id, indice_reajuste, multa_atraso, juros_mora_mensal, reajuste_periodicidade_meses, reajuste_defasagem_meses, reajuste_negativo, situacao, quitado_em, empreendimentos(nome), lotes(numero, quadras(codigo)), compradores(nome), reajustes(aniversario, indice, competencia_inicial, competencia_final, fator, fator_aplicado, parcelas, diferenca_centavos), vendas(juros_mensal, sistema), aditivos(id, data, motivo, saldo_anterior_centavos, encargos_incorporados_centavos, desconto_centavos, novo_saldo_centavos, parcelas_anteriores)',
     )
     .eq('id', contratoId)
     .maybeSingle()
@@ -284,6 +298,20 @@ export async function carregarContrato(
     situacao: c.situacao,
     quitadoEm: c.quitado_em,
     asaasAtivo: integracao.data?.ativo ?? false,
+    jurosMensal: String(c.vendas?.juros_mensal ?? 0),
+    sistema: (c.vendas?.sistema ?? 'price') as 'price' | 'sac',
+    aditivos: [...(c.aditivos ?? [])]
+      .sort((a, b) => a.data.localeCompare(b.data))
+      .map((a) => ({
+        id: a.id,
+        data: a.data,
+        motivo: a.motivo,
+        saldoAnteriorCentavos: a.saldo_anterior_centavos,
+        encargosCentavos: a.encargos_incorporados_centavos,
+        descontoCentavos: a.desconto_centavos,
+        novoSaldoCentavos: a.novo_saldo_centavos,
+        parcelasAnteriores: Array.isArray(a.parcelas_anteriores) ? a.parcelas_anteriores.length : 0,
+      })),
     parcelas: lista,
     totais: {
       valorCentavos: soma((p) => (p.situacao === 'cancelada' ? 0 : p.valorCentavos)),
@@ -536,4 +564,134 @@ export async function parcelasPorVenda(
     resultado.set(venda, lista)
   }
   return resultado
+}
+
+export interface DadosRenegociacao {
+  data: string
+  motivo: string
+  incorporarEncargos: boolean
+  descontoCentavos: number
+  parcelas: number
+  jurosMensal: string
+  sistema: 'price' | 'sac'
+  primeiraParcelaEm: string
+}
+
+/**
+ * Renegociação por aditivo (RN-K07): saldo em aberto (+ encargos das vencidas, se
+ * incorporados, calculados pelo motor com a regra do contrato) − desconto, em novo plano do
+ * motor numerado a partir da última parcela. O banco confere e guarda a foto do plano anterior.
+ */
+export async function renegociarContrato(
+  db: ClienteBanco,
+  contratoId: string,
+  d: DadosRenegociacao,
+): Promise<string> {
+  const [{ data: c, error }, abertas] = await Promise.all([
+    db.from('contratos').select('multa_atraso, juros_mora_mensal').eq('id', contratoId).single(),
+    paginar((de, ate) =>
+      db
+        .from('parcelas')
+        .select('numero, vencimento, valor_centavos, pago_centavos, situacao')
+        .eq('contrato_id', contratoId)
+        .order('numero')
+        .range(de, ate),
+    ),
+  ])
+  falhar(error)
+  const regra = regraDe(c!)
+  const emAberto = abertas.filter((p) => p.situacao === 'aberta')
+  const saldo = emAberto.reduce((t, p) => t + p.valor_centavos - p.pago_centavos, 0)
+  const encargos = d.incorporarEncargos
+    ? emAberto.reduce((t, p) => {
+        const e = calcularEncargos(
+          centavos(p.valor_centavos - p.pago_centavos),
+          p.vencimento,
+          d.data,
+          regra,
+        )
+        return t + e.multa + e.jurosMora
+      }, 0)
+    : 0
+  const novo = saldo + encargos - d.descontoCentavos
+  if (saldo <= 0) throw new ErroAplicacao('O contrato não tem saldo em aberto.', 'invalido')
+  if (d.descontoCentavos < 0 || novo <= 0)
+    throw new ErroAplicacao('O desconto não pode zerar o saldo.', 'invalido', 'desconto')
+  const ultimo = abertas.reduce((m, p) => Math.max(m, p.numero), 0)
+  const plano = gerarParcelasContrato({
+    precoCentavos: centavos(novo),
+    entradaCentavos: centavos(0),
+    dataEntrada: d.data,
+    parcelas: d.parcelas,
+    jurosMensal: new Decimal(d.jurosMensal),
+    sistema: d.sistema,
+    primeiraParcelaEm: d.primeiraParcelaEm,
+  })
+  const { data, error: erro } = await db.rpc('renegociar_contrato', {
+    p_contrato: contratoId,
+    p_data: d.data,
+    p_motivo: d.motivo,
+    p_encargos: encargos,
+    p_desconto: d.descontoCentavos,
+    p_condicoes: {
+      parcelas: d.parcelas,
+      juros_mensal: d.jurosMensal,
+      sistema: d.sistema,
+      primeira_parcela_em: d.primeiraParcelaEm,
+      encargos_incorporados: d.incorporarEncargos,
+    },
+    p_parcelas: plano.map((p) => ({
+      numero: ultimo + p.numero,
+      vencimento: p.vencimento,
+      valor_centavos: p.valor,
+      amortizacao_centavos: p.amortizacao,
+      juros_centavos: p.juros,
+    })),
+  })
+  falhar(erro)
+  return data!
+}
+
+/**
+ * Antecipação (RN-K08): baixa das parcelas a vencer escolhidas, com o desconto dos juros não
+ * decorridos calculado pelo motor à taxa do contrato.
+ */
+export async function anteciparParcelas(
+  db: ClienteBanco,
+  contratoId: string,
+  parcelaIds: string[],
+  data: string,
+): Promise<{ parcelas: number; descontoCentavos: number }> {
+  if (parcelaIds.length === 0)
+    throw new ErroAplicacao('Escolha as parcelas a antecipar.', 'invalido')
+  const [{ data: c, error }, { data: lista, error: erroParcelas }] = await Promise.all([
+    db.from('contratos').select('vendas(juros_mensal)').eq('id', contratoId).single(),
+    db
+      .from('parcelas')
+      .select('id, vencimento, valor_centavos, pago_centavos')
+      .eq('contrato_id', contratoId)
+      .in('id', parcelaIds),
+  ])
+  falhar(error)
+  falhar(erroParcelas)
+  const taxa = new Decimal(String(c!.vendas?.juros_mensal ?? 0))
+  const itens = (lista ?? []).map((p) => ({
+    parcela: p.id,
+    desconto_centavos: descontoAntecipacao(
+      centavos(p.valor_centavos - p.pago_centavos),
+      p.vencimento,
+      data,
+      taxa,
+    ),
+  }))
+  const { error: erro } = await db.rpc('antecipar_parcelas', {
+    p_contrato: contratoId,
+    p_data: data,
+    p_itens: itens,
+  })
+  falhar(erro)
+  return {
+    parcelas: itens.length,
+    descontoCentavos: itens.reduce((t, i) => t + i.desconto_centavos, 0),
+  }
 }

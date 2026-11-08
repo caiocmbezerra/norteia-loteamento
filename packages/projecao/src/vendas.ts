@@ -100,7 +100,6 @@ export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
     if (v.contrato) {
       if (!porRecebido) lancarComissaoNoAto()
       for (const pc of v.contrato) {
-        if (pc.situacao === 'cancelada') continue
         const fracao = new Decimal(pc.amortizacaoCentavos + pc.correcaoCentavos).div(
           pc.valorCentavos,
         )
@@ -139,7 +138,8 @@ export function projetarReceitas(e: EntradaReceitas): ProjecaoViabilidade {
             'realizado',
           )
         }
-        const saldo = new Decimal(pc.valorCentavos - pago)
+        // Parcela substituída por aditivo: o que já foi pago fica; o saldo está no novo plano.
+        const saldo = new Decimal(pc.situacao === 'cancelada' ? 0 : pc.valorCentavos - pago)
         if (saldo.gt(0))
           parte(
             Math.max(mesDoFluxo(e.dataBase, pc.vencimento), mesAtual),
