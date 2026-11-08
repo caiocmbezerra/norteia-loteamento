@@ -12,3 +12,4 @@ export {
   projetarCustos,
 } from './custos'
 export { orcamentoDoPlano, projetarAtual } from './atual'
+export { type EntradaReceitas, type VendaReal, projetarReceitas } from './vendas'
