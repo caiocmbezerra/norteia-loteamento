@@ -1,3 +1,14 @@
-// Traduz registros do banco em lançamentos do fluxo de caixa (com origem).
-// Implementação prevista no roadmap (docs/roadmap.md).
-export {}
+// Projeção: traduz registros do banco em lançamentos do fluxo de caixa (RN-F01, RN-F03). Puro.
+export { mesDoFluxo } from './datas'
+export {
+  type ContaCusto,
+  type ContratoCusto,
+  type CustoPorCentro,
+  type EntradaCustos,
+  type ItemOrcamento,
+  type PagamentoCusto,
+  type ProjecaoCustos,
+  centroDeOrcamento,
+  projetarCustos,
+} from './custos'
+export { orcamentoDoPlano, projetarAtual } from './atual'
