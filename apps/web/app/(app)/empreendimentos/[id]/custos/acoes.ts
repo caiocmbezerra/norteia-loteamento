@@ -6,6 +6,7 @@ import {
   estornarPagamento,
   registrarConta,
   registrarContrato,
+  registrarMedicao,
   registrarPagamento,
   type SugestaoConta,
   anexarDocumentoConta,
@@ -14,6 +15,7 @@ import {
 } from '@norteia/aplicacao'
 import { clienteLeitura } from '@norteia/integracoes/leitura-documento'
 import { lerMoeda } from '@norteia/dominio'
+import { Decimal } from '@norteia/motor-financeiro'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { type EstadoFormulario, estadoDeErro, valoresDoFormulario } from '@/lib/acao'
@@ -258,4 +260,45 @@ export async function lerDocumentoConta(arquivo: {
     console.error('leitura de documento', e)
     return { erro: 'Não foi possível ler o documento agora; preencha à mão.' }
   }
+}
+
+const esquemaMedicao = z.object({
+  data: z.iso.date({ error: 'Data da medição inválida.' }),
+  percentual: z
+    .string()
+    .trim()
+    .regex(/^\d{1,3}(,\d{1,4})?$/, 'Percentual: use um número como 45 ou 45,5.')
+    .transform((v) => new Decimal(v.replace(',', '.')).div(100))
+    .refine((v) => v.gt(0) && v.lte(1), 'Percentual: de 0 a 100.')
+    .transform((v) => v.toString()),
+  vencimento: z.iso.date({ error: 'Vencimento inválido.' }),
+  documento: z.string().trim().max(60),
+  observacao: z.string().trim().max(500),
+})
+
+/** Medição pelo percentual acumulado executado; gera a conta a pagar da diferença. */
+export async function medir(
+  empreendimentoId: string,
+  contratoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const m = esquemaMedicao.parse(valoresDoFormulario(form))
+    await registrarMedicao(ctx.db, {
+      contratoId,
+      data: m.data,
+      percentualAcumulado: m.percentual,
+      vencimento: m.vencimento,
+      documento: m.documento || null,
+      observacao: m.observacao || null,
+    })
+  } catch (e) {
+    if (e instanceof ErroAplicacao && e.codigo === 'percentual')
+      return { erros: { percentual: e.message }, valores: valoresDoFormulario(form) }
+    return estadoDeErro(e, form)
+  }
+  revalidatePath(caminho(empreendimentoId))
+  return { ok: 'Medição registrada; a conta a pagar foi criada.' }
 }

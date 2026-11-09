@@ -1947,6 +1947,73 @@ export type Database = {
           },
         ]
       }
+      medicoes: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          conta_id: string
+          contrato_id: string
+          criado_em: string
+          criado_por: string | null
+          data: string
+          empreendimento_id: string
+          id: string
+          numero: number
+          observacao: string | null
+          percentual_acumulado: number
+          tenant_id: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          conta_id: string
+          contrato_id: string
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          empreendimento_id: string
+          id?: string
+          numero: number
+          observacao?: string | null
+          percentual_acumulado: number
+          tenant_id: string
+          valor_centavos: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          conta_id?: string
+          contrato_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          empreendimento_id?: string
+          id?: string
+          numero?: number
+          observacao?: string | null
+          percentual_acumulado?: number
+          tenant_id?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'medicoes_tenant_id_conta_id_fkey'
+            columns: ['tenant_id', 'conta_id']
+            isOneToOne: false
+            referencedRelation: 'contas_pagar'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'medicoes_tenant_id_empreendimento_id_contrato_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id', 'contrato_id']
+            isOneToOne: false
+            referencedRelation: 'contratos_fornecedor'
+            referencedColumns: ['tenant_id', 'empreendimento_id', 'id']
+          },
+        ]
+      }
       membros: {
         Row: {
           ativo: boolean
@@ -4015,6 +4082,17 @@ export type Database = {
         Returns: string
       }
       reajustar_contrato: { Args: { p_contrato: string }; Returns: number }
+      registrar_medicao: {
+        Args: {
+          p_contrato: string
+          p_data: string
+          p_documento?: string
+          p_observacao?: string
+          p_percentual_acumulado: number
+          p_vencimento: string
+        }
+        Returns: string
+      }
       registrar_movimento_socio: {
         Args: {
           p_data: string

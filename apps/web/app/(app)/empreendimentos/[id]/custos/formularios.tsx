@@ -7,6 +7,7 @@ import { Alerta, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/form
 import type { EstadoFormulario } from '@/lib/acao'
 import {
   anexarConta,
+  medir,
   estornar,
   lerDocumentoConta,
   novaConta,
@@ -468,6 +469,60 @@ export function FormularioAnexo({
           {f.er.anexo}
         </p>
       )}
+    </form>
+  )
+}
+
+/** Medição do contrato pelo percentual acumulado executado. */
+export function FormularioMedicao({
+  empreendimentoId,
+  contratoId,
+  hoje,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  hoje: string
+}) {
+  const f = useFormulario(medir.bind(null, empreendimentoId, contratoId))
+  const p = `medicao-${contratoId}`
+  return (
+    <form ref={f.ref} action={f.despachar} className="flex flex-col gap-3" noValidate>
+      <Mensagens estado={f.estado} />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Campo
+          id={`${p}-percentual`}
+          rotulo="Executado acumulado (%)"
+          ajuda="Total executado até agora, não só desta medição."
+          erro={f.er.percentual}
+        >
+          <Entrada
+            {...aria(p, 'percentual', f.er.percentual, 'ajuda')}
+            inputMode="decimal"
+            defaultValue={f.v('percentual')}
+          />
+        </Campo>
+        <Campo id={`${p}-data`} rotulo="Data da medição" erro={f.er.data}>
+          <Entrada {...aria(p, 'data', f.er.data)} type="date" defaultValue={f.v('data') ?? hoje} />
+        </Campo>
+        <Campo id={`${p}-vencimento`} rotulo="Vencimento" erro={f.er.vencimento}>
+          <Entrada
+            {...aria(p, 'vencimento', f.er.vencimento)}
+            type="date"
+            defaultValue={f.v('vencimento')}
+          />
+        </Campo>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Campo id={`${p}-documento`} rotulo="Nº da nota (opcional)">
+          <Entrada id={`${p}-documento`} name="documento" defaultValue={f.v('documento')} />
+        </Campo>
+        <Campo id={`${p}-observacao`} rotulo="Observação (opcional)">
+          <Entrada id={`${p}-observacao`} name="observacao" defaultValue={f.v('observacao')} />
+        </Campo>
+      </div>
+      <Button type="submit" variant="secondary" disabled={f.enviando}>
+        {f.enviando ? 'Registrando…' : 'Registrar medição'}
+      </Button>
     </form>
   )
 }

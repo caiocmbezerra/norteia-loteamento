@@ -16,6 +16,7 @@ import {
   FormularioContrato,
   FormularioEstorno,
   FormularioAnexo,
+  FormularioMedicao,
   FormularioPagar,
 } from './formularios'
 
@@ -53,7 +54,7 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
     ctx.db
       .from('contratos_fornecedor')
       .select(
-        'id, descricao, centro_codigo, valor_centavos, data_fim_prevista, situacao, fornecedores(nome)',
+        'id, descricao, centro_codigo, valor_centavos, data_fim_prevista, situacao, fornecedores(nome), medicoes(id, numero, data, percentual_acumulado, valor_centavos, contas_pagar(cancelada_em))',
       )
       .eq('empreendimento_id', id)
       .order('data_inicio'),
@@ -289,22 +290,55 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
           <p className="text-sm text-muted-foreground">Nenhum contrato.</p>
         )}
         <ul className="divide-y">
-          {(contratos ?? []).map((k) => (
-            <li
-              key={k.id}
-              className="flex flex-wrap items-baseline justify-between gap-2 py-3 text-sm"
-            >
-              <span>
-                <span className="font-medium">{k.descricao}</span>
-                <span className="text-muted-foreground">
-                  {' '}
-                  · {k.fornecedores?.nome} · {nome(k.centro_codigo)} · até{' '}
-                  {formatarData(k.data_fim_prevista)}
-                </span>
-              </span>
-              <span>{formatarMoeda(arredondarCentavos(String(k.valor_centavos)))}</span>
-            </li>
-          ))}
+          {(contratos ?? []).map((k) => {
+            const medicoes = k.medicoes
+              .filter((m) => !m.contas_pagar?.cancelada_em)
+              .sort((a, b) => a.numero - b.numero)
+            const executado = medicoes.at(-1)?.percentual_acumulado ?? 0
+            const executadoPct = Number(executado) * 100
+            return (
+              <li key={k.id} className="flex flex-col gap-2 py-3 text-sm">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span>
+                    <span className="font-medium">{k.descricao}</span>
+                    <span className="text-muted-foreground">
+                      {' '}
+                      · {k.fornecedores?.nome} · {nome(k.centro_codigo)} · até{' '}
+                      {formatarData(k.data_fim_prevista)}
+                    </span>
+                  </span>
+                  <span>{formatarMoeda(arredondarCentavos(String(k.valor_centavos)))}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div
+                    role="progressbar"
+                    aria-label={`Execução de ${k.descricao}`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(executadoPct)}
+                    className="h-2 w-32 overflow-hidden rounded-full bg-muted"
+                  >
+                    <div className="h-full bg-primary" style={{ width: `${executadoPct}%` }} />
+                  </div>
+                  <span>
+                    {formatarPercentual(String(executado), 2)} executado
+                    {medicoes.length > 0 &&
+                      ` · ${medicoes.length} medição(ões), última em ${formatarData(medicoes.at(-1)!.data)}`}
+                  </span>
+                </div>
+                {podeEditar && k.situacao === 'vigente' && executadoPct < 100 && (
+                  <details>
+                    <summary className="cursor-pointer text-xs font-medium">
+                      Registrar medição
+                    </summary>
+                    <div className="mt-3">
+                      <FormularioMedicao empreendimentoId={id} contratoId={k.id} hoje={hoje} />
+                    </div>
+                  </details>
+                )}
+              </li>
+            )
+          })}
         </ul>
       </Cartao>
 

@@ -325,3 +325,27 @@ export async function estornarPagamento(db: ClienteBanco, pagamentoId: string, m
   falhar(error)
   if (!data?.length) throw new ErroAplicacao('Pagamento não encontrado ou já estornado.')
 }
+
+/** Registra a medição pelo percentual acumulado; o banco calcula o valor e cria a conta. */
+export async function registrarMedicao(
+  db: ClienteBanco,
+  m: {
+    contratoId: string
+    data: string
+    percentualAcumulado: string
+    vencimento: string
+    documento: string | null
+    observacao: string | null
+  },
+): Promise<string> {
+  const { data, error } = await db.rpc('registrar_medicao', {
+    p_contrato: m.contratoId,
+    p_data: m.data,
+    p_percentual_acumulado: Number(m.percentualAcumulado),
+    p_vencimento: m.vencimento,
+    ...(m.documento ? { p_documento: m.documento } : {}),
+    ...(m.observacao ? { p_observacao: m.observacao } : {}),
+  })
+  falhar(error)
+  return data!
+}
