@@ -7,6 +7,11 @@ export const metadata: Metadata = { title: 'Configurações' }
 
 const SECOES = [
   {
+    href: '/configuracoes/implantacao',
+    titulo: 'Implantação',
+    texto: 'O que já está pronto na sua loteadora e o que falta configurar.',
+  },
+  {
     href: '/configuracoes/membros',
     titulo: 'Membros e convites',
     texto: 'Quem acessa, com qual papel e em qual escopo.',
