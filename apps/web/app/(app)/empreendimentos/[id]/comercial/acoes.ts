@@ -1,6 +1,6 @@
 'use server'
 
-import { decidirAprovacaoDesconto, publicarTabelaPreco } from '@norteia/aplicacao'
+import { decidirAprovacaoDesconto, decidirProposta, publicarTabelaPreco } from '@norteia/aplicacao'
 import { lerMoeda } from '@norteia/dominio'
 import { Decimal } from '@norteia/motor-financeiro'
 import { revalidatePath } from 'next/cache'
@@ -67,4 +67,25 @@ export async function decidirDesconto(
   }
   revalidatePath(`/empreendimentos/${empreendimentoId}/comercial`)
   return { ok: aprovar ? 'Desconto aprovado.' : 'Desconto recusado.' }
+}
+
+/** Aceita ou recusa uma proposta; a aceita segue para o registro da venda. */
+export async function decidirPropostaAcao(
+  empreendimentoId: string,
+  propostaId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  const aceitar = form.get('decisao') === 'aprovar'
+  const motivo = String(form.get('motivo') ?? '').trim()
+  try {
+    await decidirProposta(ctx.db, propostaId, aceitar, motivo || undefined)
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidatePath(`/empreendimentos/${empreendimentoId}`, 'layout')
+  return {
+    ok: aceitar ? 'Proposta aceita. Registre a venda pelo link da proposta.' : 'Proposta recusada.',
+  }
 }

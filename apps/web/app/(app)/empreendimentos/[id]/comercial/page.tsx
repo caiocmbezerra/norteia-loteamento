@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Cartao, Indicador, TituloPagina } from '@/components/ui/cartao'
 import { Alerta } from '@/components/ui/formulario'
 import { exigirContexto, temPapel } from '@/lib/contexto'
-import { DecisaoDesconto } from './decisao-desconto'
+import { hojeSaoPaulo } from '@/lib/datas'
+import { decidirDesconto, decidirPropostaAcao } from './acoes'
+import { Decisao } from './decisao'
 
 export const metadata: Metadata = { title: 'Comercial' }
 
@@ -38,35 +40,50 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
     'socio_leitura',
   )
 
-  const [{ data: vendas }, { data: reservas }, { data: lotes }, { data: pedidos }] =
-    await Promise.all([
-      ctx.db
-        .from('vendas')
-        .select(
-          'id, data_venda, preco_centavos, comissao_percentual, comissao_modo, lote_id, lotes(numero, quadras(codigo)), corretores(nome)',
-        )
-        .eq('empreendimento_id', id)
-        .eq('situacao', 'ativa')
-        .order('data_venda', { ascending: false }),
-      ctx.db
-        .from('reservas')
-        .select(
-          'id, cliente_nome, expira_em, lote_id, lotes(numero, quadras(codigo)), corretores(nome)',
-        )
-        .eq('empreendimento_id', id)
-        .eq('situacao', 'ativa')
-        .gt('expira_em', new Date().toISOString())
-        .order('expira_em'),
-      ctx.db.from('lotes').select('status, preco_base_centavos').eq('empreendimento_id', id),
-      ctx.db
-        .from('aprovacoes_desconto')
-        .select(
-          'id, situacao, preco_tabela_centavos, preco_centavos, desconto, limite, justificativa, valida_ate, criado_em, lote_id, lotes(numero, quadras(codigo))',
-        )
-        .eq('empreendimento_id', id)
-        .in('situacao', ['pendente', 'aprovada'])
-        .order('criado_em'),
-    ])
+  const [
+    { data: vendas },
+    { data: reservas },
+    { data: lotes },
+    { data: pedidos },
+    { data: propostas },
+  ] = await Promise.all([
+    ctx.db
+      .from('vendas')
+      .select(
+        'id, data_venda, preco_centavos, comissao_percentual, comissao_modo, lote_id, lotes(numero, quadras(codigo)), corretores(nome)',
+      )
+      .eq('empreendimento_id', id)
+      .eq('situacao', 'ativa')
+      .order('data_venda', { ascending: false }),
+    ctx.db
+      .from('reservas')
+      .select(
+        'id, cliente_nome, expira_em, lote_id, lotes(numero, quadras(codigo)), corretores(nome)',
+      )
+      .eq('empreendimento_id', id)
+      .eq('situacao', 'ativa')
+      .gt('expira_em', new Date().toISOString())
+      .order('expira_em'),
+    ctx.db.from('lotes').select('status, preco_base_centavos').eq('empreendimento_id', id),
+    ctx.db
+      .from('aprovacoes_desconto')
+      .select(
+        'id, situacao, preco_tabela_centavos, preco_centavos, desconto, limite, justificativa, valida_ate, criado_em, lote_id, lotes(numero, quadras(codigo))',
+      )
+      .eq('empreendimento_id', id)
+      .in('situacao', ['pendente', 'aprovada'])
+      .order('criado_em'),
+    ctx.db
+      .from('propostas')
+      .select(
+        'id, situacao, cliente_nome, preco_centavos, entrada_centavos, parcelas, valida_ate, observacao, lote_id, lotes(numero, quadras(codigo)), corretores(nome)',
+      )
+      .eq('empreendimento_id', id)
+      .in('situacao', ['aberta', 'aceita'])
+      .order('criado_em'),
+  ])
+  const podeRegistrar = temPapel(ctx, 'dono', 'comercial_gestor')
+  const hoje = hojeSaoPaulo()
   const podeAprovar = temPapel(ctx, 'dono')
 
   const lista = vendas ?? []
@@ -106,6 +123,65 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
           : {})}
       />
 
+      {(propostas ?? []).length > 0 && (
+        <Cartao className="flex flex-col gap-3">
+          <h2 className="font-semibold">Propostas</h2>
+          <ul className="divide-y">
+            {(propostas ?? []).map((p) => {
+              const vencida = p.situacao === 'aberta' && p.valida_ate < hoje
+              return (
+                <li key={p.id} className="flex flex-col gap-2 py-3 text-sm">
+                  <span>
+                    <Link
+                      href={`/empreendimentos/${id}/lotes/${p.lote_id}`}
+                      className="font-medium text-primary underline underline-offset-4"
+                    >
+                      {nomeLote(p.lotes)}
+                    </Link>{' '}
+                    · {p.cliente_nome} · {moeda(p.preco_centavos)}{' '}
+                    {p.parcelas === 0
+                      ? 'à vista'
+                      : `(${moeda(p.entrada_centavos)} + ${p.parcelas} parcelas)`}{' '}
+                    · {p.corretores?.nome ?? 'sem corretor'}
+                  </span>
+                  {p.observacao && <span className="text-muted-foreground">“{p.observacao}”</span>}
+                  {p.situacao === 'aceita' ? (
+                    podeRegistrar ? (
+                      <Button asChild size="sm" className="self-start">
+                        <Link
+                          href={`/empreendimentos/${id}/lotes/${p.lote_id}/vender?proposta=${p.id}`}
+                        >
+                          Registrar venda da proposta
+                        </Link>
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Aceita; aguardando o registro da venda.
+                      </span>
+                    )
+                  ) : vencida ? (
+                    <span className="text-xs text-muted-foreground">
+                      Vencida em {formatarData(p.valida_ate)}.
+                    </span>
+                  ) : podeRegistrar ? (
+                    <Decisao
+                      acao={decidirPropostaAcao.bind(null, id, p.id)}
+                      id={p.id}
+                      rotulo={nomeLote(p.lotes)}
+                      aceitar="Aceitar"
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      Aguardando a gestão; vale até {formatarData(p.valida_ate)}.
+                    </span>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </Cartao>
+      )}
+
       {(pedidos ?? []).length > 0 && (
         <Cartao className="flex flex-col gap-3">
           <h2 className="font-semibold">Descontos acima do limite</h2>
@@ -129,9 +205,9 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
                     Aprovado; vale para venda até {formatarData(p.valida_ate!)}.
                   </span>
                 ) : podeAprovar ? (
-                  <DecisaoDesconto
-                    empreendimentoId={id}
-                    aprovacaoId={p.id}
+                  <Decisao
+                    acao={decidirDesconto.bind(null, id, p.id)}
+                    id={p.id}
                     rotulo={nomeLote(p.lotes)}
                   />
                 ) : (

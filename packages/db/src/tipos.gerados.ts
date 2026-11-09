@@ -2688,6 +2688,130 @@ export type Database = {
         }
         Relationships: []
       }
+      propostas: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          cliente_cpf: string | null
+          cliente_email: string | null
+          cliente_nome: string
+          cliente_telefone: string | null
+          corretor_id: string | null
+          criado_em: string
+          criado_por: string | null
+          decidido_em: string | null
+          decidido_por: string | null
+          empreendimento_id: string
+          entrada_centavos: number
+          id: string
+          juros_mensal: number
+          lote_id: string
+          motivo: string | null
+          observacao: string | null
+          parcelas: number
+          preco_centavos: number
+          primeira_parcela_em: string | null
+          sistema: string
+          situacao: string
+          tenant_id: string
+          valida_ate: string
+          venda_id: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cliente_cpf?: string | null
+          cliente_email?: string | null
+          cliente_nome: string
+          cliente_telefone?: string | null
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
+          empreendimento_id: string
+          entrada_centavos: number
+          id?: string
+          juros_mensal: number
+          lote_id: string
+          motivo?: string | null
+          observacao?: string | null
+          parcelas: number
+          preco_centavos: number
+          primeira_parcela_em?: string | null
+          sistema: string
+          situacao?: string
+          tenant_id: string
+          valida_ate: string
+          venda_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cliente_cpf?: string | null
+          cliente_email?: string | null
+          cliente_nome?: string
+          cliente_telefone?: string | null
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
+          empreendimento_id?: string
+          entrada_centavos?: number
+          id?: string
+          juros_mensal?: number
+          lote_id?: string
+          motivo?: string | null
+          observacao?: string | null
+          parcelas?: number
+          preco_centavos?: number
+          primeira_parcela_em?: string | null
+          sistema?: string
+          situacao?: string
+          tenant_id?: string
+          valida_ate?: string
+          venda_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'propostas_tenant_id_corretor_id_fkey'
+            columns: ['tenant_id', 'corretor_id']
+            isOneToOne: false
+            referencedRelation: 'corretores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'propostas_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'propostas_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'propostas_tenant_id_lote_id_fkey'
+            columns: ['tenant_id', 'lote_id']
+            isOneToOne: false
+            referencedRelation: 'lotes'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'propostas_tenant_id_venda_id_fkey'
+            columns: ['tenant_id', 'venda_id']
+            isOneToOne: false
+            referencedRelation: 'vendas'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       quadras: {
         Row: {
           atualizado_em: string
@@ -3523,6 +3647,7 @@ export type Database = {
         Returns: number
       }
       cancelar_cobranca: { Args: { p_cobranca: string; p_motivo: string }; Returns: undefined }
+      cancelar_proposta: { Args: { p_motivo: string; p_proposta: string }; Returns: undefined }
       cancelar_reserva: { Args: { p_motivo: string; p_reserva: string }; Returns: undefined }
       ceder_contrato: {
         Args: { p_cessionario: string; p_contrato: string; p_data: string; p_motivo: string }
@@ -3568,6 +3693,7 @@ export type Database = {
         Args: { p_dados: Json; p_empreendimento: string; p_lotes?: string[]; p_permutante: string }
         Returns: string
       }
+      criar_proposta: { Args: { p_lote: string; p_proposta: Json }; Returns: string }
       criar_tenant: {
         Args: { p_cnpj?: string; p_nome: string; p_razao_social?: string }
         Returns: string
@@ -3575,6 +3701,10 @@ export type Database = {
       dados_dimob: { Args: { p_ano: number; p_spe: string }; Returns: Json }
       decidir_aprovacao_desconto: {
         Args: { p_aprovacao: string; p_aprovar: boolean; p_motivo?: string }
+        Returns: undefined
+      }
+      decidir_proposta: {
+        Args: { p_aceitar: boolean; p_motivo?: string; p_proposta: string }
         Returns: undefined
       }
       definir_parametro: {

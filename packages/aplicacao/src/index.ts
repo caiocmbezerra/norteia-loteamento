@@ -26,6 +26,10 @@ export {
 export {
   type CondicoesPreco,
   type DadosComprador,
+  type DadosProposta,
+  cancelarProposta,
+  criarProposta,
+  decidirProposta,
   condicoesDePreco,
   type DadosVenda,
   obterComprador,

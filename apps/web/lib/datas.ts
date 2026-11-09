@@ -14,3 +14,9 @@ export function mesAtualSaoPaulo(agora = new Date()): string {
 export function hojeSaoPaulo(agora = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(agora)
 }
+
+/** Soma dias a uma data AAAA-MM-DD (calendário, sem fuso). */
+export function somarDias(data: string, dias: number): string {
+  const [a, m, d] = data.split('-').map(Number) as [number, number, number]
+  return new Date(Date.UTC(a, m - 1, d + dias)).toISOString().slice(0, 10)
+}

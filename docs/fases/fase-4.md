@@ -23,7 +23,8 @@
 
 - Planta de lotes (D-008, D-099): imagem ou PDF da planta como fundo (o PDF vira imagem no navegador), contorno de cada lote desenhado com toques; o mapa do empreendimento abre na planta com as cores da situação, filtros e zoom, e mantém a grade por quadra.
 
+- Proposta como etapa separada (D-100): o corretor (ou a gestão) propõe as condições com simulação e validade; a gestão aceita ou recusa com motivo; a aceita abre a venda já preenchida e vira "convertida" quando a venda do lote é registrada (as abertas do lote são encerradas). O corretor só vê as próprias propostas (RN-C07).
+
 ## Pendente (4b)
 
-- Proposta como etapa separada (hoje a venda já registra as condições).
 - Metas comerciais e leads simples.
