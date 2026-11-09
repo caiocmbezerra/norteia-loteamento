@@ -23,5 +23,5 @@
 | Critério                                                                              | Situação                                                                      |
 | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Importação de uma carteira real de piloto conciliada com o saldo do sistema de origem | 🟡 conciliação obrigatória pronta; falta a carteira real de um cliente piloto |
-| 50 perguntas de avaliação com números idênticos aos do motor, citando a origem        | ⏳ 8b                                                                         |
-| Nenhuma ferramenta de IA acessa dados fora das permissões do usuário                  | ⏳ 8b                                                                         |
+| 50 perguntas de avaliação com números idênticos aos do motor, citando a origem        | 🟡 conjunto e critério prontos; rodar com a chave ativa (custa tokens)        |
+| Nenhuma ferramenta de IA acessa dados fora das permissões do usuário                  | ✅ ferramentas usam o cliente do usuário (RLS, já testada no pgTAP)           |
