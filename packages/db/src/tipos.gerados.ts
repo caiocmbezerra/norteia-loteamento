@@ -3413,6 +3413,10 @@ export type Database = {
         Returns: string
       }
       importar_indices: { Args: Record<PropertyKey, never>; Returns: number }
+      inadimplencia_historico: {
+        Args: { p_datas: string[]; p_empreendimento: string }
+        Returns: Json
+      }
       informe_pagamentos: { Args: { p_ano: number; p_contrato: string }; Returns: Json }
       meu_portal: { Args: { p_hoje?: string }; Returns: Json }
       obra_portal: { Args: { p_contrato: string }; Returns: Json }

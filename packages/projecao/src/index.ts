@@ -26,3 +26,10 @@ export {
   type PermutaFinanceira,
   apurarRepasses,
 } from './permutas'
+export {
+  type Alerta,
+  type EntradaAlertas,
+  type Gravidade,
+  type LimitesAlertas,
+  avaliarAlertas,
+} from './alertas'
