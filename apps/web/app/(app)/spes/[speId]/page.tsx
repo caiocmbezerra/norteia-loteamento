@@ -48,12 +48,20 @@ export default async function PaginaSpe({ params }: { params: Promise<{ speId: s
         subtitulo="Sócios, participações, aportes, distribuições e resultado rateado."
         acoes={
           temPapel(ctx, 'dono', 'financeiro', 'contador') && (
-            <Link
-              href={`/spes/${speId}/dimob`}
-              className="rounded-md border px-3 py-2 text-sm hover:bg-muted"
-            >
-              DIMOB
-            </Link>
+            <>
+              <Link
+                href={`/spes/${speId}/contabil`}
+                className="rounded-md border px-3 py-2 text-sm hover:bg-muted"
+              >
+                Contábil
+              </Link>
+              <Link
+                href={`/spes/${speId}/dimob`}
+                className="rounded-md border px-3 py-2 text-sm hover:bg-muted"
+              >
+                DIMOB
+              </Link>
+            </>
           )
         }
       />

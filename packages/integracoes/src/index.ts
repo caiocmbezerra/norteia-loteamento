@@ -9,3 +9,4 @@ export {
   textoDoDocumento,
 } from './documentos'
 export * from './dimob'
+export * from './contabil'

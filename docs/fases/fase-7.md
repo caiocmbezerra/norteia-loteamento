@@ -18,9 +18,13 @@
 
 - Informe de pagamentos por ano (DOCX no modelo do cliente, padrão provisório): pagamentos do ano, total do ano e acumulado até 31/12; baixado na tela do contrato e no portal do comprador.
 
+## Feito (7c — contábil)
+
+- Configurações → Contabilidade: plano de contas (colado do contador), regra por evento (débito, crédito, histórico) e formato do arquivo (separador, decimal, data, colunas).
+- SPE → Contábil: caixa × competência por mês, pendências de regra, prévia e arquivo CSV dos lançamentos.
+
 ## A fazer
 
-- 7c: exportação contábil configurável por cliente; visão caixa × competência.
 - 7d: parâmetros IBS/CBS com vigência; PWA (manifesto e ícone); andamento da obra e documentos no portal.
 
 ## Critérios

@@ -131,3 +131,4 @@ export {
   temPortal,
 } from './portal'
 export * from './fiscal'
+export * from './contabil'
