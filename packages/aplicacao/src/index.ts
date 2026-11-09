@@ -23,6 +23,7 @@ export {
   estornarPagamento,
   registrarConta,
   registrarContrato,
+  registrarMedicao,
   registrarPagamento,
 } from './custos'
 export {

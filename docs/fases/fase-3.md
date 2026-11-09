@@ -20,8 +20,9 @@
 
 - Anexo de notas, boletos e recibos às contas a pagar (D-102): o arquivo lido no lançamento fica anexado; dá para anexar depois; abre por link assinado curto.
 
+- Medições por percentual acumulado executado (D-103): o banco calcula o valor da diferença para o acumulado anterior e cria a conta a pagar; a soma das medições fecha exatamente com o valor do contrato; barra de execução por contrato.
+
 ## Pendente
 
-- Medições de contrato com percentual executado (hoje a medição é a própria conta a pagar).
 - Rateio de despesas comuns entre empreendimentos.
 - Telas para criar centros de custo próprios, encerrar contrato e cancelar conta (o banco já suporta).
