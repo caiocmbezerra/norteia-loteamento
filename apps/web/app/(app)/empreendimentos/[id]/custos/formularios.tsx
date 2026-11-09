@@ -1,10 +1,18 @@
 'use client'
 
-import { useActionState, useEffect, useRef } from 'react'
+import type { SugestaoConta } from '@norteia/aplicacao'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alerta, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/formulario'
 import type { EstadoFormulario } from '@/lib/acao'
-import { estornar, novaConta, novoContrato, pagar, salvarItemOrcamento } from './acoes'
+import {
+  estornar,
+  lerDocumentoConta,
+  novaConta,
+  novoContrato,
+  pagar,
+  salvarItemOrcamento,
+} from './acoes'
 
 type Acao = (estado: EstadoFormulario, form: FormData) => Promise<EstadoFormulario>
 
@@ -131,9 +139,58 @@ export function FormularioConta({
   fornecedores: Opcao[]
 }) {
   const f = useFormulario(novaConta.bind(null, empreendimentoId))
+  const [sug, setSug] = useState<SugestaoConta | null>(null)
+  const [versao, setVersao] = useState(0)
+  const [erroLeitura, setErroLeitura] = useState<string | null>(null)
+  const [lendo, iniciar] = useTransition()
+  // Valor do formulário: o que o usuário digitou, senão o que veio da leitura do documento.
+  const v = (k: keyof SugestaoConta) =>
+    f.v(k) ?? (sug?.[k] as string | null | undefined) ?? undefined
+
+  function ler(arq: File) {
+    setErroLeitura(null)
+    iniciar(async () => {
+      const bytes = new Uint8Array(await arq.arrayBuffer())
+      let bin = ''
+      for (let i = 0; i < bytes.length; i += 0x8000)
+        bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+      const r = await lerDocumentoConta({ base64: btoa(bin), tipo: arq.type })
+      if (r.erro) setErroLeitura(r.erro)
+      if (r.sugestao) {
+        setSug(r.sugestao)
+        setVersao((n) => n + 1)
+      }
+    })
+  }
+
   return (
-    <form ref={f.ref} action={f.despachar} className="flex flex-col gap-3" noValidate>
+    <form key={versao} ref={f.ref} action={f.despachar} className="flex flex-col gap-3" noValidate>
       <Mensagens estado={f.estado} />
+      <Campo
+        id="conta-documento"
+        rotulo="Ler nota, boleto ou recibo (opcional)"
+        ajuda="PDF ou foto. Os campos são preenchidos para você conferir antes de registrar."
+      >
+        <Entrada
+          id="conta-documento"
+          type="file"
+          accept="application/pdf,image/jpeg,image/png,image/webp"
+          disabled={lendo}
+          onChange={(e) => {
+            const arq = e.currentTarget.files?.[0]
+            if (arq) ler(arq)
+          }}
+        />
+      </Campo>
+      {lendo && <Alerta tipo="aviso">Lendo o documento…</Alerta>}
+      {erroLeitura && <Alerta>{erroLeitura}</Alerta>}
+      {sug && (
+        <Alerta tipo="aviso">
+          Confira os campos lidos (confiança {sug.confianca}).
+          {sug.fornecedorNovo && ` Fornecedor não cadastrado: ${sug.fornecedorNovo}.`}
+          {sug.avisos.length > 0 && ` ${sug.avisos.join(' ')}`}
+        </Alerta>
+      )}
       <Campo
         id="conta-contratoId"
         rotulo="Contrato"
@@ -148,7 +205,7 @@ export function FormularioConta({
       </Campo>
       <div className="grid gap-3 sm:grid-cols-2">
         <Campo id="conta-centro" rotulo="Centro de custo (avulsa)" erro={f.er.centro}>
-          <Selecao {...aria('conta', 'centro', f.er.centro)} defaultValue={f.v('centro') ?? ''}>
+          <Selecao {...aria('conta', 'centro', f.er.centro)} defaultValue={v('centro') ?? ''}>
             <Opcoes opcoes={centros} vazio="—" />
           </Selecao>
         </Campo>
@@ -156,7 +213,7 @@ export function FormularioConta({
           <Selecao
             id="conta-fornecedorId"
             name="fornecedorId"
-            defaultValue={f.v('fornecedorId') ?? ''}
+            defaultValue={v('fornecedorId') ?? ''}
           >
             <Opcoes opcoes={fornecedores} vazio="—" />
           </Selecao>
@@ -165,7 +222,7 @@ export function FormularioConta({
       <Campo id="conta-descricao" rotulo="Descrição" erro={f.er.descricao}>
         <Entrada
           {...aria('conta', 'descricao', f.er.descricao)}
-          defaultValue={f.v('descricao')}
+          defaultValue={v('descricao')}
           placeholder="Ex.: Medição 1 — março"
         />
       </Campo>
@@ -174,21 +231,21 @@ export function FormularioConta({
           <Entrada
             {...aria('conta', 'valor', f.er.valor)}
             inputMode="decimal"
-            defaultValue={f.v('valor')}
+            defaultValue={v('valor')}
           />
         </Campo>
         <Campo id="conta-vencimento" rotulo="Vencimento" erro={f.er.vencimento}>
           <Entrada
             {...aria('conta', 'vencimento', f.er.vencimento)}
             type="date"
-            defaultValue={f.v('vencimento')}
+            defaultValue={v('vencimento')}
           />
         </Campo>
         <Campo id="conta-documentoNumero" rotulo="Nº da nota (opcional)">
           <Entrada
             id="conta-documentoNumero"
             name="documentoNumero"
-            defaultValue={f.v('documentoNumero')}
+            defaultValue={v('documentoNumero')}
           />
         </Campo>
       </div>

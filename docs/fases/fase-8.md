@@ -18,10 +18,13 @@
 - Menu Alertas: aporte necessário nos próximos meses, custos e exposição acima do plano e inadimplência alta ou crescendo, por empreendimento, com gravidade (crítico ou atenção) e link para a tela de origem.
 - Limites por cliente em Parâmetros (`alertas.*`); o assistente também responde sobre os alertas.
 
+## Feito (8d — leitura de notas)
+
+- Conta a pagar: "Ler nota, boleto ou recibo" (PDF ou foto) preenche fornecedor, valor, vencimento, número, descrição e centro de custo para conferência; fornecedor reconhecido pelo CNPJ ou nome, ou apontado como não cadastrado.
+
 ## A fazer
 
 - Avisos de alerta por e-mail/WhatsApp (depende das contas Resend e WhatsApp Business).
-- 8d: leitura de notas e recibos → sugestão de lançamento.
 
 ## Critérios
 

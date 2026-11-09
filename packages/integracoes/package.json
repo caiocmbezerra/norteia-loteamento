@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./importacao": "./src/importacao.ts",
-    "./assistente": "./src/assistente.ts"
+    "./assistente": "./src/assistente.ts",
+    "./leitura-documento": "./src/leitura-documento.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p .",
@@ -17,6 +18,7 @@
     "@anthropic-ai/sdk": "1.6.0",
     "@norteia/dominio": "workspace:*",
     "docxtemplater": "3.71.1",
-    "pizzip": "3.3.0"
+    "pizzip": "3.3.0",
+    "zod": "4.6.7"
   }
 }

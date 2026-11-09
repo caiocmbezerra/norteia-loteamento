@@ -7,8 +7,11 @@ import {
   registrarConta,
   registrarContrato,
   registrarPagamento,
+  type SugestaoConta,
+  sugerirContaDeDocumento,
   traduzirErroBanco,
 } from '@norteia/aplicacao'
+import { clienteLeitura } from '@norteia/integracoes/leitura-documento'
 import { lerMoeda } from '@norteia/dominio'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
@@ -191,4 +194,24 @@ export async function salvarItemOrcamento(
   revalidatePath(caminho(empreendimentoId))
   revalidatePath(`${caminho(empreendimentoId)}/orcamento`)
   return { ok: itemId ? 'Item atualizado.' : 'Item incluído.' }
+}
+
+/** Lê nota, boleto ou recibo e devolve a sugestão para o formulário (nada é gravado). */
+export async function lerDocumentoConta(arquivo: {
+  base64: string
+  tipo: string
+}): Promise<{ sugestao?: SugestaoConta; erro?: string }> {
+  const ctx = await exigirContexto()
+  if (!process.env.ANTHROPIC_API_KEY)
+    return { erro: 'A leitura automática ainda não foi ativada nesta instalação; preencha à mão.' }
+  if (arquivo.base64.length > 14_000_000) return { erro: 'Arquivo grande demais (até 10 MB).' }
+  try {
+    return {
+      sugestao: await sugerirContaDeDocumento(ctx.db, ctx.tenant.id, arquivo, clienteLeitura()),
+    }
+  } catch (e) {
+    if (e instanceof ErroAplicacao) return { erro: e.message }
+    console.error('leitura de documento', e)
+    return { erro: 'Não foi possível ler o documento agora; preencha à mão.' }
+  }
 }
