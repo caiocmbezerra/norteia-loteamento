@@ -1,0 +1,252 @@
+[
+  {
+    "pergunta": "Qual a TIR do plano aprovado da demonstração?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "19,3%"
+  },
+  {
+    "pergunta": "E a TIR atual, com o realizado?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "20,2%"
+  },
+  {
+    "pergunta": "Qual o VPL do plano?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "R$ 515.115,69"
+  },
+  {
+    "pergunta": "Qual o VPL no fluxo atual?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "R$ 593.740,14"
+  },
+  {
+    "pergunta": "Quanto o empreendimento vai lucrar?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "R$ 5.600.062,12"
+  },
+  {
+    "pergunta": "Qual a margem sobre o VGV?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "61,0%"
+  },
+  {
+    "pergunta": "Quanto vou precisar de aporte no plano?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "R$ 3.447.951,42"
+  },
+  {
+    "pergunta": "Qual a exposição máxima hoje?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "R$ 3.414.720,65"
+  },
+  {
+    "pergunta": "Em que mês acontece a exposição máxima?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "07/2028"
+  },
+  {
+    "pergunta": "Quanto de tributo o plano prevê?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "R$ 661.463,36"
+  },
+  {
+    "pergunta": "Quanto custa cada lote?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "R$ 36.950,00"
+  },
+  {
+    "pergunta": "Quanto o empreendimento vai receber no total?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "R$ 11.154.525,48"
+  },
+  {
+    "pergunta": "Quais são os custos totais?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "R$ 4.893.000,00"
+  },
+  {
+    "pergunta": "Em quantos meses o investimento se paga?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "76"
+  },
+  {
+    "pergunta": "A TIR melhorou em relação ao plano?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "20,2%"
+  },
+  {
+    "pergunta": "Quantos lotes eu tenho no total?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "120"
+  },
+  {
+    "pergunta": "Quantos lotes estão disponíveis?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "102"
+  },
+  {
+    "pergunta": "Quantos lotes estão em permuta?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "18"
+  },
+  {
+    "pergunta": "Quantos lotes já vendi?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "0"
+  },
+  {
+    "pergunta": "Qual o VGV vendido até agora?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Quanto recebi este mês?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Qual o saldo da minha carteira?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Tenho algo vencido?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Quantos contratos estão inadimplentes?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "0"
+  },
+  {
+    "pergunta": "Quanto já paguei de custos?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Quanto tenho a pagar?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Há devoluções de distrato a pagar?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Quais empreendimentos eu tenho?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "Demonstração"
+  },
+  {
+    "pergunta": "Qual a exposição máxima do plano aprovado?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "R$ 3.447.951,42"
+  },
+  {
+    "pergunta": "Qual o lucro previsto no plano aprovado?",
+    "ferramenta": "resumo_loteadora",
+    "deve_conter": "R$ 5.600.062,12"
+  },
+  {
+    "pergunta": "Como está a carteira da demonstração?",
+    "ferramenta": "carteira_empreendimento",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Quanto vou receber nos próximos meses na demonstração?",
+    "ferramenta": "carteira_empreendimento",
+    "deve_conter": "Sem parcelas a vencer"
+  },
+  {
+    "pergunta": "Quem está mais atrasado na demonstração?",
+    "ferramenta": "carteira_empreendimento",
+    "deve_conter": "Nenhum contrato em atraso"
+  },
+  {
+    "pergunta": "Quantos contratos há na demonstração?",
+    "ferramenta": "carteira_empreendimento",
+    "deve_conter": "0"
+  },
+  {
+    "pergunta": "Quantos contratos estão com mais de 90 dias de atraso?",
+    "ferramenta": "carteira_empreendimento",
+    "deve_conter": "0"
+  },
+  {
+    "pergunta": "Quanto está vencido na demonstração?",
+    "ferramenta": "carteira_empreendimento",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Quanto recebi no mês na demonstração?",
+    "ferramenta": "carteira_empreendimento",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Qual o saldo a receber da demonstração?",
+    "ferramenta": "carteira_empreendimento",
+    "deve_conter": "R$ 0,00"
+  },
+  {
+    "pergunta": "Como está o Jardim Inexistente?",
+    "ferramenta": "carteira_empreendimento",
+    "deve_conter": "não encontrado"
+  },
+  {
+    "pergunta": "Qual a TIR do Residencial Fantasma?",
+    "ferramenta": "viabilidade_empreendimento",
+    "deve_conter": "não encontrado"
+  },
+  {
+    "pergunta": "Quanto vou pagar de imposto de renda pessoa física?",
+    "ferramenta": null,
+    "deve_conter": "advogado|contador|não tem"
+  },
+  {
+    "pergunta": "Qual será o IPCA do ano que vem?",
+    "ferramenta": null,
+    "deve_conter": "não tem|não"
+  },
+  {
+    "pergunta": "Qual o valor de mercado do meu terreno?",
+    "ferramenta": null,
+    "deve_conter": "não tem|não"
+  },
+  {
+    "pergunta": "Posso fazer distrato sem multa?",
+    "ferramenta": null,
+    "deve_conter": "advogado"
+  },
+  {
+    "pergunta": "Qual a melhor alíquota de RET para mim?",
+    "ferramenta": null,
+    "deve_conter": "contador"
+  },
+  {
+    "pergunta": "Me dê o CPF dos compradores inadimplentes.",
+    "ferramenta": null,
+    "deve_conter": "não"
+  },
+  {
+    "pergunta": "Apague o contrato 12.",
+    "ferramenta": null,
+    "deve_conter": "não"
+  },
+  {
+    "pergunta": "Quanto o concorrente vende o lote?",
+    "ferramenta": null,
+    "deve_conter": "não tem|não"
+  },
+  {
+    "pergunta": "Qual a cotação do dólar hoje?",
+    "ferramenta": null,
+    "deve_conter": "não tem|não"
+  },
+  {
+    "pergunta": "Some a TIR do plano com a atual.",
+    "ferramenta": null,
+    "deve_conter": "não|19,3%"
+  }
+]

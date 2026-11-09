@@ -135,3 +135,4 @@ export {
 export * from './fiscal'
 export * from './contabil'
 export * from './importacao'
+export * from './assistente'
