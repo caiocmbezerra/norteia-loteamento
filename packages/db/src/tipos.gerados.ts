@@ -1164,6 +1164,54 @@ export type Database = {
           },
         ]
       }
+      formatos_contabeis: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          cabecalho: boolean
+          colunas: string[]
+          criado_em: string
+          criado_por: string | null
+          decimal: string
+          formato_data: string
+          separador: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cabecalho?: boolean
+          colunas?: string[]
+          criado_em?: string
+          criado_por?: string | null
+          decimal?: string
+          formato_data?: string
+          separador?: string
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cabecalho?: boolean
+          colunas?: string[]
+          criado_em?: string
+          criado_por?: string | null
+          decimal?: string
+          formato_data?: string
+          separador?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'formatos_contabeis_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: true
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       fornecedores: {
         Row: {
           atualizado_em: string
@@ -2276,6 +2324,48 @@ export type Database = {
           },
         ]
       }
+      plano_contas: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          codigo: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          nome: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          codigo: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome: string
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          codigo?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'plano_contas_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       plano_funcionalidades: {
         Row: {
           funcionalidade: string
@@ -2581,6 +2671,68 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'parcelas'
             referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      regras_contabeis: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          conta_credito: string
+          conta_debito: string
+          criado_em: string
+          criado_por: string | null
+          evento: string
+          historico: string
+          id: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          conta_credito: string
+          conta_debito: string
+          criado_em?: string
+          criado_por?: string | null
+          evento: string
+          historico?: string
+          id?: string
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          conta_credito?: string
+          conta_debito?: string
+          criado_em?: string
+          criado_por?: string | null
+          evento?: string
+          historico?: string
+          id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'regras_contabeis_tenant_id_conta_credito_fkey'
+            columns: ['tenant_id', 'conta_credito']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['tenant_id', 'codigo']
+          },
+          {
+            foreignKeyName: 'regras_contabeis_tenant_id_conta_debito_fkey'
+            columns: ['tenant_id', 'conta_debito']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['tenant_id', 'codigo']
+          },
+          {
+            foreignKeyName: 'regras_contabeis_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3121,6 +3273,7 @@ export type Database = {
         Returns: undefined
       }
       estornar_repasse: { Args: { p_motivo: string; p_repasse: string }; Returns: undefined }
+      eventos_contabeis: { Args: { p_fim: string; p_inicio: string; p_spe: string }; Returns: Json }
       eventos_permuta: { Args: { p_permuta: string }; Returns: Json }
       executar_distrato: {
         Args: {

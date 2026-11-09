@@ -27,6 +27,11 @@ const SECOES = [
     texto: 'Contrato, termo de quitação e aditivos em Word, com o seu texto.',
   },
   {
+    href: '/configuracoes/contabilidade',
+    titulo: 'Contabilidade',
+    texto: 'Plano de contas, regras de lançamento e formato do arquivo para o seu contador.',
+  },
+  {
     href: '/configuracoes/integracoes',
     titulo: 'Integrações',
     texto: 'Boleto e Pix pelo Asaas, com baixa automática.',

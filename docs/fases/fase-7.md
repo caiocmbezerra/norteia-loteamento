@@ -18,9 +18,13 @@
 
 - Informe de pagamentos por ano (DOCX no modelo do cliente, padrão provisório): pagamentos do ano, total do ano e acumulado até 31/12; baixado na tela do contrato e no portal do comprador.
 
+## Feito (7c — contábil)
+
+- Configurações → Contabilidade: plano de contas (colado do contador), regra por evento (débito, crédito, histórico) e formato do arquivo (separador, decimal, data, colunas).
+- SPE → Contábil: caixa × competência por mês, pendências de regra, prévia e arquivo CSV dos lançamentos.
+
 ## A fazer
 
-- 7c: exportação contábil configurável por cliente; visão caixa × competência.
 - 7d: parâmetros IBS/CBS com vigência; PWA (manifesto e ícone); andamento da obra e documentos no portal.
 
 ## Critérios
@@ -29,4 +33,4 @@
 | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Comprador acessa e baixa a segunda via em até 3 toques no celular | ✅ e2e `portal.spec.ts` (entrar → enviar → segunda via)                                                    |
 | Arquivo DIMOB validado pelo programa oficial da Receita           | 🟡 gerado no leiaute oficial e testado por posição; falta importar no PGD (Windows) com o contador (PL-20) |
-| Contador de um cliente piloto importa a exportação sem ajuste     | ⏳ 7c                                                                                                      |
+| Contador de um cliente piloto importa a exportação sem ajuste     | 🟡 formato configurável pronto; falta o piloto com o contador (PL-21)                                      |
