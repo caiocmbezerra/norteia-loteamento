@@ -10,6 +10,7 @@ import { centavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { PlantaLotes } from '@/components/planta-lotes'
 import { COR_STATUS } from '@/components/status-lote'
 import { Button } from '@/components/ui/button'
 import { Cartao, Indicador, TituloPagina } from '@/components/ui/cartao'
@@ -28,20 +29,22 @@ export default async function PaginaEmpreendimento({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ status?: string; novo?: string }>
+  searchParams: Promise<{ status?: string; novo?: string; vista?: string }>
 }) {
-  const [{ id }, { status: filtro, novo }] = await Promise.all([params, searchParams])
+  const [{ id }, { status: filtro, novo, vista }] = await Promise.all([params, searchParams])
   const ctx = await exigirContexto()
   const { data: e } = await ctx.db
     .from('empreendimentos')
-    .select('id, nome, municipio, uf, situacao, data_base, data_registro, spes(razao_social)')
+    .select(
+      'id, nome, municipio, uf, situacao, data_base, data_registro, planta_arquivo, planta_largura, planta_altura, spes(razao_social)',
+    )
     .eq('id', id)
     .maybeSingle()
   if (!e) notFound()
 
   const { data: quadras, error } = await ctx.db
     .from('quadras')
-    .select('id, codigo, lotes(id, numero, status, area_m2, preco_base_centavos)')
+    .select('id, codigo, lotes(id, numero, status, area_m2, preco_base_centavos, planta_poligono)')
     .eq('empreendimento_id', id)
     .order('codigo')
   if (error) throw error
@@ -53,6 +56,25 @@ export default async function PaginaEmpreendimento({
   const r = resumirLotes(lotes)
   const statusFiltro = STATUS.find((s) => s === filtro)
   const podeEditar = temPapel(ctx, 'dono', 'engenharia', 'comercial_gestor')
+  const comContorno = lotes.filter((l) => l.planta_poligono).length
+  const planta =
+    e.planta_arquivo && e.planta_largura && e.planta_altura && comContorno > 0
+      ? {
+          url: (await ctx.db.storage.from('plantas').createSignedUrl(e.planta_arquivo, 3600)).data
+            ?.signedUrl,
+          largura: e.planta_largura,
+          altura: e.planta_altura,
+        }
+      : null
+  const verPlanta = !!planta?.url && vista !== 'grade'
+  const sufixo = (s?: StatusLote) =>
+    [s && `status=${s}`, vista === 'grade' && planta?.url && 'vista=grade']
+      .filter(Boolean)
+      .join('&')
+  const hrefFiltro = (s?: StatusLote) => {
+    const q = sufixo(s)
+    return `/empreendimentos/${id}${q ? `?${q}` : ''}`
+  }
 
   return (
     <>
@@ -96,9 +118,14 @@ export default async function PaginaEmpreendimento({
               </Button>
             )}
             {podeEditar && (
-              <Button asChild variant="outline">
-                <Link href={`/empreendimentos/${id}/editar`}>Editar dados</Link>
-              </Button>
+              <>
+                <Button asChild variant="outline">
+                  <Link href={`/empreendimentos/${id}/planta`}>Planta</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={`/empreendimentos/${id}/editar`}>Editar dados</Link>
+                </Button>
+              </>
             )}
           </>
         }
@@ -142,60 +169,122 @@ export default async function PaginaEmpreendimento({
 
       <Cartao className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="font-semibold">Lotes por quadra</h2>
+          <h2 className="font-semibold">{verPlanta ? 'Planta de lotes' : 'Lotes por quadra'}</h2>
+          {planta?.url && (
+            <nav aria-label="Ver os lotes" className="flex gap-1.5">
+              <FiltroLink
+                href={`/empreendimentos/${id}${statusFiltro ? `?status=${statusFiltro}` : ''}`}
+                ativo={verPlanta}
+              >
+                Na planta
+              </FiltroLink>
+              <FiltroLink
+                href={`/empreendimentos/${id}?vista=grade${statusFiltro ? `&status=${statusFiltro}` : ''}`}
+                ativo={!verPlanta}
+              >
+                Por quadra
+              </FiltroLink>
+            </nav>
+          )}
           <nav aria-label="Filtrar por situação" className="flex flex-wrap gap-1.5">
-            <FiltroLink href={`/empreendimentos/${id}`} ativo={!statusFiltro}>
+            <FiltroLink href={hrefFiltro()} ativo={!statusFiltro}>
               Todos ({r.total})
             </FiltroLink>
             {STATUS.filter((s) => r.porStatus[s] > 0).map((s) => (
-              <FiltroLink
-                key={s}
-                href={`/empreendimentos/${id}?status=${s}`}
-                ativo={statusFiltro === s}
-              >
+              <FiltroLink key={s} href={hrefFiltro(s)} ativo={statusFiltro === s}>
                 {ROTULO_STATUS_LOTE[s]} ({r.porStatus[s]})
               </FiltroLink>
             ))}
           </nav>
         </div>
 
-        {todas.map((q) => {
-          const visiveis = q.lotes
-            .filter((l) => !statusFiltro || l.status === statusFiltro)
-            .sort((a, b) => ordenarCodigo(a.numero, b.numero))
-          if (visiveis.length === 0) return null
-          return (
-            <section key={q.id} aria-labelledby={`quadra-${q.id}`} className="flex flex-col gap-2">
-              <h3 id={`quadra-${q.id}`} className="text-sm font-medium text-muted-foreground">
-                Quadra {q.codigo}
-              </h3>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-1.5">
-                {visiveis.map((l) => (
-                  <li key={l.id}>
+        {verPlanta && planta?.url && (
+          <>
+            <PlantaLotes
+              url={planta.url}
+              largura={planta.largura}
+              altura={planta.altura}
+              lotes={todas.flatMap((q) =>
+                q.lotes
+                  .filter((l) => l.planta_poligono && (!statusFiltro || l.status === statusFiltro))
+                  .map((l) => ({
+                    id: l.id,
+                    rotulo: `Quadra ${q.codigo}, lote ${l.numero}`,
+                    status: l.status,
+                    pontos: l.planta_poligono as [number, number][],
+                    href: `/empreendimentos/${id}/lotes/${l.id}`,
+                  })),
+              )}
+            />
+            {comContorno < lotes.length && (
+              <p className="text-sm text-muted-foreground">
+                {lotes.length - comContorno} lote(s) ainda sem contorno na planta: veja{' '}
+                <Link
+                  href={`/empreendimentos/${id}?vista=grade`}
+                  className="text-primary underline underline-offset-4"
+                >
+                  por quadra
+                </Link>
+                {podeEditar && (
+                  <>
+                    {' '}
+                    ou{' '}
                     <Link
-                      href={`/empreendimentos/${id}/lotes/${l.id}`}
-                      className={cn(
-                        'flex min-h-14 flex-col items-center justify-center rounded-md border px-1 py-1.5 text-center transition-transform hover:scale-[1.03] focus-visible:ring-[3px] focus-visible:ring-ring/60',
-                        COR_STATUS[l.status],
-                      )}
+                      href={`/empreendimentos/${id}/planta`}
+                      className="text-primary underline underline-offset-4"
                     >
-                      <span className="sr-only">{`Quadra ${q.codigo}, lote ${l.numero}: ${ROTULO_STATUS_LOTE[l.status]}, ${area.format(l.area_m2)} m²`}</span>
-                      <span aria-hidden="true" className="text-sm font-semibold leading-none">
-                        {l.numero}
-                      </span>
-                      <span
-                        aria-hidden="true"
-                        className="mt-1 text-[0.65rem] leading-none opacity-80"
-                      >
-                        {area.format(l.area_m2)} m²
-                      </span>
+                      desenhe na planta
                     </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )
-        })}
+                  </>
+                )}
+                .
+              </p>
+            )}
+          </>
+        )}
+
+        {!verPlanta &&
+          todas.map((q) => {
+            const visiveis = q.lotes
+              .filter((l) => !statusFiltro || l.status === statusFiltro)
+              .sort((a, b) => ordenarCodigo(a.numero, b.numero))
+            if (visiveis.length === 0) return null
+            return (
+              <section
+                key={q.id}
+                aria-labelledby={`quadra-${q.id}`}
+                className="flex flex-col gap-2"
+              >
+                <h3 id={`quadra-${q.id}`} className="text-sm font-medium text-muted-foreground">
+                  Quadra {q.codigo}
+                </h3>
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-1.5">
+                  {visiveis.map((l) => (
+                    <li key={l.id}>
+                      <Link
+                        href={`/empreendimentos/${id}/lotes/${l.id}`}
+                        className={cn(
+                          'flex min-h-14 flex-col items-center justify-center rounded-md border px-1 py-1.5 text-center transition-transform hover:scale-[1.03] focus-visible:ring-[3px] focus-visible:ring-ring/60',
+                          COR_STATUS[l.status],
+                        )}
+                      >
+                        <span className="sr-only">{`Quadra ${q.codigo}, lote ${l.numero}: ${ROTULO_STATUS_LOTE[l.status]}, ${area.format(l.area_m2)} m²`}</span>
+                        <span aria-hidden="true" className="text-sm font-semibold leading-none">
+                          {l.numero}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="mt-1 text-[0.65rem] leading-none opacity-80"
+                        >
+                          {area.format(l.area_m2)} m²
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )
+          })}
       </Cartao>
     </>
   )

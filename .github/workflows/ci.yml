@@ -82,9 +82,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Instalar Chromium
         run: pnpm --filter @norteia/web exec playwright install --with-deps chromium
-      - name: Subir Supabase local (banco, auth e API)
+      - name: Subir Supabase local (banco, auth, API e Storage)
         run: |
-          pnpm exec supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,storage-api,postgres-meta
+          pnpm exec supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,postgres-meta
           pnpm exec supabase status -o env \
             | grep -E '^(API_URL|PUBLISHABLE_KEY)=' \
             | sed 's/^API_URL=/NEXT_PUBLIC_SUPABASE_URL=/; s/^PUBLISHABLE_KEY=/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=/' \
