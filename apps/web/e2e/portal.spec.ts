@@ -106,6 +106,18 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
   await comprador.getByRole('link', { name: 'Parcelas e pagamentos' }).click()
   await expect(comprador.getByText('Entrada · ')).toBeVisible()
   await expect(comprador.getByRole('button', { name: 'Abrir boleto/Pix' })).toHaveCount(1)
+  // Cópia do contrato, no modelo padrão.
+  const [contrato] = await Promise.all([
+    comprador.waitForEvent('download'),
+    comprador.getByRole('link', { name: 'Contrato', exact: true }).click(),
+  ])
+  const xmlContrato = new PizZip(readFileSync((await contrato.path())!))
+    .file('word/document.xml')!
+    .asText()
+    .replace(/<[^>]+>/g, '')
+  expect(xmlContrato).toContain('Paulo Comprador')
+  expect(xmlContrato).toMatch(/PREÇO: R\$\s90\.000,00/)
+
   // Informe de IR do ano, no modelo padrão.
   const [download] = await Promise.all([
     comprador.waitForEvent('download'),

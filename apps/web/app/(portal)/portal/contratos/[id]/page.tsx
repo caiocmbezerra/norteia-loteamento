@@ -49,6 +49,23 @@ export default async function PaginaContratoPortal({
         </Alerta>
       )}
       {c.situacao === 'distratado' && <Alerta tipo="aviso">Este contrato foi distratado.</Alerta>}
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <span className="text-muted-foreground">Documentos (Word):</span>
+        <a
+          href={`/portal/contratos/${c.id}/documentos/contrato`}
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          Contrato
+        </a>
+        {c.situacao === 'quitado' && (
+          <a
+            href={`/portal/contratos/${c.id}/documentos/quitacao`}
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Termo de quitação
+          </a>
+        )}
+      </p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Indicador rotulo="Saldo a pagar" valor={moeda(saldo)} />
         <Indicador rotulo="Em atraso" valor={moeda(vencido)} />

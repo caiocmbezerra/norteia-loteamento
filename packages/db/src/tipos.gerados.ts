@@ -3264,6 +3264,7 @@ export type Database = {
         Returns: string
       }
       desativar_asaas: { Args: { p_tenant: string }; Returns: undefined }
+      documento_portal: { Args: { p_contrato: string; p_tipo: string }; Returns: Json }
       estornar_movimento_socio: {
         Args: { p_motivo: string; p_movimento: string }
         Returns: undefined

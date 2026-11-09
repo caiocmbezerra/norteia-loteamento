@@ -81,6 +81,7 @@ export {
   carregarModelos,
   enviarModelo,
   gerarDocumento,
+  gerarDocumentoPortal,
   gerarInforme,
   modeloEmUso,
   usarModeloPadrao,
