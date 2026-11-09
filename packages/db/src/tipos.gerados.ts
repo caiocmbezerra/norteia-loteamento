@@ -69,6 +69,74 @@ export type Database = {
           },
         ]
       }
+      anexos_conta: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          caminho: string
+          conta_id: string
+          criado_em: string
+          criado_por: string | null
+          empreendimento_id: string
+          id: string
+          nome: string
+          tamanho: number
+          tenant_id: string
+          tipo: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          caminho: string
+          conta_id: string
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id: string
+          id?: string
+          nome: string
+          tamanho: number
+          tenant_id: string
+          tipo: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          caminho?: string
+          conta_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id?: string
+          id?: string
+          nome?: string
+          tamanho?: number
+          tenant_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'anexos_conta_tenant_id_conta_id_fkey'
+            columns: ['tenant_id', 'conta_id']
+            isOneToOne: false
+            referencedRelation: 'contas_pagar'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'anexos_conta_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'anexos_conta_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       aprovacoes_desconto: {
         Row: {
           atualizado_em: string

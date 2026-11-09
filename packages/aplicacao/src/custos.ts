@@ -242,18 +242,59 @@ export async function registrarConta(
     falhar(error)
     centro = data!.centro_codigo
   }
-  const { error } = await db.from('contas_pagar').insert({
+  const { data, error } = await db
+    .from('contas_pagar')
+    .insert({
+      tenant_id: tenantId,
+      empreendimento_id: empreendimentoId,
+      centro_codigo: centro,
+      contrato_id: c.contratoId,
+      fornecedor_id: c.contratoId ? null : c.fornecedorId,
+      descricao: c.descricao,
+      valor_centavos: c.valorCentavos,
+      vencimento: c.vencimento,
+      documento_numero: c.documentoNumero,
+    })
+    .select('id')
+    .single()
+  falhar(error)
+  return data!.id
+}
+
+const TIPOS_ANEXO = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp']
+export const LIMITE_ANEXO = 10 * 1024 * 1024
+
+/** Guarda a nota, boleto ou recibo no Storage e liga à conta a pagar. */
+export async function anexarDocumentoConta(
+  db: ClienteBanco,
+  tenantId: string,
+  empreendimentoId: string,
+  contaId: string,
+  arquivo: { nome: string; tipo: string; bytes: Blob | ArrayBuffer; tamanho: number },
+) {
+  if (!TIPOS_ANEXO.includes(arquivo.tipo))
+    throw new ErroAplicacao('Anexe um PDF ou uma imagem (PNG, JPG ou WebP).', 'anexo', 'anexo')
+  if (arquivo.tamanho > LIMITE_ANEXO)
+    throw new ErroAplicacao('O anexo pode ter até 10 MB.', 'anexo', 'anexo')
+  const nome = arquivo.nome.replace(/[^\w.-]+/g, '_').slice(-120) || 'documento'
+  const caminho = `${tenantId}/${empreendimentoId}/contas/${contaId}/${crypto.randomUUID()}-${nome}`
+  const envio = await db.storage
+    .from('documentos')
+    .upload(caminho, arquivo.bytes, { contentType: arquivo.tipo })
+  if (envio.error) throw new ErroAplicacao('Não foi possível guardar o anexo. Tente de novo.')
+  const { error } = await db.from('anexos_conta').insert({
     tenant_id: tenantId,
     empreendimento_id: empreendimentoId,
-    centro_codigo: centro,
-    contrato_id: c.contratoId,
-    fornecedor_id: c.contratoId ? null : c.fornecedorId,
-    descricao: c.descricao,
-    valor_centavos: c.valorCentavos,
-    vencimento: c.vencimento,
-    documento_numero: c.documentoNumero,
+    conta_id: contaId,
+    caminho,
+    nome: arquivo.nome.slice(0, 200) || nome,
+    tipo: arquivo.tipo,
+    tamanho: arquivo.tamanho,
   })
-  falhar(error)
+  if (error) {
+    await db.storage.from('documentos').remove([caminho])
+    falhar(error)
+  }
 }
 
 export async function registrarPagamento(

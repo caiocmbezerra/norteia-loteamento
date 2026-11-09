@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Alerta, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/formulario'
 import type { EstadoFormulario } from '@/lib/acao'
 import {
+  anexarConta,
   estornar,
   lerDocumentoConta,
   novaConta,
@@ -143,11 +144,17 @@ export function FormularioConta({
   const [versao, setVersao] = useState(0)
   const [erroLeitura, setErroLeitura] = useState<string | null>(null)
   const [lendo, iniciar] = useTransition()
+  // O formulário é remontado com a sugestão lida; o arquivo escolhido volta no envio.
+  const [arquivo, setArquivo] = useState<File | null>(null)
+  useEffect(() => {
+    if (f.estado.ok) setArquivo(null)
+  }, [f.estado])
   // Valor do formulário: o que o usuário digitou, senão o que veio da leitura do documento.
   const v = (k: keyof SugestaoConta) =>
     f.v(k) ?? (sug?.[k] as string | null | undefined) ?? undefined
 
   function ler(arq: File) {
+    setArquivo(arq)
     setErroLeitura(null)
     iniciar(async () => {
       const bytes = new Uint8Array(await arq.arrayBuffer())
@@ -164,15 +171,26 @@ export function FormularioConta({
   }
 
   return (
-    <form key={versao} ref={f.ref} action={f.despachar} className="flex flex-col gap-3" noValidate>
+    <form
+      key={versao}
+      ref={f.ref}
+      action={(dados) => {
+        const anexo = dados.get('anexo')
+        if (arquivo && !(anexo instanceof File && anexo.size > 0)) dados.set('anexo', arquivo)
+        f.despachar(dados)
+      }}
+      className="flex flex-col gap-3"
+      noValidate
+    >
       <Mensagens estado={f.estado} />
       <Campo
         id="conta-documento"
         rotulo="Ler nota, boleto ou recibo (opcional)"
-        ajuda="PDF ou foto. Os campos são preenchidos para você conferir antes de registrar."
+        ajuda="PDF ou foto, até 10 MB. Os campos são preenchidos para você conferir, e o arquivo fica anexado à conta."
       >
         <Entrada
           id="conta-documento"
+          name="anexo"
           type="file"
           accept="application/pdf,image/jpeg,image/png,image/webp"
           disabled={lendo}
@@ -411,6 +429,43 @@ export function FormularioItemOrcamento({
           className={`col-span-2 text-xs sm:col-span-7 ${f.estado.ok ? 'text-primary' : 'text-destructive'}`}
         >
           {f.estado.ok ?? Object.values(f.er)[0] ?? f.estado.erro}
+        </p>
+      )}
+    </form>
+  )
+}
+
+/** Anexar nota, boleto ou recibo a uma conta já registrada. */
+export function FormularioAnexo({
+  empreendimentoId,
+  contaId,
+}: {
+  empreendimentoId: string
+  contaId: string
+}) {
+  const f = useFormulario(anexarConta.bind(null, empreendimentoId, contaId))
+  const id = `anexo-${contaId}`
+  return (
+    <form ref={f.ref} action={f.despachar} className="flex flex-wrap items-end gap-2" noValidate>
+      <Mensagens estado={f.estado} />
+      <div className="flex flex-col gap-1">
+        <label htmlFor={id} className="text-xs text-muted-foreground">
+          Anexar nota ou recibo
+        </label>
+        <input
+          id={id}
+          name="anexo"
+          type="file"
+          accept="application/pdf,image/jpeg,image/png,image/webp"
+          className="text-xs file:mr-2 file:rounded-md file:border file:bg-muted file:px-2 file:py-1 file:text-xs"
+        />
+      </div>
+      <Button type="submit" size="sm" variant="outline" disabled={f.enviando}>
+        Anexar
+      </Button>
+      {f.er.anexo && (
+        <p role="alert" className="basis-full text-xs text-destructive">
+          {f.er.anexo}
         </p>
       )}
     </form>

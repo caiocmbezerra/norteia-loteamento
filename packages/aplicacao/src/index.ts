@@ -16,6 +16,8 @@ export {
   type NovaConta,
   type NovoContrato,
   type PainelCustos,
+  LIMITE_ANEXO,
+  anexarDocumentoConta,
   carregarPainelCustos,
   criarOrcamentoDoPlano,
   estornarPagamento,
