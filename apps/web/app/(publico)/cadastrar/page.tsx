@@ -22,7 +22,7 @@ export default async function PaginaCadastrar({
       <p className="text-sm text-muted-foreground">
         Já tem conta?{' '}
         <Link
-          className="font-medium text-primary underline-offset-4 hover:underline"
+          className="font-medium text-primary underline underline-offset-4"
           href={`/entrar${proximo ? `?proximo=${encodeURIComponent(proximo)}` : ''}`}
         >
           Entrar

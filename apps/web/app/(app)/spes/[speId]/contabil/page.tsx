@@ -87,7 +87,7 @@ export default async function PaginaContabilSpe({
         {d.mensal.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum fato no período.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0}>
             <table className="w-full text-sm" aria-label="Caixa por competência">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr>
@@ -149,7 +149,7 @@ export default async function PaginaContabilSpe({
           </a>
         )}
         {d.lancamentos.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0}>
             <table className="w-full text-sm" aria-label="Lançamentos">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr>

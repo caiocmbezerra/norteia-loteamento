@@ -99,7 +99,7 @@ export default async function PaginaViabilidade({
             Nenhum plano aprovado. Aprove um estudo para congelar o plano original.
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0}>
             <table className="w-full min-w-[32rem] text-sm">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr>
@@ -118,7 +118,7 @@ export default async function PaginaViabilidade({
                     <tr key={p.id} className="border-t">
                       <td className="py-2">
                         <Link
-                          className="text-primary underline-offset-4 hover:underline"
+                          className="text-primary underline underline-offset-4"
                           href={`/empreendimentos/${id}/viabilidade/${p.viabilidade_id}`}
                         >
                           {p.versao === 1 ? 'Original' : `Revisão ${p.versao - 1}`}
@@ -152,7 +152,7 @@ export default async function PaginaViabilidade({
             <li key={v.id} className="flex items-center justify-between gap-3 py-3">
               <Link
                 href={`/empreendimentos/${id}/viabilidade/${v.id}`}
-                className="font-medium text-primary underline-offset-4 hover:underline"
+                className="font-medium text-primary underline underline-offset-4"
               >
                 {v.nome}
               </Link>

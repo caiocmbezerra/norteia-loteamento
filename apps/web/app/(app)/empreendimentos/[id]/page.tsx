@@ -174,14 +174,19 @@ export default async function PaginaEmpreendimento({
                   <li key={l.id}>
                     <Link
                       href={`/empreendimentos/${id}/lotes/${l.id}`}
-                      aria-label={`Quadra ${q.codigo}, lote ${l.numero}: ${ROTULO_STATUS_LOTE[l.status]}, ${area.format(l.area_m2)} m²`}
                       className={cn(
                         'flex min-h-14 flex-col items-center justify-center rounded-md border px-1 py-1.5 text-center transition-transform hover:scale-[1.03] focus-visible:ring-[3px] focus-visible:ring-ring/60',
                         COR_STATUS[l.status],
                       )}
                     >
-                      <span className="text-sm font-semibold leading-none">{l.numero}</span>
-                      <span className="mt-1 text-[0.65rem] leading-none opacity-80">
+                      <span className="sr-only">{`Quadra ${q.codigo}, lote ${l.numero}: ${ROTULO_STATUS_LOTE[l.status]}, ${area.format(l.area_m2)} m²`}</span>
+                      <span aria-hidden="true" className="text-sm font-semibold leading-none">
+                        {l.numero}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="mt-1 text-[0.65rem] leading-none opacity-80"
+                      >
                         {area.format(l.area_m2)} m²
                       </span>
                     </Link>

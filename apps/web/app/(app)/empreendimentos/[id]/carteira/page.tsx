@@ -127,7 +127,7 @@ export default async function PaginaCarteira({
                 <span>
                   <Link
                     href={`/empreendimentos/${id}/lotes/${v.loteId}`}
-                    className="font-medium text-primary underline-offset-4 hover:underline"
+                    className="font-medium text-primary underline underline-offset-4"
                   >
                     {v.lote}
                   </Link>
@@ -148,7 +148,7 @@ export default async function PaginaCarteira({
         {painel.contratos.length === 0 && (
           <p className="text-sm text-muted-foreground">Nenhum contrato ainda.</p>
         )}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0}>
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-muted-foreground">
               <tr>
@@ -165,7 +165,7 @@ export default async function PaginaCarteira({
                   <td className="py-2">
                     <Link
                       href={`/empreendimentos/${id}/carteira/${c.id}`}
-                      className="font-medium text-primary underline-offset-4 hover:underline"
+                      className="font-medium text-primary underline underline-offset-4"
                     >
                       {c.lote}
                     </Link>

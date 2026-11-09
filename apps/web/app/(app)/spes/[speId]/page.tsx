@@ -97,7 +97,7 @@ export default async function PaginaSpe({ params }: { params: Promise<{ speId: s
             Nenhum sócio com participação ou movimento.
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0}>
             <table className="w-full text-sm">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr>

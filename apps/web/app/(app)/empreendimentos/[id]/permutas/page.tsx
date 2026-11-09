@@ -106,7 +106,7 @@ export default async function PaginaPermutas({ params }: { params: Promise<{ id:
                 <Indicador rotulo="Saldo" valor={moeda(p.apuracao!.saldoCentavos)} />
               </section>
               {p.apuracao!.linhas.length > 0 && (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto" tabIndex={0}>
                   <table className="w-full text-sm">
                     <thead className="text-left text-xs text-muted-foreground">
                       <tr>
