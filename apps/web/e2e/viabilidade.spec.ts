@@ -25,7 +25,15 @@ test('demonstração mostra o caso de referência e permite revisar o plano', as
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Demonstração — Caso de referência',
   )
-  await expect(page.getByText('102 disponíveis')).toBeVisible()
+  // 102 lotes à venda menos as vendas fictícias da demonstração (até 15, uma por mês desde jan/2026).
+  const disponiveis = Number(
+    (await page
+      .getByText(/\d+ disponíveis/)
+      .first()
+      .textContent())!.match(/(\d+) disponíveis/)![1],
+  )
+  expect(disponiveis).toBeGreaterThanOrEqual(87)
+  expect(disponiveis).toBeLessThanOrEqual(102)
 
   // Plano original já aprovado com os números da especificação.
   await page.getByRole('link', { name: 'Viabilidade' }).click()
