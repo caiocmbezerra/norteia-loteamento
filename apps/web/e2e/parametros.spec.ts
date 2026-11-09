@@ -33,4 +33,10 @@ test('dona define a multa da loteadora no lugar da sugestão', async ({ page }, 
   await expect(multa.getByText('Parâmetro salvo.')).toBeVisible()
   await expect(multa.getByText(/definido pela loteadora desde/)).toBeVisible()
   await expect(multa.getByText('sugestão não confirmada')).toHaveCount(0)
+
+  // Reforma tributária: simulação com as alíquotas de teste de 2026 (sem alíquota depois).
+  const reforma = page.getByRole('region', { name: 'Simulação da reforma tributária' })
+  if (new Date().getFullYear() === 2026)
+    await expect(reforma).toContainText(/total R\$\s350,00 \(0,35% da\s+venda\)/)
+  else await expect(reforma).toContainText('Sem alíquotas de IBS/CBS em vigor')
 })

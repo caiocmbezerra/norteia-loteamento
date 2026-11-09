@@ -207,3 +207,14 @@ export async function aceitarConvitePortal(db: ClienteBanco, token: string): Pro
   falhar(error)
   return data!
 }
+
+/** Andamento da obra (avanço financeiro da infraestrutura) para o comprador. */
+export async function andamentoObra(
+  db: ClienteBanco,
+  contratoId: string,
+): Promise<{ etapa: string; orcado: number; pago: number }[]> {
+  const { data, error } = await db.rpc('obra_portal', { p_contrato: contratoId })
+  if (error?.code === '42501') return []
+  falhar(error)
+  return data as unknown as { etapa: string; orcado: number; pago: number }[]
+}

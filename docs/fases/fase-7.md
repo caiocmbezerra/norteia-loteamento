@@ -23,9 +23,15 @@
 - Configurações → Contabilidade: plano de contas (colado do contador), regra por evento (débito, crédito, histórico) e formato do arquivo (separador, decimal, data, colunas).
 - SPE → Contábil: caixa × competência por mês, pendências de regra, prévia e arquivo CSV dos lançamentos.
 
+## Feito (7d — reforma, app e obra)
+
+- IBS/CBS como parâmetros com vigência (teste de 2026; 2027+ a definir), redução de imóveis e redutor social; simulação em Parâmetros.
+- App instalável (manifesto, ícones, atalho para o portal).
+- Andamento da obra no portal do comprador: avanço financeiro por etapa da infraestrutura.
+
 ## A fazer
 
-- 7d: parâmetros IBS/CBS com vigência; PWA (manifesto e ícone); andamento da obra e documentos no portal.
+- Documentos do contrato (contrato e termo de quitação) para download no portal do comprador.
 
 ## Critérios
 

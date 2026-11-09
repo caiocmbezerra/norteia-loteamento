@@ -75,3 +75,4 @@ export {
   fatorAcumulado,
 } from './distrato'
 export { type Participacao, SEM_SOCIO, ratearPorSocio } from './socios'
+export { type EntradaIbsCbs, type ResultadoIbsCbs, ibsCbsSobreVenda } from './reforma'
