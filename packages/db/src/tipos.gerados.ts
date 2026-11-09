@@ -3291,6 +3291,7 @@ export type Database = {
       importar_indices: { Args: Record<PropertyKey, never>; Returns: number }
       informe_pagamentos: { Args: { p_ano: number; p_contrato: string }; Returns: Json }
       meu_portal: { Args: { p_hoje?: string }; Returns: Json }
+      obra_portal: { Args: { p_contrato: string }; Returns: Json }
       pagar_devolucao: { Args: { p_data: string; p_devolucao: string }; Returns: undefined }
       painel_consolidado: { Args: { p_hoje?: string; p_tenant: string }; Returns: Json }
       parametro_vigente: {

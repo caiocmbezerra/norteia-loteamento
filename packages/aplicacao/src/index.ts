@@ -123,6 +123,7 @@ export {
   type ContratoPortal,
   type MeuPortal,
   aceitarConvitePortal,
+  andamentoObra,
   carregarContratoPortal,
   carregarMeuPortal,
   convidarParaPortal,

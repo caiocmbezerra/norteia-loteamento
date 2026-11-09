@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   },
   description:
     'Gestão de loteamentos com motor financeiro único: viabilidade, obra, vendas, carteira e retorno por sócio.',
+  applicationName: 'NorteIA Loteamento',
+  appleWebApp: { capable: true, title: 'NorteIA', statusBarStyle: 'default' },
+  icons: {
+    icon: [{ url: '/icones/icone-192.png', sizes: '192x192', type: 'image/png' }],
+    apple: [{ url: '/icones/apple-touch-icon.png', sizes: '180x180' }],
+  },
 }
 
 export const viewport: Viewport = {

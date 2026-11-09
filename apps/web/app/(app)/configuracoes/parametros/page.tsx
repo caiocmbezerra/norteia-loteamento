@@ -1,5 +1,6 @@
 import { carregarParametros, ehPercentual, textoDoValor } from '@norteia/aplicacao'
-import { formatarData } from '@norteia/dominio'
+import { formatarData, formatarMoeda, formatarPercentual } from '@norteia/dominio'
+import { arredondarCentavos, ibsCbsSobreVenda } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Cartao, TituloPagina } from '@/components/ui/cartao'
@@ -43,6 +44,29 @@ export default async function PaginaParametros() {
     ]),
   ]
   const pendentes = parametros.filter((p) => !p.vigente && p.pendencia)
+  // Simulação da reforma (IBS/CBS) para um lote de exemplo, com os valores em vigor hoje.
+  const valor = (chave: string) => {
+    const p = parametros.find((x) => x.chave === chave)
+    return (p?.vigente ?? p?.sugestao)?.valor ?? null
+  }
+  const [cbs, ibs, reducao, redutor] = [
+    valor('tributario.cbs_aliquota'),
+    valor('tributario.ibs_aliquota'),
+    valor('tributario.ibs_cbs_reducao_imoveis'),
+    valor('tributario.ibs_cbs_redutor_social_lote'),
+  ]
+  const LOTE_EXEMPLO = 10_000_000
+  const reforma =
+    cbs && ibs && reducao && redutor
+      ? ibsCbsSobreVenda({
+          valorCentavos: LOTE_EXEMPLO,
+          redutorSocialCentavos: Number(redutor),
+          reducao,
+          aliquotaCbs: cbs,
+          aliquotaIbs: ibs,
+        })
+      : null
+  const moeda = (c: number) => formatarMoeda(arredondarCentavos(String(c)))
   const grupos = Object.entries(GRUPOS)
     .map(([prefixo, titulo]) => ({
       titulo,
@@ -126,6 +150,31 @@ export default async function PaginaParametros() {
           ))}
         </section>
       ))}
+      <Cartao className="flex flex-col gap-2" aria-label="Simulação da reforma tributária">
+        <h2 className="font-semibold">
+          Reforma tributária: simulação para um lote de {moeda(LOTE_EXEMPLO)}
+        </h2>
+        {reforma ? (
+          <>
+            <p className="text-sm">
+              Base {moeda(reforma.baseCentavos)} (após o redutor social) · CBS{' '}
+              {moeda(reforma.cbsCentavos)} · IBS {moeda(reforma.ibsCentavos)} ·{' '}
+              <strong>
+                total {moeda(reforma.totalCentavos)} ({formatarPercentual(reforma.cargaEfetiva, 2)}{' '}
+                da venda)
+              </strong>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Com as alíquotas em vigor hoje e a redução do regime de imóveis. Ainda fora do fluxo
+              projetado (parâmetro “considerar no fluxo”); confirme com o contador (roteiro PL-22).
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Sem alíquotas de IBS/CBS em vigor para hoje: defina-as quando forem publicadas.
+          </p>
+        )}
+      </Cartao>
     </div>
   )
 }

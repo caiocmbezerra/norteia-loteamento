@@ -1,4 +1,4 @@
-import { carregarContratoPortal } from '@norteia/aplicacao'
+import { andamentoObra, carregarContratoPortal } from '@norteia/aplicacao'
 import { formatarData, formatarMoeda } from '@norteia/dominio'
 import { arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
@@ -21,8 +21,11 @@ export default async function PaginaContratoPortal({
 }) {
   const { id } = await params
   const { db } = await exigirUsuario()
-  const c = await carregarContratoPortal(db, id)
+  const [c, obra] = await Promise.all([carregarContratoPortal(db, id), andamentoObra(db, id)])
   if (!c) notFound()
+  const obraOrcado = obra.reduce((t, e) => t + e.orcado, 0)
+  const obraPago = obra.reduce((t, e) => t + e.pago, 0)
+  const pct = (pago: number, orcado: number) => Math.min(100, Math.round((pago / orcado) * 100))
   const hoje = hojeSaoPaulo()
   const abertas = c.parcelas.filter((p) => p.situacao === 'aberta')
   const saldo = abertas.reduce((t, p) => t + p.valor - p.pago, 0)
@@ -59,6 +62,41 @@ export default async function PaginaContratoPortal({
         <Alerta tipo="aviso">
           A loteadora ainda não emite boleto pelo portal. Para pagar, fale com ela.
         </Alerta>
+      )}
+
+      {obra.length > 0 && (
+        <Cartao className="flex flex-col gap-3" aria-label="Andamento da obra">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-lg font-semibold">Andamento da obra</h2>
+            <span className="text-sm font-medium">{pct(obraPago, obraOrcado)}% executado</span>
+          </div>
+          <ul className="flex flex-col gap-3">
+            {obra.map((e) => (
+              <li key={e.etapa} className="flex flex-col gap-1">
+                <div className="flex justify-between text-sm">
+                  <span>{e.etapa}</span>
+                  <span className="text-muted-foreground">{pct(e.pago, e.orcado)}%</span>
+                </div>
+                <div
+                  role="progressbar"
+                  aria-label={e.etapa}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={pct(e.pago, e.orcado)}
+                  className="h-2 overflow-hidden rounded bg-muted"
+                >
+                  <div
+                    className="h-full bg-primary"
+                    style={{ width: `${pct(e.pago, e.orcado)}%` }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            Avanço financeiro da infraestrutura: o que já foi pago de cada etapa sobre o orçamento.
+          </p>
+        </Cartao>
       )}
 
       <Cartao className="flex flex-col gap-3">
