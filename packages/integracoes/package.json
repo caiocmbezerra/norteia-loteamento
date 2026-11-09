@@ -5,7 +5,8 @@
   "description": "Portas (interfaces) e adaptadores de fornecedores externos.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./importacao": "./src/importacao.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p .",

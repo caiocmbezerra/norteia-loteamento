@@ -15,6 +15,7 @@
     "@norteia/aplicacao": "workspace:*",
     "@norteia/db": "workspace:*",
     "@norteia/dominio": "workspace:*",
+    "@norteia/integracoes": "workspace:*",
     "@norteia/motor-financeiro": "workspace:*",
     "@norteia/projecao": "workspace:*",
     "@norteia/ui": "workspace:*",
