@@ -1094,6 +1094,9 @@ export type Database = {
           municipio_rfb: string | null
           nome: string
           observacao: string | null
+          planta_altura: number | null
+          planta_arquivo: string | null
+          planta_largura: number | null
           registro_matricula: string | null
           situacao: Database['public']['Enums']['empreendimento_situacao']
           spe_id: string
@@ -1120,6 +1123,9 @@ export type Database = {
           municipio_rfb?: string | null
           nome: string
           observacao?: string | null
+          planta_altura?: number | null
+          planta_arquivo?: string | null
+          planta_largura?: number | null
           registro_matricula?: string | null
           situacao?: Database['public']['Enums']['empreendimento_situacao']
           spe_id: string
@@ -1145,6 +1151,9 @@ export type Database = {
           municipio_rfb?: string | null
           nome?: string
           observacao?: string | null
+          planta_altura?: number | null
+          planta_arquivo?: string | null
+          planta_largura?: number | null
           registro_matricula?: string | null
           situacao?: Database['public']['Enums']['empreendimento_situacao']
           spe_id?: string
@@ -1692,6 +1701,7 @@ export type Database = {
           id: string
           numero: string
           observacao: string | null
+          planta_poligono: Json | null
           preco_base_centavos: number | null
           quadra_id: string
           status: Database['public']['Enums']['lote_status']
@@ -1709,6 +1719,7 @@ export type Database = {
           id?: string
           numero: string
           observacao?: string | null
+          planta_poligono?: Json | null
           preco_base_centavos?: number | null
           quadra_id: string
           status?: Database['public']['Enums']['lote_status']
@@ -1725,6 +1736,7 @@ export type Database = {
           id?: string
           numero?: string
           observacao?: string | null
+          planta_poligono?: Json | null
           preco_base_centavos?: number | null
           quadra_id?: string
           status?: Database['public']['Enums']['lote_status']
