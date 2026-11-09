@@ -88,4 +88,12 @@ test('custos da obra alimentam o fluxo sem dupla contagem', async ({ page }, inf
 
   // TIR do plano e atual aparecem lado a lado
   await expect(resumo).toContainText(/19,3% →/)
+
+  // Leitura de nota (Fase 8d): sem a chave da API, avisa e deixa preencher à mão.
+  await page.getByLabel('Ler nota, boleto ou recibo (opcional)').setInputFiles({
+    name: 'nota.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4 nota de teste'),
+  })
+  await expect(page.getByText(/A leitura automática ainda não foi ativada/)).toBeVisible()
 })
