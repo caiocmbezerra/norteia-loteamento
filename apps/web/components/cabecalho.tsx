@@ -5,6 +5,7 @@ import type { Contexto } from '@/lib/contexto'
 
 const LINKS = [
   { href: '/painel', rotulo: 'Painel' },
+  { href: '/alertas', rotulo: 'Alertas' },
   { href: '/assistente', rotulo: 'Assistente' },
   { href: '/configuracoes', rotulo: 'Configurações' },
 ]

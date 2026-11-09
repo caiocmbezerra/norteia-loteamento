@@ -17,6 +17,7 @@ const NOMES_FONTE: Record<string, string> = {
   resumo_loteadora: 'painel da loteadora',
   carteira_empreendimento: 'carteira',
   viabilidade_empreendimento: 'motor financeiro (plano e fluxo atual)',
+  alertas_risco: 'alertas de risco',
 }
 
 /** Uma pergunta ao assistente; só leitura, com as permissões de quem pergunta. */

@@ -13,9 +13,14 @@
 - Conferência dos números em toda resposta; aviso quando algum valor não veio das consultas.
 - Conjunto de 50 perguntas de avaliação (`docs/avaliacao`), a rodar quando a chave estiver ativa.
 
+## Feito (8c — alertas de risco)
+
+- Menu Alertas: aporte necessário nos próximos meses, custos e exposição acima do plano e inadimplência alta ou crescendo, por empreendimento, com gravidade (crítico ou atenção) e link para a tela de origem.
+- Limites por cliente em Parâmetros (`alertas.*`); o assistente também responde sobre os alertas.
+
 ## A fazer
 
-- 8c: alertas de risco (aporte próximo, inadimplência crescente, desvio de custo).
+- Avisos de alerta por e-mail/WhatsApp (depende das contas Resend e WhatsApp Business).
 - 8d: leitura de notas e recibos → sugestão de lançamento.
 
 ## Critérios
