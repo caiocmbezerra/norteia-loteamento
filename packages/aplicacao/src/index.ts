@@ -134,3 +134,4 @@ export {
 } from './portal'
 export * from './fiscal'
 export * from './contabil'
+export * from './importacao'

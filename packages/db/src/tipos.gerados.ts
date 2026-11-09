@@ -1381,6 +1381,70 @@ export type Database = {
           },
         ]
       }
+      importacoes: {
+        Row: {
+          arquivo: string | null
+          atualizado_em: string
+          atualizado_por: string | null
+          contratos: number
+          criado_em: string
+          criado_por: string | null
+          empreendimento_id: string
+          id: string
+          origem: string
+          parcelas: number
+          saldo_aberto_centavos: number
+          saldo_origem_centavos: number
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          arquivo?: string | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          contratos: number
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id: string
+          id?: string
+          origem: string
+          parcelas: number
+          saldo_aberto_centavos: number
+          saldo_origem_centavos: number
+          tenant_id: string
+        }
+        Update: {
+          arquivo?: string | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          contratos?: number
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id?: string
+          id?: string
+          origem?: string
+          parcelas?: number
+          saldo_aberto_centavos?: number
+          saldo_origem_centavos?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'importacoes_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'importacoes_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       indice_valores: {
         Row: {
           codigo: string
@@ -1585,6 +1649,45 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'quadras'
             referencedColumns: ['tenant_id', 'empreendimento_id', 'id']
+          },
+        ]
+      }
+      mapeamentos_importacao: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          colunas: NonNullable<Json>
+          criado_em: string
+          criado_por: string | null
+          nome: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          colunas: NonNullable<Json>
+          criado_em?: string
+          criado_por?: string | null
+          nome: string
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          colunas?: NonNullable<Json>
+          criado_em?: string
+          criado_por?: string | null
+          nome?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'mapeamentos_importacao_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3026,6 +3129,7 @@ export type Database = {
           empreendimento_id: string
           entrada_centavos: number
           id: string
+          importacao_id: string | null
           juros_mensal: number
           justificativa_sem_registro: string | null
           lote_id: string
@@ -3051,6 +3155,7 @@ export type Database = {
           empreendimento_id: string
           entrada_centavos: number
           id?: string
+          importacao_id?: string | null
           juros_mensal: number
           justificativa_sem_registro?: string | null
           lote_id: string
@@ -3075,6 +3180,7 @@ export type Database = {
           empreendimento_id?: string
           entrada_centavos?: number
           id?: string
+          importacao_id?: string | null
           juros_mensal?: number
           justificativa_sem_registro?: string | null
           lote_id?: string
@@ -3087,6 +3193,13 @@ export type Database = {
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'vendas_importacao_id_fkey'
+            columns: ['importacao_id']
+            isOneToOne: false
+            referencedRelation: 'importacoes'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'vendas_tenant_id_comprador_id_fkey'
             columns: ['tenant_id', 'comprador_id']
@@ -3289,6 +3402,16 @@ export type Database = {
       executar_reajustes: { Args: { p_data?: string }; Returns: number }
       expirar_reservas: { Args: Record<PropertyKey, never>; Returns: number }
       gerar_cobranca: { Args: { p_parcela: string }; Returns: string }
+      importar_carteira: {
+        Args: {
+          p_arquivo: string
+          p_contratos: Json
+          p_empreendimento: string
+          p_origem: string
+          p_saldo_origem: number
+        }
+        Returns: string
+      }
       importar_indices: { Args: Record<PropertyKey, never>; Returns: number }
       informe_pagamentos: { Args: { p_ano: number; p_contrato: string }; Returns: Json }
       meu_portal: { Args: { p_hoje?: string }; Returns: Json }

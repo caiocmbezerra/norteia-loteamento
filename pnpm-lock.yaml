@@ -53,6 +53,9 @@ importers:
       '@norteia/dominio':
         specifier: workspace:*
         version: link:../../packages/dominio
+      '@norteia/integracoes':
+        specifier: workspace:*
+        version: link:../../packages/integracoes
       '@norteia/motor-financeiro':
         specifier: workspace:*
         version: link:../../packages/motor-financeiro

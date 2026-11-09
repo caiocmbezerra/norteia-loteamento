@@ -75,7 +75,20 @@ export default async function PaginaCarteira({
       >
         ← {e.nome}
       </Link>
-      <TituloPagina titulo="Carteira" subtitulo="Contratos, parcelas a receber e inadimplência." />
+      <TituloPagina
+        titulo="Carteira"
+        subtitulo="Contratos, parcelas a receber e inadimplência."
+        acoes={
+          temPapel(ctx, 'dono', 'comercial_gestor') && (
+            <Link
+              href={`/empreendimentos/${id}/carteira/importar`}
+              className="rounded-md border px-3 py-2 text-sm hover:bg-muted"
+            >
+              Importar carteira
+            </Link>
+          )
+        }
+      />
       <p className="text-xs text-muted-foreground">
         Últimos índices publicados (BCB): {indices.join(' · ')}. Reajustes aplicados diariamente.
       </p>
