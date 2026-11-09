@@ -8,6 +8,7 @@ import {
   registrarContrato,
   registrarPagamento,
   type SugestaoConta,
+  anexarDocumentoConta,
   sugerirContaDeDocumento,
   traduzirErroBanco,
 } from '@norteia/aplicacao'
@@ -95,12 +96,13 @@ export async function novaConta(
   form: FormData,
 ): Promise<EstadoFormulario> {
   const ctx = await exigirContexto()
+  let contaId: string
   try {
     const c = esquemaConta.parse(valoresDoFormulario(form))
     if (!c.contratoId && !c.centro) {
       throw new ErroAplicacao('Escolha o contrato ou o centro de custo.', 'centro', 'centro')
     }
-    await registrarConta(ctx.db, ctx.tenant.id, empreendimentoId, {
+    contaId = await registrarConta(ctx.db, ctx.tenant.id, empreendimentoId, {
       centro: c.centro,
       contratoId: c.contratoId || null,
       fornecedorId: c.fornecedorId || null,
@@ -112,8 +114,50 @@ export async function novaConta(
   } catch (e) {
     return estadoDeErro(e, form)
   }
+  // O documento lido (ou escolhido) fica anexado à conta; se falhar, a conta continua registrada.
+  const anexo = form.get('anexo')
+  if (anexo instanceof File && anexo.size > 0) {
+    try {
+      await anexarDocumentoConta(ctx.db, ctx.tenant.id, empreendimentoId, contaId, {
+        nome: anexo.name,
+        tipo: anexo.type,
+        bytes: anexo,
+        tamanho: anexo.size,
+      })
+    } catch (e) {
+      revalidatePath(caminho(empreendimentoId))
+      return {
+        ok: `Conta a pagar registrada, mas o anexo não foi guardado: ${e instanceof Error ? e.message : 'erro'}`,
+      }
+    }
+  }
   revalidatePath(caminho(empreendimentoId))
   return { ok: 'Conta a pagar registrada.' }
+}
+
+/** Anexa uma nota, boleto ou recibo a uma conta já registrada. */
+export async function anexarConta(
+  empreendimentoId: string,
+  contaId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const anexo = form.get('anexo')
+    if (!(anexo instanceof File) || anexo.size === 0)
+      throw new ErroAplicacao('Escolha o arquivo.', 'anexo', 'anexo')
+    await anexarDocumentoConta(ctx.db, ctx.tenant.id, empreendimentoId, contaId, {
+      nome: anexo.name,
+      tipo: anexo.type,
+      bytes: anexo,
+      tamanho: anexo.size,
+    })
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidatePath(caminho(empreendimentoId))
+  return { ok: 'Anexo guardado.' }
 }
 
 export async function pagar(

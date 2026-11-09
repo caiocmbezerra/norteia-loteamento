@@ -15,6 +15,7 @@ import {
   FormularioConta,
   FormularioContrato,
   FormularioEstorno,
+  FormularioAnexo,
   FormularioPagar,
 } from './formularios'
 
@@ -59,7 +60,7 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
     ctx.db
       .from('contas_pagar')
       .select(
-        'id, descricao, valor_centavos, vencimento, cancelada_em, pagamentos(valor_centavos, estornado_em)',
+        'id, descricao, valor_centavos, vencimento, cancelada_em, pagamentos(valor_centavos, estornado_em), anexos_conta(id, nome)',
       )
       .eq('empreendimento_id', id)
       .is('cancelada_em', null)
@@ -67,7 +68,7 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
     ctx.db
       .from('pagamentos')
       .select(
-        'id, data_pagamento, valor_centavos, estornado_em, motivo_estorno, contas_pagar!inner(descricao, empreendimento_id)',
+        'id, data_pagamento, valor_centavos, estornado_em, motivo_estorno, contas_pagar!inner(descricao, empreendimento_id, anexos_conta(id, nome))',
       )
       .eq('contas_pagar.empreendimento_id', id)
       .order('data_pagamento', { ascending: false })
@@ -230,13 +231,17 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
                     {formatarData(c.vencimento)}
                   </span>
                 </div>
+                <Anexos empreendimentoId={id} anexos={c.anexos_conta} />
                 {podeEditar && (
-                  <FormularioPagar
-                    empreendimentoId={id}
-                    contaId={c.id}
-                    saldo={centavosTexto(c.saldo)}
-                    hoje={hoje}
-                  />
+                  <>
+                    <FormularioPagar
+                      empreendimentoId={id}
+                      contaId={c.id}
+                      saldo={centavosTexto(c.saldo)}
+                      hoje={hoje}
+                    />
+                    <FormularioAnexo empreendimentoId={id} contaId={c.id} />
+                  </>
                 )}
               </li>
             ))}
@@ -264,6 +269,7 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
                     {formatarMoeda(arredondarCentavos(String(p.valor_centavos)))}
                   </span>
                 </div>
+                <Anexos empreendimentoId={id} anexos={p.contas_pagar.anexos_conta} />
                 {p.estornado_em ? (
                   <span className="text-xs text-muted-foreground">
                     Estornado: {p.motivo_estorno}
@@ -335,5 +341,31 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
         </div>
       )}
     </>
+  )
+}
+
+function Anexos({
+  empreendimentoId,
+  anexos,
+}: {
+  empreendimentoId: string
+  anexos: { id: string; nome: string }[]
+}) {
+  if (anexos.length === 0) return null
+  return (
+    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs" aria-label="Anexos">
+      {anexos.map((a) => (
+        <li key={a.id}>
+          <a
+            href={`/empreendimentos/${empreendimentoId}/custos/anexos/${a.id}`}
+            className="text-primary underline underline-offset-4"
+            target="_blank"
+            rel="noopener"
+          >
+            {a.nome}
+          </a>
+        </li>
+      ))}
+    </ul>
   )
 }

@@ -16,9 +16,12 @@
 | Orçado = realizado + comprometido + projetado em cada centro | ✅ teste de propriedade na projeção e conferência na tela (e2e)                    |
 | Lançar pagamento atualiza TIR e exposição em menos de 5 s    | ✅ cálculo sob demanda, sem cache: a tela já mostra o novo valor no recarregamento |
 
+## Feito depois
+
+- Anexo de notas, boletos e recibos às contas a pagar (D-102): o arquivo lido no lançamento fica anexado; dá para anexar depois; abre por link assinado curto.
+
 ## Pendente
 
 - Medições de contrato com percentual executado (hoje a medição é a própria conta a pagar).
-- Anexo de notas fiscais (Storage com isolamento por cliente).
 - Rateio de despesas comuns entre empreendimentos.
 - Telas para criar centros de custo próprios, encerrar contrato e cancelar conta (o banco já suporta).
