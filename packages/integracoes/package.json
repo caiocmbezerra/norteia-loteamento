@@ -6,13 +6,15 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./importacao": "./src/importacao.ts"
+    "./importacao": "./src/importacao.ts",
+    "./assistente": "./src/assistente.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.6.0",
     "@norteia/dominio": "workspace:*",
     "docxtemplater": "3.71.1",
     "pizzip": "3.3.0"

@@ -7,9 +7,14 @@
 - Gravação tudo ou nada, só com o saldo conciliado com o do sistema de origem; vendas, contratos, parcelas e pagamentos marcados como importados; histórico das importações.
 - Desempenho: 200 contratos com 24 mil parcelas em cerca de 2 s.
 
+## Feito (8b — assistente)
+
+- Menu Assistente: perguntas em português respondidas pelo Claude com ferramentas só de leitura (resumo da loteadora, carteira e viabilidade por empreendimento), citando a origem.
+- Conferência dos números em toda resposta; aviso quando algum valor não veio das consultas.
+- Conjunto de 50 perguntas de avaliação (`docs/avaliacao`), a rodar quando a chave estiver ativa.
+
 ## A fazer
 
-- 8b: perguntas em linguagem natural respondidas por ferramentas que chamam o motor (números idênticos, com a origem citada).
 - 8c: alertas de risco (aporte próximo, inadimplência crescente, desvio de custo).
 - 8d: leitura de notas e recibos → sugestão de lançamento.
 
