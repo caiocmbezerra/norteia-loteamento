@@ -13,8 +13,10 @@ const moeda = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximum
 export function FormularioLote({
   empreendimentoId,
   lote,
+  precoPelaTabela,
 }: {
   empreendimentoId: string
+  precoPelaTabela: boolean
   lote: {
     id: string
     status: StatusLote
@@ -74,9 +76,17 @@ export function FormularioLote({
           />
         </Campo>
       </div>
-      <Campo id="preco" rotulo="Preço de referência (R$)" erro={er.preco}>
+      <Campo
+        id="preco"
+        rotulo="Preço de referência (R$)"
+        erro={er.preco}
+        {...(precoPelaTabela
+          ? { ajuda: 'Segue a tabela de preços vigente; para mudar, publique uma nova tabela.' }
+          : {})}
+      >
         <Entrada
-          {...ariaCampo('preco', er.preco)}
+          {...ariaCampo('preco', er.preco, precoPelaTabela ? 'ajuda' : undefined)}
+          disabled={precoPelaTabela}
           inputMode="decimal"
           placeholder="90.000,00"
           defaultValue={v(

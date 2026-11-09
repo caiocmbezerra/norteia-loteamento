@@ -24,11 +24,16 @@ export {
   registrarPagamento,
 } from './custos'
 export {
+  type CondicoesPreco,
   type DadosComprador,
+  condicoesDePreco,
   type DadosVenda,
   obterComprador,
   cancelarReserva,
+  decidirAprovacaoDesconto,
+  publicarTabelaPreco,
   registrarVenda,
+  solicitarAprovacaoDesconto,
   reservarLote,
   vendasDoEmpreendimento,
 } from './comercial'

@@ -107,7 +107,8 @@ export async function editarLote(
       .update({
         area_m2: Number(d.area),
         testada_m: d.testada ? Number(d.testada) : null,
-        preco_base_centavos: d.preco,
+        // Lote em tabela de preços: o preço não vem no formulário (segue a tabela vigente).
+        ...(form.has('preco') ? { preco_base_centavos: d.preco } : {}),
         observacao: d.observacao || null,
         ...(d.status ? { status: d.status } : {}),
       })

@@ -1,3 +1,4 @@
+import { condicoesDePreco } from '@norteia/aplicacao'
 import { formatarMoeda } from '@norteia/dominio'
 import { arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
@@ -51,8 +52,10 @@ export default async function PaginaVender({
       .maybeSingle(),
   ])
   const hoje = hojeSaoPaulo()
-  const preco = lote.preco_base_centavos
-    ? formatarMoeda(arredondarCentavos(String(lote.preco_base_centavos))).replace(/^R\$\s/, '')
+  const condicoes = await condicoesDePreco(ctx.db, ctx.tenant.id, id, loteId, hoje)
+  const tabela = condicoes.precoTabelaCentavos
+  const preco = tabela
+    ? formatarMoeda(arredondarCentavos(String(tabela))).replace(/^R\$\s/, '')
     : ''
 
   return (
@@ -80,6 +83,8 @@ export default async function PaginaVender({
             corretores={corretores ?? []}
             corretorReserva={reserva?.corretor_id ?? null}
             semRegistro={!lote.empreendimentos?.data_registro}
+            condicoes={condicoes}
+            podeAprovarDesconto={temPapel(ctx, 'dono')}
           />
         </Cartao>
       )}

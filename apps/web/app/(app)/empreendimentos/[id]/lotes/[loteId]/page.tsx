@@ -33,7 +33,7 @@ export default async function PaginaLote({
   const { data: lote } = await ctx.db
     .from('lotes')
     .select(
-      'id, numero, status, area_m2, testada_m, preco_base_centavos, observacao, tenant_id, quadras(codigo), empreendimentos(nome, data_registro)',
+      'id, numero, status, area_m2, testada_m, preco_base_centavos, observacao, tenant_id, quadras(codigo), empreendimentos(nome, data_registro), tabela_preco_itens(tabela_id)',
     )
     .eq('id', loteId)
     .eq('empreendimento_id', id)
@@ -217,7 +217,11 @@ export default async function PaginaLote({
           <details>
             <summary className="cursor-pointer font-semibold">Cadastro do lote</summary>
             <div className="mt-4">
-              <FormularioLote empreendimentoId={id} lote={lote} />
+              <FormularioLote
+                empreendimentoId={id}
+                lote={lote}
+                precoPelaTabela={lote.tabela_preco_itens.length > 0}
+              />
             </div>
           </details>
         </Cartao>
