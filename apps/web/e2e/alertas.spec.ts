@@ -21,7 +21,9 @@ test('alertas de risco da loteadora', async ({ page }, info) => {
 
   await page.getByRole('link', { name: 'Painel', exact: true }).click()
   await page.getByRole('button', { name: 'Criar demonstração' }).click()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Demonstração — Caso de referência')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Demonstração — Caso de referência',
+  )
   await page.goto('/alertas')
   const lista = page.getByRole('list', { name: 'Alertas' })
   // Plano da demonstração começa em jan/2026 e pede aporte até 2028.
