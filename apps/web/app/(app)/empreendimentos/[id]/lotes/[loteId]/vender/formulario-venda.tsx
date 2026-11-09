@@ -1,12 +1,13 @@
 'use client'
 
-import { formatarMoeda, lerMoeda } from '@norteia/dominio'
+import type { CondicoesPreco } from '@norteia/aplicacao'
+import { formatarData, formatarMoeda, formatarPercentual, lerMoeda } from '@norteia/dominio'
 import { Decimal, arredondarCentavos, tabelaAmortizacao } from '@norteia/motor-financeiro'
 import { useActionState, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alerta, AreaTexto, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/formulario'
 import type { EstadoFormulario } from '@/lib/acao'
-import { vender } from '../acoes-comerciais'
+import { pedirAprovacaoDesconto, vender } from '../acoes-comerciais'
 
 function centavos(texto: string): number | null {
   try {
@@ -36,6 +37,22 @@ function simular(
   return { primeira: tabela[0]!.prestacao, ultima: tabela.at(-1)!.prestacao, total }
 }
 
+/** Desconto sobre a tabela e o que falta para vender com ele (RN-C05). */
+function situacaoDesconto(preco: string, c: CondicoesPreco, podeAprovar: boolean) {
+  const p = centavos(preco)
+  if (p === null || !c.precoTabelaCentavos || p >= c.precoTabelaCentavos) return null
+  const desconto = new Decimal(1).minus(new Decimal(p).div(c.precoTabelaCentavos))
+  const acimaDoLimite = c.limiteDesconto !== null && desconto.gt(c.limiteDesconto)
+  const situacao = podeAprovar
+    ? 'dono'
+    : c.pedido?.situacao === 'aprovada' && p >= c.pedido.precoCentavos
+      ? 'aprovado'
+      : c.pedido?.situacao === 'pendente'
+        ? 'pendente'
+        : 'pedir'
+  return { desconto, acimaDoLimite, situacao }
+}
+
 export function FormularioVenda({
   empreendimentoId,
   loteId,
@@ -45,6 +62,8 @@ export function FormularioVenda({
   corretores,
   corretorReserva,
   semRegistro,
+  condicoes,
+  podeAprovarDesconto,
 }: {
   empreendimentoId: string
   loteId: string
@@ -54,12 +73,18 @@ export function FormularioVenda({
   corretores: { id: string; nome: string }[]
   corretorReserva: string | null
   semRegistro: boolean
+  condicoes: CondicoesPreco
+  podeAprovarDesconto: boolean
 }) {
   const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
     vender.bind(null, empreendimentoId, loteId),
     {},
   )
-  const er = estado.erros ?? {}
+  const [pedido, acaoPedido, pedindo] = useActionState<EstadoFormulario, FormData>(
+    pedirAprovacaoDesconto.bind(null, empreendimentoId, loteId),
+    {},
+  )
+  const er = { ...pedido.erros, ...estado.erros }
   const v = (k: string, padrao = '') => estado.valores?.[k] ?? padrao
   const [cond, setCond] = useState({
     preco: v('preco', preco),
@@ -76,10 +101,13 @@ export function FormularioVenda({
     (k: keyof typeof cond) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setCond({ ...cond, [k]: e.target.value })
   const fmt = (d: Decimal) => formatarMoeda(arredondarCentavos(d))
+  const desconto = situacaoDesconto(cond.preco, condicoes, podeAprovarDesconto)
 
   return (
     <form action={acao} className="flex flex-col gap-5" noValidate>
       {estado.erro && <Alerta>{estado.erro}</Alerta>}
+      {pedido.erro && <Alerta>{pedido.erro}</Alerta>}
+      {pedido.ok && <Alerta tipo="sucesso">{pedido.ok}</Alerta>}
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-sm font-semibold">Comprador</legend>
         <Campo id="nome" rotulo="Nome completo" erro={er.nome}>
@@ -106,9 +134,18 @@ export function FormularioVenda({
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-sm font-semibold">Condições</legend>
         <div className="grid grid-cols-2 gap-3">
-          <Campo id="preco" rotulo="Preço (R$)" erro={er.preco}>
+          <Campo
+            id="preco"
+            rotulo="Preço (R$)"
+            erro={er.preco}
+            {...(condicoes.precoTabelaCentavos
+              ? {
+                  ajuda: `Tabela: ${formatarMoeda(arredondarCentavos(String(condicoes.precoTabelaCentavos)))}${desconto ? ` · desconto de ${formatarPercentual(desconto.desconto.toString(), 2)}` : ''}`,
+                }
+              : {})}
+          >
             <Entrada
-              {...ariaCampo('preco', er.preco)}
+              {...ariaCampo('preco', er.preco, condicoes.precoTabelaCentavos ? 'ajuda' : undefined)}
               inputMode="decimal"
               value={cond.preco}
               onChange={mudar('preco')}
@@ -201,6 +238,41 @@ export function FormularioVenda({
           )}
         </output>
       </fieldset>
+
+      {desconto?.acimaDoLimite && (
+        <div className="flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-50">
+          <p>
+            O desconto passa do limite de {formatarPercentual(condicoes.limiteDesconto!, 2)} sem
+            aprovação.{' '}
+            {desconto.situacao === 'dono'
+              ? 'A venda fica registrada como aprovada por você.'
+              : desconto.situacao === 'aprovado'
+                ? `Desconto aprovado até ${formatarData(condicoes.pedido!.validaAte!)}: pode registrar a venda.`
+                : desconto.situacao === 'pendente'
+                  ? 'Já há um pedido aguardando a aprovação do dono; um novo pedido substitui o anterior.'
+                  : 'Peça a aprovação ao dono antes de registrar a venda.'}
+          </p>
+          {(desconto.situacao === 'pedir' || desconto.situacao === 'pendente') && (
+            <>
+              <Campo
+                id="motivoDesconto"
+                rotulo="Motivo do desconto"
+                ajuda="O dono vê este motivo ao decidir. A aprovação vale para este preço ou maior."
+                erro={er.motivoDesconto}
+              >
+                <AreaTexto
+                  {...ariaCampo('motivoDesconto', er.motivoDesconto, 'ajuda')}
+                  defaultValue={v('motivoDesconto')}
+                  maxLength={500}
+                />
+              </Campo>
+              <Button type="submit" variant="secondary" formAction={acaoPedido} disabled={pedindo}>
+                {pedindo ? 'Enviando…' : 'Pedir aprovação do desconto'}
+              </Button>
+            </>
+          )}
+        </div>
+      )}
 
       {semRegistro && (
         <Campo

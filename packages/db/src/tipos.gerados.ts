@@ -69,6 +69,102 @@ export type Database = {
           },
         ]
       }
+      aprovacoes_desconto: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          decidido_em: string | null
+          decidido_por: string | null
+          desconto: number
+          empreendimento_id: string
+          id: string
+          justificativa: string
+          limite: number
+          lote_id: string
+          motivo_decisao: string | null
+          preco_centavos: number
+          preco_tabela_centavos: number
+          situacao: string
+          tenant_id: string
+          valida_ate: string | null
+          venda_id: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
+          desconto: number
+          empreendimento_id: string
+          id?: string
+          justificativa: string
+          limite: number
+          lote_id: string
+          motivo_decisao?: string | null
+          preco_centavos: number
+          preco_tabela_centavos: number
+          situacao?: string
+          tenant_id: string
+          valida_ate?: string | null
+          venda_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
+          desconto?: number
+          empreendimento_id?: string
+          id?: string
+          justificativa?: string
+          limite?: number
+          lote_id?: string
+          motivo_decisao?: string | null
+          preco_centavos?: number
+          preco_tabela_centavos?: number
+          situacao?: string
+          tenant_id?: string
+          valida_ate?: string | null
+          venda_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'aprovacoes_desconto_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'aprovacoes_desconto_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'aprovacoes_desconto_tenant_id_lote_id_fkey'
+            columns: ['tenant_id', 'lote_id']
+            isOneToOne: false
+            referencedRelation: 'lotes'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'aprovacoes_desconto_tenant_id_venda_id_fkey'
+            columns: ['tenant_id', 'venda_id']
+            isOneToOne: false
+            referencedRelation: 'vendas'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       asaas_clientes: {
         Row: {
           asaas_id: string
@@ -3076,6 +3172,101 @@ export type Database = {
           },
         ]
       }
+      tabela_preco_itens: {
+        Row: {
+          lote_id: string
+          preco_centavos: number
+          tabela_id: string
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          lote_id: string
+          preco_centavos: number
+          tabela_id: string
+          tenant_id: string
+        }
+        Update: {
+          lote_id?: string
+          preco_centavos?: number
+          tabela_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'tabela_preco_itens_tenant_id_lote_id_fkey'
+            columns: ['tenant_id', 'lote_id']
+            isOneToOne: false
+            referencedRelation: 'lotes'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'tabela_preco_itens_tenant_id_tabela_id_fkey'
+            columns: ['tenant_id', 'tabela_id']
+            isOneToOne: false
+            referencedRelation: 'tabelas_preco'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      tabelas_preco: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          empreendimento_id: string
+          id: string
+          lotes: number
+          nome: string
+          reajuste: number
+          tenant_id: string
+          vigente_desde: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id: string
+          id?: string
+          lotes: number
+          nome: string
+          reajuste?: number
+          tenant_id: string
+          vigente_desde: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id?: string
+          id?: string
+          lotes?: number
+          nome?: string
+          reajuste?: number
+          tenant_id?: string
+          vigente_desde?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'tabelas_preco_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'tabelas_preco_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       tenants: {
         Row: {
           atualizado_em: string
@@ -3117,6 +3308,7 @@ export type Database = {
       }
       vendas: {
         Row: {
+          aprovacao_desconto_id: string | null
           atualizado_em: string
           atualizado_por: string | null
           comissao_modo: string
@@ -3126,6 +3318,7 @@ export type Database = {
           criado_em: string
           criado_por: string | null
           data_venda: string
+          desconto_aprovado_por: string | null
           empreendimento_id: string
           entrada_centavos: number
           id: string
@@ -3135,6 +3328,7 @@ export type Database = {
           lote_id: string
           parcelas: number
           preco_centavos: number
+          preco_tabela_centavos: number | null
           primeira_parcela_em: string | null
           reserva_id: string | null
           sistema: string
@@ -3143,6 +3337,7 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          aprovacao_desconto_id?: string | null
           atualizado_em?: string
           atualizado_por?: string | null
           comissao_modo?: string
@@ -3152,6 +3347,7 @@ export type Database = {
           criado_em?: string
           criado_por?: string | null
           data_venda: string
+          desconto_aprovado_por?: string | null
           empreendimento_id: string
           entrada_centavos: number
           id?: string
@@ -3161,6 +3357,7 @@ export type Database = {
           lote_id: string
           parcelas: number
           preco_centavos: number
+          preco_tabela_centavos?: number | null
           primeira_parcela_em?: string | null
           reserva_id?: string | null
           sistema: string
@@ -3168,6 +3365,7 @@ export type Database = {
           tenant_id: string
         }
         Update: {
+          aprovacao_desconto_id?: string | null
           atualizado_em?: string
           atualizado_por?: string | null
           comissao_modo?: string
@@ -3177,6 +3375,7 @@ export type Database = {
           criado_em?: string
           criado_por?: string | null
           data_venda?: string
+          desconto_aprovado_por?: string | null
           empreendimento_id?: string
           entrada_centavos?: number
           id?: string
@@ -3186,6 +3385,7 @@ export type Database = {
           lote_id?: string
           parcelas?: number
           preco_centavos?: number
+          preco_tabela_centavos?: number | null
           primeira_parcela_em?: string | null
           reserva_id?: string | null
           sistema?: string
@@ -3199,6 +3399,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'importacoes'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'vendas_tenant_id_aprovacao_desconto_id_fkey'
+            columns: ['tenant_id', 'aprovacao_desconto_id']
+            isOneToOne: false
+            referencedRelation: 'aprovacoes_desconto'
+            referencedColumns: ['tenant_id', 'id']
           },
           {
             foreignKeyName: 'vendas_tenant_id_comprador_id_fkey'
@@ -3354,6 +3561,10 @@ export type Database = {
         Returns: string
       }
       dados_dimob: { Args: { p_ano: number; p_spe: string }; Returns: Json }
+      decidir_aprovacao_desconto: {
+        Args: { p_aprovacao: string; p_aprovar: boolean; p_motivo?: string }
+        Returns: undefined
+      }
       definir_parametro: {
         Args: {
           p_chave: string
@@ -3433,8 +3644,19 @@ export type Database = {
         Returns: Json
       }
       portal_contrato: { Args: { p_contrato: string }; Returns: Json }
+      preco_tabela: { Args: { p_data: string; p_lote: string }; Returns: number }
       publicar_modelo: {
         Args: { p_conteudo: string; p_nome: string; p_tenant: string; p_tipo: string }
+        Returns: string
+      }
+      publicar_tabela_preco: {
+        Args: {
+          p_empreendimento: string
+          p_nome: string
+          p_precos?: Json
+          p_reajuste?: number
+          p_vigente_desde: string
+        }
         Returns: string
       }
       reajustar_contrato: { Args: { p_contrato: string }; Returns: number }
@@ -3484,6 +3706,10 @@ export type Database = {
         Returns: string
       }
       segunda_via: { Args: { p_parcela: string }; Returns: string }
+      solicitar_aprovacao_desconto: {
+        Args: { p_data: string; p_justificativa: string; p_lote: string; p_preco: number }
+        Returns: string
+      }
       trocar_lote: {
         Args: {
           p_condicoes: Json

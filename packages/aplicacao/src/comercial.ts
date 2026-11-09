@@ -192,3 +192,110 @@ export async function vendasDoEmpreendimento(
       : {}),
   }))
 }
+
+/** Publica uma tabela de preços (RN-C05): a vigente reajustada, com preços próprios por lote. */
+export async function publicarTabelaPreco(
+  db: ClienteBanco,
+  empreendimentoId: string,
+  t: { nome: string; vigenteDesde: string; reajuste: string; precos: Record<string, number> },
+): Promise<string> {
+  const { data, error } = await db.rpc('publicar_tabela_preco', {
+    p_empreendimento: empreendimentoId,
+    p_nome: t.nome,
+    p_vigente_desde: t.vigenteDesde,
+    p_reajuste: Number(t.reajuste),
+    p_precos: t.precos,
+  })
+  falhar(error)
+  return data!
+}
+
+/** Pede a aprovação de um preço com desconto acima do limite (RN-C05). */
+export async function solicitarAprovacaoDesconto(
+  db: ClienteBanco,
+  loteId: string,
+  precoCentavos: number,
+  data: string,
+  justificativa: string,
+): Promise<string> {
+  const { data: id, error } = await db.rpc('solicitar_aprovacao_desconto', {
+    p_lote: loteId,
+    p_preco: precoCentavos,
+    p_data: data,
+    p_justificativa: justificativa,
+  })
+  falhar(error)
+  return id!
+}
+
+export async function decidirAprovacaoDesconto(
+  db: ClienteBanco,
+  aprovacaoId: string,
+  aprovar: boolean,
+  motivo?: string,
+) {
+  const { error } = await db.rpc('decidir_aprovacao_desconto', {
+    p_aprovacao: aprovacaoId,
+    p_aprovar: aprovar,
+    ...(motivo ? { p_motivo: motivo } : {}),
+  })
+  falhar(error)
+}
+
+export interface CondicoesPreco {
+  /** Preço da tabela vigente na data (ou o de cadastro, sem tabela). */
+  precoTabelaCentavos: number | null
+  /** Desconto máximo sem aprovação (fração); nulo = a loteadora não definiu limite. */
+  limiteDesconto: string | null
+  /** Último pedido de desconto ainda em aberto para o lote. */
+  pedido: {
+    situacao: 'pendente' | 'aprovada'
+    precoCentavos: number
+    validaAte: string | null
+  } | null
+}
+
+/** O que a venda precisa saber do preço do lote numa data (RN-C05). */
+export async function condicoesDePreco(
+  db: ClienteBanco,
+  tenantId: string,
+  empreendimentoId: string,
+  loteId: string,
+  data: string,
+): Promise<CondicoesPreco> {
+  const [tabela, limite, pedido] = await Promise.all([
+    db.rpc('preco_tabela', { p_lote: loteId, p_data: data }),
+    db.rpc('parametro_vigente', {
+      p_chave: 'comercial.desconto_maximo_sem_aprovacao',
+      p_data: data,
+      p_tenant: tenantId,
+      p_escopo: 'empreendimento',
+      p_escopo_id: empreendimentoId,
+    }),
+    db
+      .from('aprovacoes_desconto')
+      .select('situacao, preco_centavos, valida_ate')
+      .eq('lote_id', loteId)
+      .in('situacao', ['pendente', 'aprovada'])
+      .order('criado_em', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+  falhar(tabela.error)
+  falhar(limite.error)
+  falhar(pedido.error)
+  return {
+    precoTabelaCentavos: tabela.data ?? null,
+    limiteDesconto:
+      limite.data === null || limite.data === undefined
+        ? null
+        : String(limite.data).replace(/^"|"$/g, ''),
+    pedido: pedido.data
+      ? {
+          situacao: pedido.data.situacao as 'pendente' | 'aprovada',
+          precoCentavos: pedido.data.preco_centavos,
+          validaAte: pedido.data.valida_ate,
+        }
+      : null,
+  }
+}

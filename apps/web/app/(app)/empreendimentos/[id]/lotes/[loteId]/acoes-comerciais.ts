@@ -6,6 +6,7 @@ import {
   cancelarReserva,
   registrarVenda,
   reservarLote,
+  solicitarAprovacaoDesconto,
 } from '@norteia/aplicacao'
 import { lerMoeda } from '@norteia/dominio'
 import { Decimal } from '@norteia/motor-financeiro'
@@ -173,4 +174,38 @@ export async function vender(
   redirect(
     `/empreendimentos/${empreendimentoId}/lotes/${loteId}?vendido=1${resultado.contratoId ? '' : '&semContrato=1'}`,
   )
+}
+
+/** Pede ao dono a aprovação do preço com desconto acima do limite (RN-C05). */
+export async function pedirAprovacaoDesconto(
+  empreendimentoId: string,
+  loteId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const d = z
+      .object({
+        preco: dinheiro('Preço', 1),
+        dataVenda: z.iso.date({ error: 'Data da venda inválida.' }),
+        motivoDesconto: z
+          .string()
+          .trim()
+          .min(10, 'Explique o motivo do desconto (ao menos 10 caracteres).')
+          .max(500),
+      })
+      .parse(valoresDoFormulario(form))
+    await solicitarAprovacaoDesconto(ctx.db, loteId, d.preco, d.dataVenda, d.motivoDesconto)
+  } catch (e) {
+    if (e instanceof ErroAplicacao && e.codigo === 'justificativa_desconto')
+      return { erros: { motivoDesconto: e.message }, valores: valoresDoFormulario(form) }
+    return estadoDeErro(e, form)
+  }
+  revalidatePath(`/empreendimentos/${empreendimentoId}/lotes/${loteId}/vender`)
+  revalidatePath(`/empreendimentos/${empreendimentoId}/comercial`)
+  return {
+    ok: 'Pedido enviado. Quando o dono aprovar, volte aqui e registre a venda.',
+    valores: valoresDoFormulario(form),
+  }
 }
