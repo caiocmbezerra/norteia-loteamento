@@ -25,6 +25,8 @@
 
 - Proposta como etapa separada (D-100): o corretor (ou a gestão) propõe as condições com simulação e validade; a gestão aceita ou recusa com motivo; a aceita abre a venda já preenchida e vira "convertida" quando a venda do lote é registrada (as abertas do lote são encerradas). O corretor só vê as próprias propostas (RN-C07).
 
+- Metas e leads (D-101): meta do mês por empreendimento ou corretor (vendas e VGV), com o realizado calculado das vendas registradas; leads por empreendimento com origem, etapa do funil (novo → ganho/perdido, perda com motivo), próximo contato e conversão. O corretor cadastra e vê só os próprios leads e a própria meta.
+
 ## Pendente (4b)
 
-- Metas comerciais e leads simples.
+- Nada de código; a Fase 4 está completa. Melhorias futuras: importação DXF/DWG da planta (sob demanda, D-008).

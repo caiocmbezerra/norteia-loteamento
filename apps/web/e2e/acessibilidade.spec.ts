@@ -49,6 +49,7 @@ test('telas principais sem violações graves de acessibilidade', async ({ page 
     `${empreendimento}/custos`,
     `${empreendimento}/comercial`,
     `${empreendimento}/comercial/precos`,
+    `${empreendimento}/comercial/leads`,
     `${empreendimento}/planta`,
     `${empreendimento}/carteira`,
     `${empreendimento}/carteira/importar`,
