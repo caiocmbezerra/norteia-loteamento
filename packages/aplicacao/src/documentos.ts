@@ -178,6 +178,126 @@ export async function usarModeloPadrao(db: ClienteBanco, tenantId: string, tipo:
   falhar(error)
 }
 
+interface ContratoDocumento {
+  situacao: string
+  quitado_em: string | null
+  indice_reajuste: string | null
+  multa_atraso: number
+  juros_mora_mensal: number
+  reajuste_periodicidade_meses: number
+  reajuste_defasagem_meses: number
+  compradores: {
+    nome: string
+    cpf: string | null
+    email: string | null
+    telefone: string | null
+  } | null
+  lotes: { numero: string; area_m2: number | null; quadras: { codigo: string } | null } | null
+  vendas: {
+    data_venda: string
+    preco_centavos: number
+    entrada_centavos: number
+    parcelas: number
+    juros_mensal: number
+    sistema: string
+  } | null
+  empreendimentos: {
+    nome: string
+    municipio: string | null
+    uf: string | null
+    spes: { razao_social: string; cnpj: string | null } | null
+  } | null
+}
+
+/** Valores do documento a partir dos dados do contrato (mesmo mapa na gestão e no portal). */
+function montarDados({
+  c,
+  parcelas,
+  tipo,
+  aditivoId,
+  aditivo,
+  loteAnterior,
+  cedente,
+  recebidoCentavos,
+  hoje,
+}: {
+  c: ContratoDocumento
+  parcelas: {
+    numero: number
+    vencimento: string
+    valor_centavos: number
+    situacao: string
+    aditivo_origem_id: string | null
+  }[]
+  tipo: TipoDocumento
+  aditivoId?: string | undefined
+  aditivo: {
+    data: string
+    motivo: string
+    saldo_anterior_centavos: number
+    encargos_incorporados_centavos: number
+    desconto_centavos: number
+    novo_saldo_centavos: number
+  } | null
+  loteAnterior: { numero: string; quadras: { codigo: string } | null } | null
+  cedente: { nome: string; cpf: string | null } | null
+  recebidoCentavos: number
+  hoje: string
+}): DadosDocumento {
+  const doPlano = parcelas.filter((p) =>
+    tipo === 'aditivo_renegociacao' || tipo === 'aditivo_troca_lote'
+      ? p.aditivo_origem_id === aditivoId
+      : p.numero > 0 && p.situacao !== 'cancelada',
+  )
+  const v = c.vendas
+  const e = c.empreendimentos
+  const dados: DadosDocumento = {
+    vendedora_razao_social: e?.spes?.razao_social ?? '',
+    vendedora_cnpj: cnpj(e?.spes?.cnpj),
+    comprador_nome: c.compradores?.nome ?? '',
+    comprador_cpf: cpf(c.compradores?.cpf),
+    comprador_email: c.compradores?.email ?? '—',
+    comprador_telefone: c.compradores?.telefone ?? '—',
+    empreendimento_nome: e?.nome ?? '',
+    cidade: e?.municipio ? `${e.municipio}${e.uf ? `/${e.uf}` : ''}` : '',
+    lote_quadra: c.lotes?.quadras?.codigo ?? '',
+    lote_numero: c.lotes?.numero ?? '',
+    lote_area: String(c.lotes?.area_m2 ?? '').replace('.', ','),
+    venda_data: v ? formatarData(v.data_venda) : '',
+    venda_preco: v ? moeda(v.preco_centavos) : '',
+    venda_entrada: v ? moeda(v.entrada_centavos) : '',
+    venda_parcelas: String(v?.parcelas ?? ''),
+    venda_juros: v ? formatarPercentual(String(v.juros_mensal), 2) : '',
+    venda_sistema: v?.sistema === 'sac' ? 'SAC' : 'Price',
+    contrato_indice: c.indice_reajuste ?? 'sem reajuste',
+    contrato_reajuste: c.indice_reajuste
+      ? `a cada ${c.reajuste_periodicidade_meses} meses contados da venda, pelo índice acumulado até ${c.reajuste_defasagem_meses} meses antes do aniversário`
+      : 'sem reajuste',
+    contrato_multa: formatarPercentual(String(c.multa_atraso), 2),
+    contrato_juros_mora: formatarPercentual(String(c.juros_mora_mensal), 2),
+    parcelas: doPlano.map((p) => ({
+      numero: String(p.numero),
+      vencimento: formatarData(p.vencimento),
+      valor: moeda(p.valor_centavos),
+    })),
+    aditivo_data: aditivo ? formatarData(aditivo.data) : '',
+    aditivo_motivo: aditivo?.motivo ?? '',
+    aditivo_saldo_anterior: aditivo ? moeda(aditivo.saldo_anterior_centavos) : '',
+    aditivo_encargos: aditivo ? moeda(aditivo.encargos_incorporados_centavos) : '',
+    aditivo_desconto: aditivo ? moeda(aditivo.desconto_centavos) : '',
+    aditivo_novo_saldo: aditivo ? moeda(aditivo.novo_saldo_centavos) : '',
+    aditivo_lote_anterior: loteAnterior
+      ? `Lote ${loteAnterior.numero} da Quadra ${loteAnterior.quadras?.codigo ?? '?'}`
+      : '',
+    cedente_nome: cedente?.nome ?? '',
+    cedente_cpf: cpf(cedente?.cpf),
+    quitacao_data: c.quitado_em ? formatarData(c.quitado_em) : '',
+    quitacao_total: moeda(recebidoCentavos),
+    hoje: formatarData(hoje),
+  }
+  return dados
+}
+
 /**
  * Gera o documento de um contrato (ou de um aditivo dele) com o modelo em uso do cliente.
  */
@@ -251,57 +371,17 @@ export async function gerarDocumento(
       : Promise.resolve([] as { valor_centavos: number }[]),
   ])
 
-  const doPlano = parcelas.filter((p) =>
-    tipo === 'aditivo_renegociacao' || tipo === 'aditivo_troca_lote'
-      ? p.aditivo_origem_id === aditivoId
-      : p.numero > 0 && p.situacao !== 'cancelada',
-  )
-  const v = c!.vendas
-  const e = c!.empreendimentos
-  const dados: DadosDocumento = {
-    vendedora_razao_social: e?.spes?.razao_social ?? '',
-    vendedora_cnpj: cnpj(e?.spes?.cnpj),
-    comprador_nome: c!.compradores?.nome ?? '',
-    comprador_cpf: cpf(c!.compradores?.cpf),
-    comprador_email: c!.compradores?.email ?? '—',
-    comprador_telefone: c!.compradores?.telefone ?? '—',
-    empreendimento_nome: e?.nome ?? '',
-    cidade: e?.municipio ? `${e.municipio}${e.uf ? `/${e.uf}` : ''}` : '',
-    lote_quadra: c!.lotes?.quadras?.codigo ?? '',
-    lote_numero: c!.lotes?.numero ?? '',
-    lote_area: String(c!.lotes?.area_m2 ?? '').replace('.', ','),
-    venda_data: v ? formatarData(v.data_venda) : '',
-    venda_preco: v ? moeda(v.preco_centavos) : '',
-    venda_entrada: v ? moeda(v.entrada_centavos) : '',
-    venda_parcelas: String(v?.parcelas ?? ''),
-    venda_juros: v ? formatarPercentual(String(v.juros_mensal), 2) : '',
-    venda_sistema: v?.sistema === 'sac' ? 'SAC' : 'Price',
-    contrato_indice: c!.indice_reajuste ?? 'sem reajuste',
-    contrato_reajuste: c!.indice_reajuste
-      ? `a cada ${c!.reajuste_periodicidade_meses} meses contados da venda, pelo índice acumulado até ${c!.reajuste_defasagem_meses} meses antes do aniversário`
-      : 'sem reajuste',
-    contrato_multa: formatarPercentual(String(c!.multa_atraso), 2),
-    contrato_juros_mora: formatarPercentual(String(c!.juros_mora_mensal), 2),
-    parcelas: doPlano.map((p) => ({
-      numero: String(p.numero),
-      vencimento: formatarData(p.vencimento),
-      valor: moeda(p.valor_centavos),
-    })),
-    aditivo_data: aditivo.data ? formatarData(aditivo.data.data) : '',
-    aditivo_motivo: aditivo.data?.motivo ?? '',
-    aditivo_saldo_anterior: aditivo.data ? moeda(aditivo.data.saldo_anterior_centavos) : '',
-    aditivo_encargos: aditivo.data ? moeda(aditivo.data.encargos_incorporados_centavos) : '',
-    aditivo_desconto: aditivo.data ? moeda(aditivo.data.desconto_centavos) : '',
-    aditivo_novo_saldo: aditivo.data ? moeda(aditivo.data.novo_saldo_centavos) : '',
-    aditivo_lote_anterior: loteAnterior.data
-      ? `Lote ${loteAnterior.data.numero} da Quadra ${loteAnterior.data.quadras?.codigo ?? '?'}`
-      : '',
-    cedente_nome: cedente.data?.nome ?? '',
-    cedente_cpf: cpf(cedente.data?.cpf),
-    quitacao_data: c!.quitado_em ? formatarData(c!.quitado_em) : '',
-    quitacao_total: moeda(recebidos.reduce((t, r) => t + r.valor_centavos, 0)),
-    hoje: formatarData(hoje),
-  }
+  const dados = montarDados({
+    c: c!,
+    parcelas,
+    tipo,
+    aditivoId,
+    aditivo: aditivo.data,
+    loteAnterior: loteAnterior.data,
+    cedente: cedente.data,
+    recebidoCentavos: recebidos.reduce((t, r) => t + r.valor_centavos, 0),
+    hoje,
+  })
   const modelo = await modeloEmUso(db, tenantId, tipo)
   let conteudo: Uint8Array
   try {
@@ -390,4 +470,43 @@ export async function gerarInforme(
     nomeArquivo: `informe-pagamentos-${ano}-contrato-${i.contrato_numero}.docx`,
     conteudo,
   }
+}
+
+/** Contrato ou termo de quitação baixado pelo próprio comprador (portal). Nulo se não for dele. */
+export async function gerarDocumentoPortal(
+  db: ClienteBanco,
+  contratoId: string,
+  tipo: 'contrato' | 'quitacao',
+  hoje: string,
+): Promise<{ nomeArquivo: string; conteudo: Uint8Array } | null> {
+  const { data, error } = await db.rpc('documento_portal', { p_contrato: contratoId, p_tipo: tipo })
+  if (error?.code === '42501') return null
+  falhar(error)
+  const d = data as unknown as {
+    contrato: ContratoDocumento
+    parcelas: Parameters<typeof montarDados>[0]['parcelas']
+    recebido_centavos: number
+    modelo: string | null
+  }
+  const dados = montarDados({
+    c: d.contrato,
+    parcelas: d.parcelas,
+    tipo,
+    aditivo: null,
+    loteAnterior: null,
+    cedente: null,
+    recebidoCentavos: d.recebido_centavos,
+    hoje,
+  })
+  let conteudo: Uint8Array
+  try {
+    conteudo = preencherModelo(d.modelo ? deBase64(d.modelo) : modeloPadrao(tipo), dados)
+  } catch (erro) {
+    if (erro instanceof ErroModelo) throw new ErroAplicacao(erro.message, 'invalido')
+    throw erro
+  }
+  const lote = `quadra-${dados.lote_quadra}-lote-${dados.lote_numero}`
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '')
+  return { nomeArquivo: `${tipo}-${lote}.docx`, conteudo }
 }

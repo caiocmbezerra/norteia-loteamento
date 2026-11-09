@@ -29,9 +29,11 @@
 - App instalável (manifesto, ícones, atalho para o portal).
 - Andamento da obra no portal do comprador: avanço financeiro por etapa da infraestrutura.
 
-## A fazer
+- Contrato e termo de quitação para download no portal do comprador.
 
-- Documentos do contrato (contrato e termo de quitação) para download no portal do comprador.
+## A fazer (com os clientes)
+
+- Importar a DIMOB no PGD, piloto da exportação contábil e validação de PL-19 a PL-22.
 
 ## Critérios
 
