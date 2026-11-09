@@ -2,6 +2,7 @@ import type { ClienteBanco } from '@norteia/db'
 import { formatarData, formatarMoeda, formatarPercentual } from '@norteia/dominio'
 import type { FerramentaAssistente } from '@norteia/integracoes/assistente'
 import { Decimal, arredondarCentavos, somarMeses } from '@norteia/motor-financeiro'
+import { carregarAlertas } from './alertas'
 import { carregarCarteira, paginar } from './carteira'
 import { carregarPainelCustos } from './custos'
 import { ErroAplicacao } from './erros'
@@ -148,6 +149,23 @@ export function ferramentasDoAssistente(
         ]
           .filter(Boolean)
           .join('\n')
+      },
+    },
+    {
+      nome: 'alertas_risco',
+      descricao:
+        'Alertas de risco da loteadora hoje: aporte necessário nos próximos meses, custos e exposição acima do plano, inadimplência alta ou crescendo, por empreendimento, com a gravidade (crítico ou atenção).',
+      esquema: { type: 'object', properties: {} },
+      async executar() {
+        const alertas = await carregarAlertas(db, tenantId, hoje)
+        if (alertas.length === 0) return `Nenhum alerta de risco em ${formatarData(hoje)}.`
+        return [
+          `Alertas em ${formatarData(hoje)}:`,
+          ...alertas.map(
+            (a) =>
+              `- ${a.empreendimento} (${a.alerta.gravidade === 'critico' ? 'crítico' : 'atenção'}): ${a.texto}`,
+          ),
+        ].join('\n')
       },
     },
   ]
