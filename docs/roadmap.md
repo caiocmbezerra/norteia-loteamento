@@ -1,6 +1,8 @@
 # NorteIA Loteamento — Roadmap
 
-> Status: **proposta para aprovação** (v0.1, 07/11/2026).
+> Status (09/11/2026): **código das Fases 0 a 8 entregue e em produção.** O que falta para fechar os critérios depende de clientes piloto, contadores e contas externas; está em cada `docs/fases/fase-N.md` e no roteiro por cliente (`docs/pendencias-legais.md`).
+>
+> Pendências fora do código: chave da API da Anthropic na Vercel (assistente e leitura de notas), avaliação das 50 perguntas, DIMOB importada no PGD, piloto da exportação contábil, carteira real importada, teste do Asaas em sandbox, contas Resend/WhatsApp Business/assinatura eletrônica.
 > Cada fase termina com: testes passando no CI, migrations versionadas, dados de demonstração atualizados e um resumo em `docs/fases/fase-N.md` (feito × pendente).
 > As fases são sequenciais no núcleo; itens marcados _(paralelo)_ podem começar antes, se houver capacidade.
 
