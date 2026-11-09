@@ -26,9 +26,12 @@ export default async function PaginaLote({
   searchParams,
 }: {
   params: Promise<{ id: string; loteId: string }>
-  searchParams: Promise<{ vendido?: string; semContrato?: string }>
+  searchParams: Promise<{ vendido?: string; semContrato?: string; proposta?: string }>
 }) {
-  const [{ id, loteId }, { vendido, semContrato }] = await Promise.all([params, searchParams])
+  const [{ id, loteId }, { vendido, semContrato, proposta: propostaEnviada }] = await Promise.all([
+    params,
+    searchParams,
+  ])
   const ctx = await exigirContexto()
   const { data: lote } = await ctx.db
     .from('lotes')
@@ -54,39 +57,50 @@ export default async function PaginaLote({
   const podeGerarContrato = temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor')
   const podeEditarCadastro = temPapel(ctx, 'dono', 'engenharia', 'comercial_gestor')
 
-  const [{ data: reserva }, { data: venda }, { data: corretores }, { data: prazo }] =
-    await Promise.all([
-      ctx.db
-        .from('reservas')
-        .select('id, cliente_nome, expira_em, corretores(nome)')
-        .eq('lote_id', loteId)
-        .eq('situacao', 'ativa')
-        .gt('expira_em', new Date().toISOString())
-        .maybeSingle(),
-      ctx.db
-        .from('vendas')
-        .select(
-          'id, data_venda, preco_centavos, entrada_centavos, parcelas, compradores(nome), corretores(nome), contratos(id)',
-        )
-        .eq('lote_id', loteId)
-        .eq('situacao', 'ativa')
-        .maybeSingle(),
-      gestor
-        ? ctx.db
-            .from('corretores')
-            .select('id, nome')
-            .eq('tenant_id', ctx.tenant.id)
-            .eq('ativo', true)
-            .order('nome')
-        : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
-      ctx.db.rpc('parametro_vigente', {
-        p_chave: 'comercial.prazo_reserva_horas',
-        p_data: new Date().toISOString().slice(0, 10),
-        p_tenant: ctx.tenant.id,
-        p_escopo: 'empreendimento',
-        p_escopo_id: id,
-      }),
-    ])
+  const [
+    { data: reserva },
+    { data: venda },
+    { data: corretores },
+    { data: prazo },
+    { data: propostas },
+  ] = await Promise.all([
+    ctx.db
+      .from('reservas')
+      .select('id, cliente_nome, expira_em, corretores(nome)')
+      .eq('lote_id', loteId)
+      .eq('situacao', 'ativa')
+      .gt('expira_em', new Date().toISOString())
+      .maybeSingle(),
+    ctx.db
+      .from('vendas')
+      .select(
+        'id, data_venda, preco_centavos, entrada_centavos, parcelas, compradores(nome), corretores(nome), contratos(id)',
+      )
+      .eq('lote_id', loteId)
+      .eq('situacao', 'ativa')
+      .maybeSingle(),
+    gestor
+      ? ctx.db
+          .from('corretores')
+          .select('id, nome')
+          .eq('tenant_id', ctx.tenant.id)
+          .eq('ativo', true)
+          .order('nome')
+      : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
+    ctx.db.rpc('parametro_vigente', {
+      p_chave: 'comercial.prazo_reserva_horas',
+      p_data: new Date().toISOString().slice(0, 10),
+      p_tenant: ctx.tenant.id,
+      p_escopo: 'empreendimento',
+      p_escopo_id: id,
+    }),
+    ctx.db
+      .from('propostas')
+      .select('id, situacao, cliente_nome, preco_centavos, parcelas, valida_ate, corretores(nome)')
+      .eq('lote_id', loteId)
+      .in('situacao', ['aberta', 'aceita'])
+      .order('criado_em'),
+  ])
   const semRegistro = !lote.empreendimentos?.data_registro
 
   return (
@@ -112,8 +126,39 @@ export default async function PaginaLote({
         </Alerta>
       )}
 
+      {propostaEnviada && (
+        <Alerta tipo="sucesso">Proposta enviada. A gestão comercial vai aceitar ou recusar.</Alerta>
+      )}
+
       <Cartao className="flex flex-col gap-3">
         <h2 className="font-semibold">Comercial</h2>
+        {(propostas ?? []).length > 0 && (
+          <ul className="flex flex-col gap-2 rounded-md border p-3 text-sm" aria-label="Propostas">
+            {(propostas ?? []).map((p) => (
+              <li key={p.id} className="flex flex-col gap-1">
+                <span>
+                  Proposta de <span className="font-medium">{p.cliente_nome}</span>:{' '}
+                  {moeda(p.preco_centavos)}
+                  {p.parcelas === 0 ? ' à vista' : ` em ${p.parcelas} parcelas`}
+                  {p.corretores?.nome ? ` · ${p.corretores.nome}` : ''} ·{' '}
+                  {p.situacao === 'aceita' ? 'aceita' : `aberta até ${formatarData(p.valida_ate)}`}
+                </span>
+                {p.situacao === 'aceita' && gestor && (
+                  <Button asChild size="sm" className="self-start">
+                    <Link href={`/empreendimentos/${id}/lotes/${loteId}/vender?proposta=${p.id}`}>
+                      Registrar venda da proposta
+                    </Link>
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {podeReservar && ['disponivel', 'reservado'].includes(lote.status) && (
+          <Button asChild variant="secondary">
+            <Link href={`/empreendimentos/${id}/lotes/${loteId}/proposta`}>Fazer proposta</Link>
+          </Button>
+        )}
         {lote.status === 'disponivel' && (
           <>
             {podeReservar && (

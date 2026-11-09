@@ -18,7 +18,7 @@ function centavos(texto: string): number | null {
 }
 
 /** Simulação ao vivo com o mesmo motor que projeta o fluxo (RN-F01). */
-function simular(
+export function simular(
   preco: string,
   entrada: string,
   parcelas: string,
@@ -64,6 +64,7 @@ export function FormularioVenda({
   semRegistro,
   condicoes,
   podeAprovarDesconto,
+  inicial = {},
 }: {
   empreendimentoId: string
   loteId: string
@@ -75,6 +76,8 @@ export function FormularioVenda({
   semRegistro: boolean
   condicoes: CondicoesPreco
   podeAprovarDesconto: boolean
+  /** Valores iniciais (ex.: da proposta aceita). */
+  inicial?: Record<string, string>
 }) {
   const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
     vender.bind(null, empreendimentoId, loteId),
@@ -85,7 +88,7 @@ export function FormularioVenda({
     {},
   )
   const er = { ...pedido.erros, ...estado.erros }
-  const v = (k: string, padrao = '') => estado.valores?.[k] ?? padrao
+  const v = (k: string, padrao = '') => estado.valores?.[k] ?? inicial[k] ?? padrao
   const [cond, setCond] = useState({
     preco: v('preco', preco),
     entrada: v('entrada', ''),

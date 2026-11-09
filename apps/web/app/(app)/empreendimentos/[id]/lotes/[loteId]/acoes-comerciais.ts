@@ -4,6 +4,7 @@ import {
   ErroAplicacao,
   INDICES_REAJUSTE,
   cancelarReserva,
+  criarProposta,
   registrarVenda,
   reservarLote,
   solicitarAprovacaoDesconto,
@@ -85,46 +86,99 @@ const dinheiro = (rotulo: string, minimo = 0) =>
 
 const opcional = (v: string) => (v.trim() === '' ? null : v.trim())
 
-const esquemaVenda = z
-  .object({
-    nome: z.string().trim().min(2, 'Nome do comprador: informe ao menos 2 caracteres.'),
-    cpf: z
-      .string()
-      .transform((v) => v.replace(/\D/g, ''))
-      .refine((v) => v === '' || v.length === 11, 'CPF: informe os 11 dígitos.'),
-    email: z.union([z.literal(''), z.email('E-mail inválido.')]),
-    telefone: z.string().trim().max(30),
-    corretor: z.string(),
+const camposCondicoes = {
+  nome: z.string().trim().min(2, 'Nome do comprador: informe ao menos 2 caracteres.'),
+  cpf: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ''))
+    .refine((v) => v === '' || v.length === 11, 'CPF: informe os 11 dígitos.'),
+  email: z.union([z.literal(''), z.email('E-mail inválido.')]),
+  telefone: z.string().trim().max(30),
+  corretor: z.string(),
+  preco: dinheiro('Preço', 1),
+  entrada: dinheiro('Entrada'),
+  parcelas: z.coerce.number().int().min(0, 'Parcelas: mínimo 0.').max(480, 'Parcelas: máximo 480.'),
+  juros: z
+    .string()
+    .trim()
+    .regex(/^\d{1,2}(,\d{1,4})?$/, 'Juros: use um percentual como 0,5.')
+    .transform((v) => new Decimal(v.replace(',', '.')).div(100).toString()),
+  sistema: z.enum(['price', 'sac']),
+  primeiraParcela: z.string(),
+}
+
+type Condicoes = { preco: number; entrada: number; parcelas: number; primeiraParcela: string }
+
+/** Regras comuns à proposta e à venda (à vista × parcelado). */
+function comRegras<T extends z.ZodType<Condicoes>>(esquema: T) {
+  return esquema
+    .refine((v) => v.entrada <= v.preco, {
+      message: 'A entrada não pode passar do preço.',
+      path: ['entrada'],
+    })
+    .refine((v) => (v.parcelas === 0) === (v.entrada === v.preco), {
+      message:
+        'À vista: entrada igual ao preço e 0 parcelas; parcelado: entrada menor que o preço.',
+      path: ['parcelas'],
+    })
+    .refine((v) => v.parcelas === 0 || /^\d{4}-\d{2}-\d{2}$/.test(v.primeiraParcela), {
+      message: 'Informe a data da 1ª parcela.',
+      path: ['primeiraParcela'],
+    })
+}
+
+const esquemaVenda = comRegras(
+  z.object({
+    ...camposCondicoes,
     dataVenda: z.iso.date({ error: 'Data da venda inválida.' }),
-    preco: dinheiro('Preço', 1),
-    entrada: dinheiro('Entrada'),
-    parcelas: z.coerce
-      .number()
-      .int()
-      .min(0, 'Parcelas: mínimo 0.')
-      .max(480, 'Parcelas: máximo 480.'),
-    juros: z
-      .string()
-      .trim()
-      .regex(/^\d{1,2}(,\d{1,4})?$/, 'Juros: use um percentual como 0,5.')
-      .transform((v) => new Decimal(v.replace(',', '.')).div(100).toString()),
-    sistema: z.enum(['price', 'sac']),
-    primeiraParcela: z.string(),
     indice: z.union([z.literal(''), z.enum(INDICES_REAJUSTE)]),
     justificativa: z.string().trim().max(500),
-  })
-  .refine((v) => v.entrada <= v.preco, {
-    message: 'A entrada não pode passar do preço.',
-    path: ['entrada'],
-  })
-  .refine((v) => (v.parcelas === 0) === (v.entrada === v.preco), {
-    message: 'À vista: entrada igual ao preço e 0 parcelas; parcelado: entrada menor que o preço.',
-    path: ['parcelas'],
-  })
-  .refine((v) => v.parcelas === 0 || /^\d{4}-\d{2}-\d{2}$/.test(v.primeiraParcela), {
-    message: 'Informe a data da 1ª parcela.',
-    path: ['primeiraParcela'],
-  })
+  }),
+)
+
+const esquemaProposta = comRegras(
+  z.object({
+    ...camposCondicoes,
+    validade: z.iso.date({ error: 'Informe até quando a proposta vale.' }),
+    observacao: z.string().trim().max(1000),
+  }),
+)
+
+/** Registra a proposta (corretor ou gestão); a gestão aceita ou recusa depois. */
+export async function propor(
+  empreendimentoId: string,
+  loteId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const v = esquemaProposta.parse(valoresDoFormulario(form))
+    await criarProposta(ctx.db, loteId, {
+      cliente: {
+        nome: v.nome,
+        cpf: opcional(v.cpf),
+        email: opcional(v.email),
+        telefone: opcional(v.telefone),
+      },
+      corretorId: opcional(v.corretor),
+      precoCentavos: v.preco,
+      entradaCentavos: v.entrada,
+      parcelas: v.parcelas,
+      jurosMensal: v.juros,
+      sistema: v.sistema,
+      primeiraParcelaEm: v.parcelas > 0 ? v.primeiraParcela : null,
+      validaAte: v.validade,
+      observacao: opcional(v.observacao),
+    })
+  } catch (e) {
+    if (e instanceof ErroAplicacao && e.codigo === 'valida_ate')
+      return { erros: { validade: e.message }, valores: valoresDoFormulario(form) }
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, loteId)
+  redirect(`/empreendimentos/${empreendimentoId}/lotes/${loteId}?proposta=1`)
+}
 
 export async function vender(
   empreendimentoId: string,

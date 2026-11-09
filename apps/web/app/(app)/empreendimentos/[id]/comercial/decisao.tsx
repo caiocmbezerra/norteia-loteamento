@@ -4,23 +4,22 @@ import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alerta, Entrada } from '@/components/ui/formulario'
 import type { EstadoFormulario } from '@/lib/acao'
-import { decidirDesconto } from './acoes'
 
-export function DecisaoDesconto({
-  empreendimentoId,
-  aprovacaoId,
+/** Aceitar/aprovar ou recusar (com motivo) um pedido da área comercial. */
+export function Decisao({
+  acao: acaoServidor,
+  id,
   rotulo,
+  aceitar = 'Aprovar',
 }: {
-  empreendimentoId: string
-  aprovacaoId: string
+  acao: (estado: EstadoFormulario, form: FormData) => Promise<EstadoFormulario>
+  id: string
   rotulo: string
+  aceitar?: string
 }) {
-  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
-    decidirDesconto.bind(null, empreendimentoId, aprovacaoId),
-    {},
-  )
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(acaoServidor, {})
   if (estado.ok) return <Alerta tipo="sucesso">{estado.ok}</Alerta>
-  const campo = `motivo-${aprovacaoId}`
+  const campo = `motivo-${id}`
   return (
     <form action={acao} className="flex flex-col gap-2">
       {estado.erro && <Alerta>{estado.erro}</Alerta>}
@@ -30,7 +29,7 @@ export function DecisaoDesconto({
       <Entrada id={campo} name="motivo" placeholder="Motivo (obrigatório para recusar)" />
       <div className="flex gap-2">
         <Button type="submit" name="decisao" value="aprovar" size="sm" disabled={enviando}>
-          Aprovar
+          {aceitar}
         </Button>
         <Button
           type="submit"

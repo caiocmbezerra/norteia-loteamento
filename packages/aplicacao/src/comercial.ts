@@ -299,3 +299,65 @@ export async function condicoesDePreco(
       : null,
   }
 }
+
+export interface DadosProposta {
+  cliente: DadosComprador
+  corretorId: string | null
+  precoCentavos: number
+  entradaCentavos: number
+  parcelas: number
+  jurosMensal: string
+  sistema: 'price' | 'sac'
+  primeiraParcelaEm: string | null
+  validaAte: string
+  observacao: string | null
+}
+
+/** Registra a proposta do cliente para o lote (condições antes da venda). */
+export async function criarProposta(
+  db: ClienteBanco,
+  loteId: string,
+  d: DadosProposta,
+): Promise<string> {
+  const { data, error } = await db.rpc('criar_proposta', {
+    p_lote: loteId,
+    p_proposta: {
+      cliente_nome: d.cliente.nome,
+      cliente_cpf: d.cliente.cpf,
+      cliente_email: d.cliente.email,
+      cliente_telefone: d.cliente.telefone,
+      corretor_id: d.corretorId,
+      preco_centavos: d.precoCentavos,
+      entrada_centavos: d.entradaCentavos,
+      parcelas: d.parcelas,
+      juros_mensal: d.jurosMensal,
+      sistema: d.sistema,
+      primeira_parcela_em: d.primeiraParcelaEm,
+      valida_ate: d.validaAte,
+      observacao: d.observacao,
+    },
+  })
+  if (error?.code === '23514' && /cpf/i.test(error.message))
+    throw new ErroAplicacao('CPF inválido: confira os dígitos.', 'cpf', 'cpf')
+  falhar(error)
+  return data!
+}
+
+export async function decidirProposta(
+  db: ClienteBanco,
+  propostaId: string,
+  aceitar: boolean,
+  motivo?: string,
+) {
+  const { error } = await db.rpc('decidir_proposta', {
+    p_proposta: propostaId,
+    p_aceitar: aceitar,
+    ...(motivo ? { p_motivo: motivo } : {}),
+  })
+  falhar(error)
+}
+
+export async function cancelarProposta(db: ClienteBanco, propostaId: string, motivo: string) {
+  const { error } = await db.rpc('cancelar_proposta', { p_proposta: propostaId, p_motivo: motivo })
+  falhar(error)
+}

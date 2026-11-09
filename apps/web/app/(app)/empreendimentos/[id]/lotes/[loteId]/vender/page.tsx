@@ -1,6 +1,6 @@
 import { condicoesDePreco } from '@norteia/aplicacao'
 import { formatarMoeda } from '@norteia/dominio'
-import { arredondarCentavos } from '@norteia/motor-financeiro'
+import { Decimal, arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -22,10 +22,12 @@ function proximoMes(data: string) {
 
 export default async function PaginaVender({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; loteId: string }>
+  searchParams: Promise<{ proposta?: string }>
 }) {
-  const { id, loteId } = await params
+  const [{ id, loteId }, { proposta: propostaId }] = await Promise.all([params, searchParams])
   const ctx = await exigirContexto()
   if (!temPapel(ctx, 'dono', 'comercial_gestor')) redirect(`/empreendimentos/${id}/lotes/${loteId}`)
   const { data: lote } = await ctx.db
@@ -51,7 +53,34 @@ export default async function PaginaVender({
       .eq('situacao', 'ativa')
       .maybeSingle(),
   ])
+  const { data: proposta } = propostaId
+    ? await ctx.db
+        .from('propostas')
+        .select(
+          'cliente_nome, cliente_cpf, cliente_email, cliente_telefone, corretor_id, preco_centavos, entrada_centavos, parcelas, juros_mensal, sistema, primeira_parcela_em',
+        )
+        .eq('id', propostaId)
+        .eq('lote_id', loteId)
+        .eq('situacao', 'aceita')
+        .maybeSingle()
+    : { data: null }
   const hoje = hojeSaoPaulo()
+  const valor = (c: number) => formatarMoeda(arredondarCentavos(String(c))).replace(/^R\$\s/, '')
+  const inicial = proposta
+    ? {
+        nome: proposta.cliente_nome,
+        cpf: proposta.cliente_cpf ?? '',
+        email: proposta.cliente_email ?? '',
+        telefone: proposta.cliente_telefone ?? '',
+        corretor: proposta.corretor_id ?? '',
+        preco: valor(proposta.preco_centavos),
+        entrada: valor(proposta.entrada_centavos),
+        parcelas: String(proposta.parcelas),
+        juros: new Decimal(String(proposta.juros_mensal)).times(100).toString().replace('.', ','),
+        sistema: proposta.sistema,
+        ...(proposta.primeira_parcela_em ? { primeiraParcela: proposta.primeira_parcela_em } : {}),
+      }
+    : undefined
   const condicoes = await condicoesDePreco(ctx.db, ctx.tenant.id, id, loteId, hoje)
   const tabela = condicoes.precoTabelaCentavos
   const preco = tabela
@@ -70,6 +99,11 @@ export default async function PaginaVender({
         titulo="Registrar venda"
         subtitulo={`${lote.empreendimentos?.nome} · Quadra ${lote.quadras?.codigo} · Lote ${lote.numero}`}
       />
+      {proposta && (
+        <Alerta tipo="sucesso">
+          Condições da proposta aceita de {proposta.cliente_nome}. Confira e registre a venda.
+        </Alerta>
+      )}
       {!['disponivel', 'reservado'].includes(lote.status) ? (
         <Alerta>Este lote não está disponível para venda.</Alerta>
       ) : (
@@ -84,6 +118,7 @@ export default async function PaginaVender({
             corretorReserva={reserva?.corretor_id ?? null}
             semRegistro={!lote.empreendimentos?.data_registro}
             condicoes={condicoes}
+            {...(inicial ? { inicial } : {})}
             podeAprovarDesconto={temPapel(ctx, 'dono')}
           />
         </Cartao>
