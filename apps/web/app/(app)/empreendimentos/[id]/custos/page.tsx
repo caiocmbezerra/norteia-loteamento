@@ -174,7 +174,7 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
 
       <Cartao className="flex flex-col gap-3">
         <h2 className="font-semibold">Por centro de custo</h2>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0}>
           <table className="w-full min-w-[40rem] text-sm">
             <thead className="text-xs text-muted-foreground">
               <tr className="text-right">

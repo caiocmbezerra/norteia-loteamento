@@ -92,7 +92,7 @@ export default async function Painel() {
           </section>
           <Cartao className="flex flex-col gap-3">
             <h2 className="font-semibold">Por empreendimento</h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" tabIndex={0}>
               <table className="w-full text-sm">
                 <thead className="text-left text-xs text-muted-foreground">
                   <tr>
@@ -111,7 +111,7 @@ export default async function Painel() {
                       <td className="py-2">
                         <Link
                           href={`/empreendimentos/${l.id}`}
-                          className="text-primary underline-offset-4 hover:underline"
+                          className="text-primary underline underline-offset-4"
                         >
                           {l.nome}
                         </Link>

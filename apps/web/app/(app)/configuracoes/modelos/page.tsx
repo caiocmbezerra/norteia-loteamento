@@ -50,7 +50,7 @@ export default async function PaginaModelos() {
           </div>
           <a
             href={`/configuracoes/modelos/${m.tipo}`}
-            className="text-sm text-primary underline-offset-4 hover:underline"
+            className="text-sm text-primary underline underline-offset-4"
           >
             Baixar modelo em uso (.docx)
           </a>

@@ -53,14 +53,14 @@ export default async function PaginaContratoPortal({
         <span className="text-muted-foreground">Documentos (Word):</span>
         <a
           href={`/portal/contratos/${c.id}/documentos/contrato`}
-          className="text-primary underline-offset-4 hover:underline"
+          className="text-primary underline underline-offset-4"
         >
           Contrato
         </a>
         {c.situacao === 'quitado' && (
           <a
             href={`/portal/contratos/${c.id}/documentos/quitacao`}
-            className="text-primary underline-offset-4 hover:underline"
+            className="text-primary underline underline-offset-4"
           >
             Termo de quitação
           </a>
@@ -182,7 +182,7 @@ export default async function PaginaContratoPortal({
                       <span className="font-medium">{moeda(total)}</span>
                       <a
                         href={`/portal/contratos/${c.id}/informe?ano=${ano}`}
-                        className="text-primary underline-offset-4 hover:underline"
+                        className="text-primary underline underline-offset-4"
                       >
                         Baixar informe {ano}
                       </a>

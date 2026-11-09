@@ -187,7 +187,7 @@ export default async function PaginaEstudo({
 
         <Cartao className="flex flex-col gap-3">
           <h2 className="font-semibold">Sensibilidade da TIR anual</h2>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0}>
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground">
                 <tr>

@@ -35,7 +35,7 @@ export default async function Empresas() {
                   <li key={s.id} className="rounded-lg border bg-background px-3 py-2 text-sm">
                     <Link
                       href={`/spes/${s.id}`}
-                      className="font-medium text-primary underline-offset-4 hover:underline"
+                      className="font-medium text-primary underline underline-offset-4"
                     >
                       {s.razao_social}
                     </Link>

@@ -28,6 +28,7 @@ export default async function PaginaImplantacao() {
           <li key={p.id}>
             <Cartao className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
               <span
+                role="img"
                 aria-label={p.feito ? 'Concluído' : 'Pendente'}
                 className={
                   p.feito
@@ -47,10 +48,7 @@ export default async function PaginaImplantacao() {
                 <p className="text-sm text-muted-foreground">{p.detalhe}</p>
               </div>
               {!p.feito && (
-                <Link
-                  href={p.link}
-                  className="text-sm text-primary underline-offset-4 hover:underline"
-                >
+                <Link href={p.link} className="text-sm text-primary underline underline-offset-4">
                   Resolver
                 </Link>
               )}

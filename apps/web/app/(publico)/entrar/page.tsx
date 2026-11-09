@@ -26,7 +26,7 @@ export default async function PaginaEntrar({
       <p className="text-sm text-muted-foreground">
         Ainda não tem conta?{' '}
         <Link
-          className="font-medium text-primary underline-offset-4 hover:underline"
+          className="font-medium text-primary underline underline-offset-4"
           href={`/cadastrar${proximo ? `?proximo=${encodeURIComponent(proximo)}` : ''}`}
         >
           Criar conta

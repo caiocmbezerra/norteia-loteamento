@@ -195,17 +195,11 @@ export default async function PaginaContrato({
       {podeDocumentos && (
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <span className="text-muted-foreground">Documentos (Word):</span>
-          <a
-            href={`${baseDocs}/contrato`}
-            className="text-primary underline-offset-4 hover:underline"
-          >
+          <a href={`${baseDocs}/contrato`} className="text-primary underline underline-offset-4">
             Contrato
           </a>
           {c.situacao === 'quitado' && (
-            <a
-              href={`${baseDocs}/quitacao`}
-              className="text-primary underline-offset-4 hover:underline"
-            >
+            <a href={`${baseDocs}/quitacao`} className="text-primary underline underline-offset-4">
               Termo de quitação
             </a>
           )}
@@ -213,7 +207,7 @@ export default async function PaginaContrato({
             <a
               key={ano}
               href={`${baseDocs}/informe_pagamentos?ano=${ano}`}
-              className="text-primary underline-offset-4 hover:underline"
+              className="text-primary underline underline-offset-4"
             >
               Informe de pagamentos {ano}
             </a>
@@ -233,7 +227,7 @@ export default async function PaginaContrato({
         {formatarPercentual(c.regra.jurosMoraMensal.toString(), 2)} ao mês ·{' '}
         <Link
           href={`/empreendimentos/${id}/lotes/${c.loteId}`}
-          className="text-primary underline-offset-4 hover:underline"
+          className="text-primary underline underline-offset-4"
         >
           ver lote
         </Link>
@@ -332,7 +326,7 @@ export default async function PaginaContrato({
                 Regras padrão da sua loteadora em{' '}
                 <Link
                   href="/configuracoes/parametros"
-                  className="text-primary underline-offset-4 hover:underline"
+                  className="text-primary underline underline-offset-4"
                 >
                   Parâmetros
                 </Link>
@@ -418,7 +412,7 @@ export default async function PaginaContrato({
                       {' · '}
                       <a
                         href={`${baseDocs}/aditivo_${a.tipo}?aditivo=${a.id}`}
-                        className="text-primary underline-offset-4 hover:underline"
+                        className="text-primary underline underline-offset-4"
                       >
                         baixar aditivo (Word)
                       </a>
@@ -471,7 +465,7 @@ export default async function PaginaContrato({
 
       <Cartao className="flex flex-col gap-3">
         <h2 className="font-semibold">Parcelas</h2>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0}>
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-muted-foreground">
               <tr>
@@ -539,7 +533,7 @@ export default async function PaginaContrato({
                               href={p.cobranca.linkFatura}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-primary underline-offset-4 hover:underline"
+                              className="text-primary underline underline-offset-4"
                             >
                               Boleto/Pix de {moeda(p.cobranca.valorCentavos)}
                             </a>

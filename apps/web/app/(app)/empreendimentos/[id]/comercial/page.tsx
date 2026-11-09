@@ -111,7 +111,7 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
               <li key={r.id} className="py-3 text-sm">
                 <Link
                   href={`/empreendimentos/${id}/lotes/${r.lote_id}`}
-                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  className="font-medium text-primary underline underline-offset-4"
                 >
                   {nomeLote(r.lotes)}
                 </Link>
@@ -159,7 +159,7 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
               <span>
                 <Link
                   href={`/empreendimentos/${id}/lotes/${v.lote_id}`}
-                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  className="font-medium text-primary underline underline-offset-4"
                 >
                   {nomeLote(v.lotes)}
                 </Link>

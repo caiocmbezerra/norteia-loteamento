@@ -182,7 +182,7 @@ export default async function PaginaLote({
                     {venda.contratos[0] ? (
                       <Link
                         href={`/empreendimentos/${id}/carteira/${venda.contratos[0].id}`}
-                        className="text-primary underline-offset-4 hover:underline"
+                        className="text-primary underline underline-offset-4"
                       >
                         Ver parcelas
                       </Link>

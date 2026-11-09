@@ -53,7 +53,7 @@ export default async function PaginaPermutaPortal({ params }: { params: Promise<
             {apuracao.linhas.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum evento gerou repasse ainda.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0}>
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs text-muted-foreground">
                     <tr>

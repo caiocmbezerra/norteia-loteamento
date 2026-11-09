@@ -37,7 +37,7 @@ export default async function PaginaAlertas() {
                   <span
                     className={
                       a.alerta.gravidade === 'critico'
-                        ? 'rounded bg-destructive/15 px-2 py-0.5 text-xs font-semibold text-destructive'
+                        ? 'rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-900 dark:bg-red-950 dark:text-red-100'
                         : 'rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-900/40 dark:text-amber-100'
                     }
                   >
@@ -46,7 +46,7 @@ export default async function PaginaAlertas() {
                   <h2 className="font-semibold">{TITULOS[a.alerta.tipo]}</h2>
                   <Link
                     href={`/empreendimentos/${a.empreendimentoId}${a.alerta.tipo === 'inadimplencia' ? '/carteira' : '/custos'}`}
-                    className="text-sm text-primary underline-offset-4 hover:underline sm:ml-auto"
+                    className="text-sm text-primary underline underline-offset-4 sm:ml-auto"
                   >
                     {a.empreendimento}
                   </Link>
