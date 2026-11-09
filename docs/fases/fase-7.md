@@ -33,4 +33,4 @@
 | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Comprador acessa e baixa a segunda via em até 3 toques no celular | ✅ e2e `portal.spec.ts` (entrar → enviar → segunda via)                                                    |
 | Arquivo DIMOB validado pelo programa oficial da Receita           | 🟡 gerado no leiaute oficial e testado por posição; falta importar no PGD (Windows) com o contador (PL-20) |
-| Contador de um cliente piloto importa a exportação sem ajuste     | ⏳ 7c                                                                                                      |
+| Contador de um cliente piloto importa a exportação sem ajuste     | 🟡 formato configurável pronto; falta o piloto com o contador (PL-21)                                      |
