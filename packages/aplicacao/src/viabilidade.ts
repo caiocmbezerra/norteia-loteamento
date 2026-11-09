@@ -20,6 +20,7 @@ import {
   projetarViabilidade,
   resumirViabilidade,
 } from '@norteia/motor-financeiro'
+import { popularCarteiraDemonstracao } from './demonstracao'
 import { ErroAplicacao, traduzirErroBanco } from './erros'
 
 export interface Estresse {
@@ -196,7 +197,12 @@ export function premissasSugeridas(
  * Empreendimento de demonstração com o caso de referência (Fase 2): 120 lotes, 18 em
  * permuta física, estudo de viabilidade aprovado como plano original.
  */
-export async function criarDemonstracao(db: ClienteBanco, tenantId: string): Promise<string> {
+export async function criarDemonstracao(
+  db: ClienteBanco,
+  tenantId: string,
+  /** Com a data de hoje, a demonstração também ganha vendas, carteira e atrasos. */
+  hoje?: string,
+): Promise<string> {
   const { data: spe, error: e1 } = await db
     .from('spes')
     .select('id')
@@ -253,5 +259,6 @@ export async function criarDemonstracao(db: ClienteBanco, tenantId: string): Pro
     '0.012',
   )
   await aprovarViabilidade(db, id)
+  if (hoje) await popularCarteiraDemonstracao(db, empreendimentoId, hoje)
   return empreendimentoId
 }

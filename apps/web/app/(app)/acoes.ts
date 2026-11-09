@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { type EstadoFormulario, estadoDeErro, valoresDoFormulario } from '@/lib/acao'
 import { COOKIE_TENANT, clientesDoUsuario, exigirContexto } from '@/lib/contexto'
+import { hojeSaoPaulo } from '@/lib/datas'
 
 export async function trocarCliente(form: FormData) {
   const id = String(form.get('tenant') ?? '')
@@ -24,7 +25,7 @@ export async function trocarCliente(form: FormData) {
 /** Empreendimento de demonstração com o caso de referência (Fase 2). */
 export async function criarEmpreendimentoDemonstracao() {
   const ctx = await exigirContexto()
-  const id = await criarDemonstracao(ctx.db, ctx.tenant.id)
+  const id = await criarDemonstracao(ctx.db, ctx.tenant.id, hojeSaoPaulo())
   redirect(`/empreendimentos/${id}`)
 }
 
