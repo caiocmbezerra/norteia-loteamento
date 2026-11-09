@@ -1650,6 +1650,86 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          corretor_id: string | null
+          criado_em: string
+          criado_por: string | null
+          email: string | null
+          empreendimento_id: string
+          id: string
+          motivo_perda: string | null
+          nome: string
+          observacao: string | null
+          origem: string
+          proximo_contato: string | null
+          situacao: string
+          telefone: string | null
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          email?: string | null
+          empreendimento_id: string
+          id?: string
+          motivo_perda?: string | null
+          nome: string
+          observacao?: string | null
+          origem?: string
+          proximo_contato?: string | null
+          situacao?: string
+          telefone?: string | null
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          email?: string | null
+          empreendimento_id?: string
+          id?: string
+          motivo_perda?: string | null
+          nome?: string
+          observacao?: string | null
+          origem?: string
+          proximo_contato?: string | null
+          situacao?: string
+          telefone?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'leads_tenant_id_corretor_id_fkey'
+            columns: ['tenant_id', 'corretor_id']
+            isOneToOne: false
+            referencedRelation: 'corretores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'leads_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'leads_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       leiautes_declaracao: {
         Row: {
           anos: unknown
@@ -1844,6 +1924,71 @@ export type Database = {
             columns: ['usuario_id']
             isOneToOne: false
             referencedRelation: 'perfis'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      metas_comerciais: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          corretor_id: string | null
+          criado_em: string
+          criado_por: string | null
+          empreendimento_id: string
+          id: string
+          mes: string
+          tenant_id: string
+          vendas: number
+          vgv_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id: string
+          id?: string
+          mes: string
+          tenant_id: string
+          vendas: number
+          vgv_centavos: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          corretor_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id?: string
+          id?: string
+          mes?: string
+          tenant_id?: string
+          vendas?: number
+          vgv_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'metas_comerciais_tenant_id_corretor_id_fkey'
+            columns: ['tenant_id', 'corretor_id']
+            isOneToOne: false
+            referencedRelation: 'corretores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'metas_comerciais_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'metas_comerciais_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
             referencedColumns: ['id']
           },
         ]

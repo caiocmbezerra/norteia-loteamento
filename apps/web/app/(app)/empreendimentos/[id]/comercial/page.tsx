@@ -10,6 +10,7 @@ import { exigirContexto, temPapel } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
 import { decidirDesconto, decidirPropostaAcao } from './acoes'
 import { Decisao } from './decisao'
+import { FormularioMeta } from './formularios'
 
 export const metadata: Metadata = { title: 'Comercial' }
 
@@ -40,17 +41,20 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
     'socio_leitura',
   )
 
+  const mes = hojeSaoPaulo().slice(0, 7)
   const [
     { data: vendas },
     { data: reservas },
     { data: lotes },
     { data: pedidos },
     { data: propostas },
+    { data: metas },
+    { data: corretoresAtivos },
   ] = await Promise.all([
     ctx.db
       .from('vendas')
       .select(
-        'id, data_venda, preco_centavos, comissao_percentual, comissao_modo, lote_id, lotes(numero, quadras(codigo)), corretores(nome)',
+        'id, data_venda, preco_centavos, comissao_percentual, comissao_modo, lote_id, corretor_id, lotes(numero, quadras(codigo)), corretores(nome)',
       )
       .eq('empreendimento_id', id)
       .eq('situacao', 'ativa')
@@ -81,6 +85,17 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
       .eq('empreendimento_id', id)
       .in('situacao', ['aberta', 'aceita'])
       .order('criado_em'),
+    ctx.db
+      .from('metas_comerciais')
+      .select('id, corretor_id, vendas, vgv_centavos, corretores(nome)')
+      .eq('empreendimento_id', id)
+      .eq('mes', `${mes}-01`),
+    ctx.db
+      .from('corretores')
+      .select('id, nome')
+      .eq('tenant_id', ctx.tenant.id)
+      .eq('ativo', true)
+      .order('nome'),
   ])
   const podeRegistrar = temPapel(ctx, 'dono', 'comercial_gestor')
   const hoje = hojeSaoPaulo()
@@ -98,6 +113,16 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
     c.comissao = c.comissao.plus(new Decimal(v.preco_centavos).times(String(v.comissao_percentual)))
     porCorretor.set(nome, c)
   }
+  const doMes = lista.filter((v) => v.data_venda.startsWith(mes))
+  const realizado = (corretorId: string | null) => {
+    const vs = corretorId ? doMes.filter((v) => v.corretor_id === corretorId) : doMes
+    return { vendas: vs.length, vgv: vs.reduce((s, v) => s.plus(v.preco_centavos), new Decimal(0)) }
+  }
+  const nomeMes = new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${mes}-01T12:00:00Z`))
   const nomeLote = (l: { numero: string; quadras: { codigo: string } | null } | null) =>
     l ? `Quadra ${l.quadras?.codigo} · Lote ${l.numero}` : '—'
 
@@ -115,13 +140,77 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
         {...(!corretor
           ? {
               acoes: (
-                <Button asChild variant="secondary">
-                  <Link href={`/empreendimentos/${id}/comercial/precos`}>Tabela de preços</Link>
-                </Button>
+                <>
+                  <Button asChild variant="secondary">
+                    <Link href={`/empreendimentos/${id}/comercial/leads`}>Leads</Link>
+                  </Button>
+                  <Button asChild variant="secondary">
+                    <Link href={`/empreendimentos/${id}/comercial/precos`}>Tabela de preços</Link>
+                  </Button>
+                </>
               ),
             }
           : {})}
       />
+
+      {corretor && (
+        <Button asChild variant="secondary" className="self-start">
+          <Link href={`/empreendimentos/${id}/comercial/leads`}>Meus leads</Link>
+        </Button>
+      )}
+
+      {((metas ?? []).length > 0 || podeRegistrar) && (
+        <Cartao className="flex flex-col gap-3">
+          <h2 className="font-semibold">Metas de {nomeMes}</h2>
+          {(metas ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma meta definida para este mês.</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {(metas ?? [])
+                .sort((a, b) => (a.corretor_id ? 1 : 0) - (b.corretor_id ? 1 : 0))
+                .map((m) => {
+                  const r = realizado(m.corretor_id)
+                  const pct =
+                    m.vendas > 0 ? Math.min(100, Math.round((100 * r.vendas) / m.vendas)) : 100
+                  const nome = m.corretores?.nome ?? 'Empreendimento'
+                  return (
+                    <li key={m.id} className="flex flex-col gap-1 text-sm">
+                      <span className="flex flex-wrap justify-between gap-2">
+                        <span className="font-medium">{nome}</span>
+                        <span>
+                          {r.vendas} de {m.vendas} vendas · {moeda(r.vgv)} de{' '}
+                          {moeda(m.vgv_centavos)}
+                        </span>
+                      </span>
+                      <div
+                        role="progressbar"
+                        aria-label={`Meta de vendas de ${nome}`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={pct}
+                        className="h-2 overflow-hidden rounded-full bg-muted"
+                      >
+                        <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                      </div>
+                    </li>
+                  )
+                })}
+            </ul>
+          )}
+          {podeRegistrar && (
+            <details>
+              <summary className="cursor-pointer text-sm font-medium">Definir meta</summary>
+              <div className="mt-3">
+                <FormularioMeta
+                  empreendimentoId={id}
+                  mes={mes}
+                  corretores={corretoresAtivos ?? []}
+                />
+              </div>
+            </details>
+          )}
+        </Cartao>
+      )}
 
       {(propostas ?? []).length > 0 && (
         <Cartao className="flex flex-col gap-3">
