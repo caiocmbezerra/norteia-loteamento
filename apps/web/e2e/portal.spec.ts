@@ -143,6 +143,33 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
   expect(texto).toContain('Paulo Comprador')
   expect(texto).toMatch(new RegExp(`Total pago em ${ano}: R\\$\\s9\\.000,00`))
 
+  // Chamado de atendimento: o comprador pergunta, a loteadora responde e resolve.
+  const contratoPortal = comprador.url()
+  await comprador.getByText('Falar com a loteadora').click()
+  await comprador.getByLabel('Assunto').fill('Escritura do lote')
+  await comprador.getByLabel('Sobre').selectOption('escritura')
+  await comprador.getByLabel('Mensagem').fill('Quando posso fazer a escritura?')
+  await comprador.getByRole('button', { name: 'Abrir chamado' }).click()
+  await expect(comprador.getByRole('heading', { level: 1 })).toHaveText('Escritura do lote')
+  await expect(comprador.getByText('Quando posso fazer a escritura?')).toBeVisible()
+
+  const contratoGestao = dona.url()
+  await dona.getByRole('link', { name: 'Atendimento', exact: true }).click()
+  await expect(dona.getByRole('region', { name: 'Resumo' })).toContainText(/Abertos\s*1/)
+  await dona.getByRole('link', { name: 'Escritura do lote' }).click()
+  await dona.getByLabel('Sua mensagem').fill('Depois da quitação. Seu contrato está em dia.')
+  await dona.getByRole('button', { name: 'Enviar mensagem' }).click()
+  await expect(dona.getByText('Depois da quitação. Seu contrato está em dia.')).toBeVisible()
+  await dona.getByRole('button', { name: 'Marcar como resolvido' }).click()
+  await expect(dona.getByRole('button', { name: 'Reabrir atendimento' })).toBeVisible()
+
+  await comprador.reload()
+  await expect(comprador.getByText('Depois da quitação. Seu contrato está em dia.')).toBeVisible()
+  await comprador.goto(contratoPortal)
+  await expect(
+    comprador.getByRole('region', { name: 'Atendimento' }).getByText(/Resolvido/),
+  ).toBeVisible()
+
   // Sai e volta: entrar (toque 1, 2 com o envio) leva direto ao portal; segunda via é o 3º toque.
   await comprador.getByRole('button', { name: 'Sair' }).click()
   await comprador.goto('/entrar')
@@ -159,6 +186,6 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
   await expect(comprador).toHaveURL(/\/portal$/)
 
   // Na gestão, o convite aparece como aceito.
-  await dona.reload()
+  await dona.goto(contratoGestao)
   await expect(dona.getByText(/O comprador já acessa o portal/)).toBeVisible()
 })

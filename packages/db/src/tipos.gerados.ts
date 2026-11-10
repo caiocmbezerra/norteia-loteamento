@@ -453,6 +453,119 @@ export type Database = {
           },
         ]
       }
+      chamado_mensagens: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          autor_comprador: boolean
+          chamado_id: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          tenant_id: string
+          texto: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          autor_comprador: boolean
+          chamado_id: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          tenant_id: string
+          texto: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          autor_comprador?: boolean
+          chamado_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          tenant_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'chamado_mensagens_tenant_id_chamado_id_fkey'
+            columns: ['tenant_id', 'chamado_id']
+            isOneToOne: false
+            referencedRelation: 'chamados'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
+      chamados: {
+        Row: {
+          assunto: string
+          atualizado_em: string
+          atualizado_por: string | null
+          categoria: string
+          contrato_id: string
+          criado_em: string
+          criado_por: string | null
+          empreendimento_id: string
+          id: string
+          situacao: string
+          tenant_id: string
+          ultima_mensagem_em: string
+        }
+        ComputedFields: never
+        Insert: {
+          assunto: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          categoria: string
+          contrato_id: string
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id: string
+          id?: string
+          situacao?: string
+          tenant_id: string
+          ultima_mensagem_em?: string
+        }
+        Update: {
+          assunto?: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          categoria?: string
+          contrato_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          empreendimento_id?: string
+          id?: string
+          situacao?: string
+          tenant_id?: string
+          ultima_mensagem_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'chamados_tenant_id_contrato_id_fkey'
+            columns: ['tenant_id', 'contrato_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'chamados_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'chamados_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       cobrancas: {
         Row: {
           asaas_id: string
@@ -4051,6 +4164,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abrir_chamado: {
+        Args: { p_assunto: string; p_categoria: string; p_contrato: string; p_texto: string }
+        Returns: string
+      }
       aceitar_convite: { Args: { p_token: string }; Returns: string }
       aceitar_convite_portal: { Args: { p_token: string }; Returns: string }
       antecipar_parcelas: {
@@ -4187,6 +4304,10 @@ export type Database = {
       }
       informe_pagamentos: { Args: { p_ano: number; p_contrato: string }; Returns: Json }
       meu_portal: { Args: { p_hoje?: string }; Returns: Json }
+      mudar_situacao_chamado: {
+        Args: { p_chamado: string; p_situacao: string }
+        Returns: undefined
+      }
       obra_portal: { Args: { p_contrato: string }; Returns: Json }
       pagar_devolucao: { Args: { p_data: string; p_devolucao: string }; Returns: undefined }
       painel_consolidado: { Args: { p_hoje?: string; p_tenant: string }; Returns: Json }
@@ -4277,6 +4398,7 @@ export type Database = {
         Args: { p_cliente_nome: string; p_corretor?: string; p_horas?: number; p_lote: string }
         Returns: string
       }
+      responder_chamado: { Args: { p_chamado: string; p_texto: string }; Returns: undefined }
       segunda_via: { Args: { p_parcela: string }; Returns: string }
       solicitar_aprovacao_desconto: {
         Args: { p_data: string; p_justificativa: string; p_lote: string; p_preco: number }
