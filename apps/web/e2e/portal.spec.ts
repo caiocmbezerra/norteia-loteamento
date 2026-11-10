@@ -118,6 +118,21 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
   expect(xmlContrato).toContain('Paulo Comprador')
   expect(xmlContrato).toMatch(/PREÇO: R\$\s90\.000,00/)
 
+  // Quitação antecipada estimada (juros de 0% ao mês: sem desconto) e extrato em PDF.
+  const quitar = comprador.getByRole('region', { name: 'Quitar hoje' })
+  await expect(quitar).toContainText(/Parcelas em aberto\s*R\$\s81\.000,00/)
+  await expect(quitar).toContainText(/Total para quitar em \d{2}\/\d{2}\/\d{4}\s*R\$\s81\.000,00/)
+  const [extrato] = await Promise.all([
+    comprador.waitForEvent('download'),
+    comprador.getByRole('link', { name: 'Extrato (PDF)' }).click(),
+  ])
+  expect(extrato.suggestedFilename()).toMatch(/^extrato-contrato-\d+\.pdf$/)
+  expect(
+    readFileSync((await extrato.path())!)
+      .subarray(0, 5)
+      .toString('latin1'),
+  ).toBe('%PDF-')
+
   // Informe de IR do ano, no modelo padrão.
   const [download] = await Promise.all([
     comprador.waitForEvent('download'),

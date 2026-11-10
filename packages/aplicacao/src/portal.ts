@@ -1,4 +1,12 @@
 import type { ClienteBanco } from '@norteia/db'
+import { formatarData, formatarMoeda } from '@norteia/dominio'
+import { gerarExtratoPdf } from '@norteia/integracoes/extrato-pdf'
+import {
+  Decimal,
+  type QuitacaoAntecipada,
+  centavos,
+  quitacaoAntecipada,
+} from '@norteia/motor-financeiro'
 import { type ApuracaoRepasse, type VendaReal, apurarRepasses } from '@norteia/projecao'
 import { traduzirErroBanco } from './erros'
 
@@ -44,6 +52,13 @@ export interface ContratoPortal {
   situacao: string
   indice: string | null
   quitado_em: string | null
+  numero: number | null
+  comprador: string
+  vendedora: string
+  /** Condições do próprio contrato (frações). */
+  juros_mensal: number
+  multa_atraso: number
+  juros_mora_mensal: number
   loteadora: string
   empreendimento: string
   lote: string
@@ -217,4 +232,88 @@ export async function andamentoObra(
   if (error?.code === '42501') return []
   falhar(error)
   return data as unknown as { etapa: string; orcado: number; pago: number }[]
+}
+
+/** Quanto custa quitar hoje (estimativa do motor: desconto nas a vencer, encargos nas vencidas). */
+export function quitacaoHoje(c: ContratoPortal, hoje: string): QuitacaoAntecipada {
+  return quitacaoAntecipada(
+    c.parcelas
+      .filter((p) => p.situacao === 'aberta')
+      .map((p) => ({ vencimento: p.vencimento, saldoCentavos: centavos(p.valor - p.pago) })),
+    hoje,
+    new Decimal(String(c.juros_mensal ?? 0)),
+    {
+      multa: new Decimal(String(c.multa_atraso ?? 0)),
+      jurosMoraMensal: new Decimal(String(c.juros_mora_mensal ?? 0)),
+    },
+  )
+}
+
+const SITUACAO_PARCELA: Record<string, string> = {
+  aberta: 'Em aberto',
+  paga: 'Paga',
+  renegociada: 'Renegociada',
+}
+
+/** Extrato do contrato em PDF para o próprio comprador (nulo se não for dele). */
+export async function extratoPortalPdf(
+  db: ClienteBanco,
+  contratoId: string,
+  hoje: string,
+): Promise<{ nomeArquivo: string; conteudo: Uint8Array } | null> {
+  const c = await carregarContratoPortal(db, contratoId)
+  if (!c) return null
+  const moeda = (v: number) => formatarMoeda(centavos(v))
+  const abertas = c.parcelas.filter((p) => p.situacao === 'aberta')
+  const saldo = abertas.reduce((t, p) => t + p.valor - p.pago, 0)
+  const vencido = abertas
+    .filter((p) => p.vencimento < hoje)
+    .reduce((t, p) => t + p.valor - p.pago, 0)
+  const pago = c.pagamentos.reduce((t, p) => t + p.valor, 0)
+  const q = quitacaoHoje(c, hoje)
+  const conteudo = await gerarExtratoPdf({
+    titulo: `Extrato do contrato${c.numero ? ` nº ${c.numero}` : ''}`,
+    identificacao: [
+      ['Vendedora', c.vendedora],
+      ['Loteadora', c.loteadora],
+      ['Comprador', c.comprador],
+      ['Imóvel', `${c.empreendimento} · ${c.lote}`],
+      ['Reajuste', c.indice ?? 'sem reajuste'],
+      [
+        'Situação',
+        c.situacao === 'quitado' ? 'Quitado' : c.situacao === 'vigente' ? 'Vigente' : c.situacao,
+      ],
+    ],
+    resumo: [
+      ['Total pago', moeda(pago)],
+      ['Saldo a pagar (soma das parcelas em aberto)', moeda(saldo)],
+      ['Em atraso', moeda(vencido)],
+      ...(saldo > 0
+        ? ([[`Para quitar hoje (estimativa em ${formatarData(hoje)})`, moeda(q.totalCentavos)]] as [
+            string,
+            string,
+          ][])
+        : []),
+    ],
+    parcelas: c.parcelas.map((p) => ({
+      numero: p.numero === 0 ? 'Entrada' : String(p.numero),
+      vencimento: formatarData(p.vencimento),
+      valor: moeda(p.valor),
+      pago: moeda(p.pago),
+      situacao:
+        p.situacao === 'aberta' && p.vencimento < hoje
+          ? 'Em atraso'
+          : (SITUACAO_PARCELA[p.situacao] ?? p.situacao),
+    })),
+    pagamentos: c.pagamentos.map((p) => ({
+      data: formatarData(p.data),
+      parcela: p.parcela === 0 ? 'entrada' : String(p.parcela),
+      valor: moeda(p.valor),
+    })),
+    rodape: `Emitido em ${formatarData(hoje)} pelo portal do comprador. Valores sujeitos a conferência pela loteadora.`,
+  })
+  return {
+    nomeArquivo: `extrato-contrato-${c.numero ?? c.id.slice(0, 8)}.pdf`,
+    conteudo,
+  }
 }

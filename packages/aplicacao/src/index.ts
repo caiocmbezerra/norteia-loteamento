@@ -146,6 +146,8 @@ export {
   convidarParaPortal,
   emitirSegundaVia,
   extratoPermutante,
+  extratoPortalPdf,
+  quitacaoHoje,
   temPortal,
 } from './portal'
 export * from './fiscal'

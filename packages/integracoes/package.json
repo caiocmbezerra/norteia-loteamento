@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./importacao": "./src/importacao.ts",
     "./assistente": "./src/assistente.ts",
-    "./leitura-documento": "./src/leitura-documento.ts"
+    "./leitura-documento": "./src/leitura-documento.ts",
+    "./extrato-pdf": "./src/extrato-pdf.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p .",
@@ -18,6 +19,7 @@
     "@anthropic-ai/sdk": "1.6.0",
     "@norteia/dominio": "workspace:*",
     "docxtemplater": "3.71.1",
+    "pdf-lib": "1.17.1",
     "pizzip": "3.3.0",
     "zod": "4.6.7"
   }
