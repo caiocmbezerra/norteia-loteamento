@@ -223,6 +223,19 @@ export default async function PaginaContrato({
           </Link>
         </p>
       )}
+      {temPapel(ctx, 'dono') && (
+        <p className="text-sm">
+          <a
+            href={`/empreendimentos/${id}/carteira/${contratoId}/dados-titular`}
+            className="text-primary underline underline-offset-4"
+          >
+            Dados do comprador (LGPD)
+          </a>{' '}
+          <span className="text-muted-foreground">
+            — para atender um pedido de acesso do titular; fica registrado.
+          </span>
+        </p>
+      )}
 
       <p className="text-sm text-muted-foreground">
         Reajuste: {c.indiceReajuste ?? 'sem reajuste'} · multa{' '}

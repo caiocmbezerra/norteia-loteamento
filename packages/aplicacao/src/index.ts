@@ -169,3 +169,4 @@ export {
   mudarSituacaoChamado,
   responderChamado,
 } from './chamados'
+export { exportarDadosTitular } from './lgpd'

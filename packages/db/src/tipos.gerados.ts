@@ -1460,6 +1460,55 @@ export type Database = {
           },
         ]
       }
+      exportacoes_titular: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          comprador_id: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          pelo_titular: boolean
+          tenant_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          comprador_id: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          pelo_titular: boolean
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          comprador_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          pelo_titular?: boolean
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'exportacoes_titular_tenant_id_comprador_id_fkey'
+            columns: ['tenant_id', 'comprador_id']
+            isOneToOne: false
+            referencedRelation: 'compradores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'exportacoes_titular_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       formatos_contabeis: {
         Row: {
           atualizado_em: string
@@ -4231,6 +4280,8 @@ export type Database = {
         Returns: string
       }
       dados_dimob: { Args: { p_ano: number; p_spe: string }; Returns: Json }
+      dados_titular: { Args: { p_comprador: string }; Returns: Json }
+      dados_titular_do_contrato: { Args: { p_contrato: string }; Returns: Json }
       decidir_aprovacao_desconto: {
         Args: { p_aprovacao: string; p_aprovar: boolean; p_motivo?: string }
         Returns: undefined
