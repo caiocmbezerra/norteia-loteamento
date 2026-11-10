@@ -102,8 +102,10 @@ export {
 } from './documentos'
 export {
   type EntradaSimulacaoDistrato,
+  type ItemDescontoDistrato,
   type SimulacaoDistrato,
   executarDistrato,
+  itensDescontoDistrato,
   pagarDevolucao,
   regrasDistrato,
   simularDistrato,

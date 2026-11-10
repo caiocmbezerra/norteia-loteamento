@@ -811,11 +811,14 @@ export function FormularioDistrato({
   contratoId,
   hoje,
   padrao,
+  itens = [],
 }: {
   empreendimentoId: string
   contratoId: string
   hoje: string
   padrao: { clausula: string; fruicao: string; parcelas: string; carencia: string }
+  /** Itens de desconto do cliente (Configurações → Distrato). */
+  itens?: { id: string; nome: string; dentroDoLimite: boolean; padrao: string }[]
 }) {
   const [sim, simular, simulando] = useActionState<EstadoDistrato, FormData>(
     simularDistratoAcao.bind(null, empreendimentoId, contratoId),
@@ -853,7 +856,7 @@ export function FormularioDistrato({
         <Campo id="dis-posse" rotulo="Posse desde (se houve)" erro={er.posse}>
           <Entrada {...aria('dis', 'posse', er.posse)} type="date" defaultValue={v('posse', '')} />
         </Campo>
-        <Campo id="dis-outros" rotulo="Outros débitos (R$)" erro={er.outros}>
+        <Campo id="dis-outros" rotulo="IPTU e taxas em aberto (R$)" erro={er.outros}>
           <Entrada
             {...aria('dis', 'outros', er.outros)}
             inputMode="decimal"
@@ -890,6 +893,30 @@ export function FormularioDistrato({
           />
         </Campo>
       </div>
+      {itens.length > 0 && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm font-semibold">Outros custos da loteadora</legend>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {itens.map((i) => (
+              <Campo
+                key={i.id}
+                id={`dis-item-${i.id}`}
+                rotulo={`${i.nome} (R$)`}
+                ajuda={i.dentroDoLimite ? 'Dentro do teto da cláusula penal' : 'Fora do teto'}
+              >
+                <Entrada
+                  id={`dis-item-${i.id}`}
+                  name={`item_${i.id}`}
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  aria-describedby={`dis-item-${i.id}-ajuda`}
+                  defaultValue={v(`item_${i.id}`, i.padrao)}
+                />
+              </Campo>
+            ))}
+          </div>
+        </fieldset>
+      )}
       <Button
         type="submit"
         formAction={simular}
@@ -916,13 +943,26 @@ export function FormularioDistrato({
               {linha(`Fruição (${s.mesesPosse} meses de posse)`, s.deducoes.fruicao, '− ')}
               {linha('Encargos moratórios pagos', s.deducoes.encargosMoratorios, '− ')}
               {linha('Comissão de corretagem', s.deducoes.comissao, '− ')}
-              {linha('Outros débitos', s.deducoes.outrosDebitos, '− ')}
+              {linha('IPTU e taxas em aberto', s.deducoes.outrosDebitos, '− ')}
+              {s.deducoes.itens.map((i) => (
+                <tr key={i.descricao} className="border-t">
+                  <td className="py-1">{i.descricao}</td>
+                  <td className="py-1 text-right">− {moeda(i.valorCentavos)}</td>
+                </tr>
+              ))}
               <tr className="border-t font-semibold">
                 <td className="py-1">Devolução ao comprador</td>
                 <td className="py-1 text-right">{moeda(s.devolucaoCentavos)}</td>
               </tr>
             </tbody>
           </table>
+          {s.limite?.excede && (
+            <Alerta tipo="aviso">
+              Cláusula penal e despesas administrativas somam {moeda(s.limite.usadoCentavos)}, acima
+              do teto de {moeda(s.limite.tetoCentavos)} (art. 32-A, II, da Lei 6.766). Confira com o
+              advogado antes de executar.
+            </Alerta>
+          )}
           {s.parcelas.length > 0 && (
             <p className="text-xs text-muted-foreground">
               {s.parcelas.length} parcela(s) de {moeda(s.parcelas[0]!.valorCentavos)}, a 1ª em{' '}

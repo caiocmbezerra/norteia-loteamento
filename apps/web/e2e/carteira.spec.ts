@@ -245,6 +245,16 @@ test('distrato: simulação, execução e devolução', async ({ page }, info) =
   await page.getByLabel('Situação').selectOption('em_vendas')
   await page.getByLabel('Data do registro').fill('2026-01-02')
   await page.getByRole('button', { name: 'Salvar' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jardim Distrato')
+
+  // Custo próprio da loteadora no distrato, dentro do teto de 10%
+  await page.goto('/configuracoes/distrato')
+  await page.getByLabel('Nome do custo').fill('Documentação')
+  await page.getByLabel('Valor sugerido (R$, opcional)').fill('1.000,00')
+  await page.getByRole('button', { name: 'Cadastrar custo' }).click()
+  await expect(page.getByText('Item cadastrado.')).toBeVisible()
+  await expect(page.getByText(/Dentro do teto · sugerido R\$\s1\.000,00/)).toBeVisible()
+  await page.goto(empreendimento)
 
   await page.getByRole('link', { name: /Quadra A, lote 1:/ }).click()
   await page.getByRole('link', { name: 'Registrar venda' }).click()
@@ -258,14 +268,21 @@ test('distrato: simulação, execução e devolução', async ({ page }, info) =
   await page.getByRole('button', { name: 'Registrar recebimento' }).click()
   await expect(page.getByText('Recebimento registrado.')).toBeVisible()
 
-  // Simulação: pago 9.000 − cláusula de 5% sobre 90.000 = 4.500 em 12 parcelas
+  // Com 10% + documentação, passa do teto: o sistema avisa
   await page.getByText('Distrato (art. 32-A)').click()
+  await expect(page.getByLabel('Documentação (R$)')).toHaveValue('1.000,00')
+  await page.getByRole('button', { name: 'Simular distrato' }).click()
+  await expect(page.getByText(/acima do teto de R\$\s9\.000,00/)).toBeVisible()
+
+  // Simulação: pago 9.000 − cláusula de 5% sobre 90.000 (4.500) − documentação (1.000) = 3.500
   await page.getByLabel('Cláusula penal (%)').fill('5')
   await page.getByRole('button', { name: 'Simular distrato' }).click()
+  await expect(page.getByRole('row', { name: /Documentação/ })).toContainText(/R\$\s1\.000,00/)
   await expect(page.getByRole('row', { name: /Devolução ao comprador/ })).toContainText(
-    /R\$\s4\.500,00/,
+    /R\$\s3\.500,00/,
   )
-  await expect(page.getByText(/12 parcela\(s\) de R\$\s375,00/)).toBeVisible()
+  await expect(page.getByText(/acima do teto/)).toHaveCount(0)
+  await expect(page.getByText(/12 parcela\(s\) de R\$\s291,66/)).toBeVisible()
   await page.getByLabel('Motivo do distrato').fill('Desistência da compradora')
   await page.getByRole('button', { name: 'Executar distrato' }).click()
   await expect(page.getByText(/Distrato executado/)).toBeVisible()

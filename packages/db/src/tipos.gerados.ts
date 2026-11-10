@@ -1728,6 +1728,54 @@ export type Database = {
           },
         ]
       }
+      itens_desconto_distrato: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          dentro_do_limite: boolean
+          id: string
+          nome: string
+          tenant_id: string
+          valor_padrao_centavos: number | null
+        }
+        ComputedFields: never
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          dentro_do_limite?: boolean
+          id?: string
+          nome: string
+          tenant_id: string
+          valor_padrao_centavos?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          dentro_do_limite?: boolean
+          id?: string
+          nome?: string
+          tenant_id?: string
+          valor_padrao_centavos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'itens_desconto_distrato_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       leads: {
         Row: {
           atualizado_em: string

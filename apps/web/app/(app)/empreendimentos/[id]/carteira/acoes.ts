@@ -2,6 +2,7 @@
 
 import {
   type EntradaSimulacaoDistrato,
+  ErroAplicacao,
   INDICES_REAJUSTE,
   type SimulacaoDistrato,
   executarDistrato,
@@ -366,10 +367,20 @@ function lerDistrato(form: FormData): EntradaSimulacaoDistrato {
         .max(60, 'Carência: máximo 60 meses.'),
     })
     .parse(valoresDoFormulario(form))
+  // Itens de desconto do cliente: campos item_<id> com o valor deste distrato.
+  const itens: { id: string; valorCentavos: number }[] = []
+  for (const [k, valor] of form.entries()) {
+    if (!k.startsWith('item_') || typeof valor !== 'string' || valor.trim() === '') continue
+    const c = dinheiro('Valor do item', 0).safeParse(valor)
+    if (!c.success)
+      throw new ErroAplicacao('Valor de item de desconto: use o formato 800,00.', 'invalido')
+    itens.push({ id: k.slice('item_'.length), valorCentavos: c.data })
+  }
   return {
     data: r.data,
     posseDesde: r.posse || null,
     outrosDebitosCentavos: r.outros,
+    itens,
     ajustes: {
       clausulaPenal: r.clausula,
       fruicaoMensal: r.fruicao,

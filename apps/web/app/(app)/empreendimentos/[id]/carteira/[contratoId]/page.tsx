@@ -1,4 +1,4 @@
-import { carregarContrato, regrasDistrato } from '@norteia/aplicacao'
+import { carregarContrato, itensDescontoDistrato, regrasDistrato } from '@norteia/aplicacao'
 import { formatarData, formatarMoeda, formatarPercentual } from '@norteia/dominio'
 import { Decimal, arredondarCentavos, somarMeses } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
@@ -73,9 +73,12 @@ export default async function PaginaContrato({
   const proxima = c.parcelas.find((p) => p.situacao === 'aberta')
   const podeDistratar =
     temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor') && c.situacao === 'vigente'
-  const regras = podeDistratar
-    ? await regrasDistrato(ctx.db, ctx.tenant.id, id, hoje).catch(() => null)
-    : null
+  const [regras, itensDistrato] = podeDistratar
+    ? await Promise.all([
+        regrasDistrato(ctx.db, ctx.tenant.id, id, hoje).catch(() => null),
+        itensDescontoDistrato(ctx.db, ctx.tenant.id),
+      ])
+    : [null, []]
   const pct = (d: { times: (n: number) => { toString: () => string } }) =>
     d.times(100).toString().replace('.', ',')
   const podeDocumentos = temPapel(ctx, 'dono', 'financeiro', 'contador', 'comercial_gestor')
@@ -342,6 +345,17 @@ export default async function PaginaContrato({
                   parcelas: String(regras?.parcelasDevolucao ?? 12),
                   carencia: String(regras?.carenciaMeses ?? 12),
                 }}
+                itens={itensDistrato.map((i) => ({
+                  id: i.id,
+                  nome: i.nome,
+                  dentroDoLimite: i.dentroDoLimite,
+                  padrao:
+                    i.valorPadraoCentavos === null
+                      ? ''
+                      : (i.valorPadraoCentavos / 100).toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                        }),
+                }))}
               />
             </div>
           </details>

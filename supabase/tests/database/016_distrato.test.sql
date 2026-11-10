@@ -22,7 +22,7 @@ select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), json
   json_build_object('numero', 1, 'vencimento', current_date + 10, 'valor_centavos', 45000, 'amortizacao_centavos', 45000, 'juros_centavos', 0),
   json_build_object('numero', 2, 'vencimento', current_date + 40, 'valor_centavos', 45000, 'amortizacao_centavos', 45000, 'juros_centavos', 0))::jsonb));
 select public.registrar_recebimento((select id from public.parcelas where contrato_id = testes.id('contrato') and numero = 0), current_date - 40, 10000);
-select is((select count(*) from public.parametros where chave like 'distrato.%'), 6::bigint, 'parâmetros do distrato no catálogo');
+select is((select count(*) from public.parametros where chave like 'distrato.%'), 7::bigint, 'parâmetros do distrato no catálogo (com o teto da cláusula penal)');
 
 -- Pago 100,00 − cláusula 10% de 1.000 = 0 → sem devolução; aqui simulamos devolução de 30,00 em 2 parcelas
 select set_config('teste.resumo', '{"devolucao_centavos": 3000, "pago_centavos": 10000}', true);
