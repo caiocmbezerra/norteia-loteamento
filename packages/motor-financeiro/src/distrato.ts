@@ -17,6 +17,19 @@ export interface RegrasDistrato {
   parcelasDevolucao: number
   /** Meses entre o distrato e a 1ª parcela da devolução. */
   carenciaMeses: number
+  /**
+   * Teto de cláusula penal + despesas administrativas (art. 32-A, II), fração do valor
+   * atualizado. Só avisa quando excedido; sem teto, não há aviso. // VALIDAR COM ADVOGADO
+   */
+  limitePenal?: Decimal
+}
+
+/** Item de desconto do cliente (documentação, taxas…), com o valor deste distrato. */
+export interface ItemDeducaoDistrato {
+  descricao: string
+  valorCentavos: Centavos
+  /** Conta dentro do teto da cláusula penal + despesas administrativas. */
+  dentroDoLimite: boolean
 }
 
 export interface EntradaDistrato {
@@ -31,6 +44,8 @@ export interface EntradaDistrato {
   comissaoPagaCentavos: Centavos
   /** Outros débitos do comprador (IPTU, contribuições), informados no distrato. */
   outrosDebitosCentavos: Centavos
+  /** Itens de desconto cadastrados pelo cliente, com o valor deste distrato. */
+  itens?: readonly ItemDeducaoDistrato[]
   regras: RegrasDistrato
 }
 
@@ -45,7 +60,10 @@ export interface ResultadoDistrato {
     encargosMoratorios: Centavos
     comissao: Centavos
     outrosDebitos: Centavos
+    itens: ItemDeducaoDistrato[]
   }
+  /** Cláusula penal + itens dentro do limite, comparados ao teto (quando há teto). */
+  limite: { tetoCentavos: Centavos; usadoCentavos: Centavos; excede: boolean } | null
   devolucaoCentavos: Centavos
   parcelas: { numero: number; vencimento: string; valorCentavos: Centavos }[]
 }
@@ -59,7 +77,10 @@ const arredondar = (d: Decimal) => centavos(BigInt(d.toDecimalPlaces(0).toFixed(
  */
 export function calcularDistrato(e: EntradaDistrato): ResultadoDistrato {
   const r = e.regras
+  const itens = (e.itens ?? []).map((i) => ({ ...i }))
   if (
+    itens.some((i) => !Number.isInteger(i.valorCentavos) || i.valorCentavos < 0) ||
+    r.limitePenal?.isNegative() ||
     r.clausulaPenal.isNegative() ||
     r.fruicaoMensal.isNegative() ||
     !Number.isInteger(r.parcelasDevolucao) ||
@@ -87,8 +108,25 @@ export function calcularDistrato(e: EntradaDistrato): ResultadoDistrato {
     ),
     comissao: centavos(r.deduzComissao ? e.comissaoPagaCentavos : 0),
     outrosDebitos: e.outrosDebitosCentavos,
+    itens,
   }
-  const totalDeducoes = Object.values(deducoes).reduce((t: number, x) => t + x, 0)
+  const totalItens = itens.reduce((t, i) => t + i.valorCentavos, 0)
+  const totalDeducoes =
+    deducoes.clausulaPenal +
+    deducoes.fruicao +
+    deducoes.encargosMoratorios +
+    deducoes.comissao +
+    deducoes.outrosDebitos +
+    totalItens
+  let limite: ResultadoDistrato['limite'] = null
+  if (r.limitePenal) {
+    const teto = arredondar(valorContrato.times(r.limitePenal))
+    const usado = centavos(
+      deducoes.clausulaPenal +
+        itens.filter((i) => i.dentroDoLimite).reduce((t, i) => t + i.valorCentavos, 0),
+    )
+    limite = { tetoCentavos: teto, usadoCentavos: usado, excede: usado > teto }
+  }
   const devolucao = centavos(Math.max(0, Number(arredondar(pagoAtualizado)) - totalDeducoes))
 
   const base = Math.floor(devolucao / r.parcelasDevolucao)
@@ -108,6 +146,7 @@ export function calcularDistrato(e: EntradaDistrato): ResultadoDistrato {
     valorContratoAtualizadoCentavos: arredondar(valorContrato),
     mesesPosse,
     deducoes,
+    limite,
     devolucaoCentavos: devolucao,
     parcelas,
   }

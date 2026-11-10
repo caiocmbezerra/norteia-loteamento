@@ -38,7 +38,9 @@ describe('calcularDistrato (RN-D01 a RN-D03)', () => {
       encargosMoratorios: 5_000,
       comissao: 0,
       outrosDebitos: 0,
+      itens: [],
     })
+    expect(r.limite).toBeNull()
     expect(r.devolucaoCentavos).toBe(900_000)
     expect(r.parcelas).toHaveLength(12)
     expect(r.parcelas[0]).toEqual({ numero: 1, vencimento: '2027-11-08', valorCentavos: 75_000 })
@@ -102,5 +104,47 @@ describe('calcularDistrato (RN-D01 a RN-D03)', () => {
   it('fator acumulado de variações mensais', () => {
     expect(fatorAcumulado([new Decimal('0.5'), new Decimal('0.5')]).toString()).toBe('1.010025')
     expect(fatorAcumulado([]).toString()).toBe('1')
+  })
+})
+
+describe('itens de desconto do cliente e teto do art. 32-A, II', () => {
+  const comTeto = { ...regras, limitePenal: new Decimal('0.10') }
+
+  it('desconta os itens e soma os de dentro do limite à cláusula penal', () => {
+    const r = calcularDistrato({
+      ...base,
+      regras: { ...comTeto, clausulaPenal: new Decimal('0.08') },
+      itens: [
+        { descricao: 'Documentação', valorCentavos: centavos(100_000), dentroDoLimite: true },
+        { descricao: 'IPTU em aberto', valorCentavos: centavos(30_000), dentroDoLimite: false },
+      ],
+    })
+    // 8% de 90.000 = 7.200; dentro do limite: 7.200 + 1.000 = 8.200 ≤ 9.000
+    expect(r.deducoes.clausulaPenal).toBe(720_000)
+    expect(r.deducoes.itens).toHaveLength(2)
+    expect(r.limite).toEqual({ tetoCentavos: 900_000, usadoCentavos: 820_000, excede: false })
+    // 18.050 − 7.200 − 50 (encargos) − 1.000 − 300 = 9.500
+    expect(r.devolucaoCentavos).toBe(950_000)
+  })
+
+  it('avisa quando cláusula penal + itens dentro do limite passam do teto', () => {
+    const r = calcularDistrato({
+      ...base,
+      regras: comTeto,
+      itens: [{ descricao: 'Documentação', valorCentavos: centavos(1), dentroDoLimite: true }],
+    })
+    expect(r.limite).toEqual({ tetoCentavos: 900_000, usadoCentavos: 900_001, excede: true })
+  })
+
+  it('recusa item com valor negativo ou fracionário e teto negativo', () => {
+    expect(() =>
+      calcularDistrato({
+        ...base,
+        itens: [{ descricao: 'x', valorCentavos: -1 as never, dentroDoLimite: false }],
+      }),
+    ).toThrow(ErroMotor)
+    expect(() =>
+      calcularDistrato({ ...base, regras: { ...regras, limitePenal: new Decimal('-0.1') } }),
+    ).toThrow(ErroMotor)
   })
 })

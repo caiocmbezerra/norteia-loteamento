@@ -19,6 +19,8 @@ export interface EntradaSimulacaoDistrato {
   data: string
   posseDesde: string | null
   outrosDebitosCentavos: number
+  /** Itens de desconto do cliente com o valor deste distrato (ids de itens_desconto_distrato). */
+  itens?: { id: string; valorCentavos: number }[]
   /** Ajustes deste contrato sobre os parâmetros do cliente (RN-D01). */
   ajustes?: Partial<
     Pick<RegrasDistrato, 'clausulaPenal' | 'fruicaoMensal' | 'parcelasDevolucao' | 'carenciaMeses'>
@@ -33,6 +35,7 @@ export interface SimulacaoDistrato extends ResultadoDistrato {
     deduzComissao: boolean
     parcelasDevolucao: number
     carenciaMeses: number
+    limitePenal: string | null
   }
   indice: string | null
 }
@@ -62,13 +65,25 @@ export async function regrasDistrato(
       )
     return String(v).replace(/^"|"$/g, '')
   }
-  const [penal, fruicao, encargos, comissao, parcelas, carencia] = await Promise.all([
+  const opcional = async (chave: string) => {
+    const { data: v, error } = await db.rpc('parametro_vigente', {
+      p_chave: chave,
+      p_data: data,
+      p_tenant: tenantId,
+      p_escopo: 'empreendimento',
+      p_escopo_id: empreendimentoId,
+    })
+    falhar(error)
+    return v === null || v === undefined ? null : String(v).replace(/^"|"$/g, '')
+  }
+  const [penal, fruicao, encargos, comissao, parcelas, carencia, limite] = await Promise.all([
     ler('distrato.clausula_penal'),
     ler('distrato.fruicao_mensal'),
     ler('distrato.deduz_encargos_moratorios'),
     ler('distrato.deduz_comissao'),
     ler('distrato.parcelas_devolucao'),
     ler('distrato.carencia_devolucao_meses'),
+    opcional('distrato.limite_penal'),
   ])
   return {
     clausulaPenal: new Decimal(penal),
@@ -77,7 +92,35 @@ export async function regrasDistrato(
     deduzComissao: comissao === 'true',
     parcelasDevolucao: Number(parcelas),
     carenciaMeses: Number(carencia),
+    ...(limite ? { limitePenal: new Decimal(limite) } : {}),
   }
+}
+
+export interface ItemDescontoDistrato {
+  id: string
+  nome: string
+  dentroDoLimite: boolean
+  valorPadraoCentavos: number | null
+}
+
+/** Itens de desconto ativos do cliente (documentação, taxas…), na ordem do nome. */
+export async function itensDescontoDistrato(
+  db: ClienteBanco,
+  tenantId: string,
+): Promise<ItemDescontoDistrato[]> {
+  const { data, error } = await db
+    .from('itens_desconto_distrato')
+    .select('id, nome, dentro_do_limite, valor_padrao_centavos')
+    .eq('tenant_id', tenantId)
+    .eq('ativo', true)
+    .order('nome')
+  falhar(error)
+  return (data ?? []).map((i) => ({
+    id: i.id,
+    nome: i.nome,
+    dentroDoLimite: i.dentro_do_limite,
+    valorPadraoCentavos: i.valor_padrao_centavos,
+  }))
 }
 
 /**
@@ -101,7 +144,7 @@ export async function simularDistrato(
   if (c!.situacao !== 'vigente')
     throw new ErroAplicacao('Só contratos vigentes são distratados.', 'invalido')
   const v = c!.vendas!
-  const [base, recebimentos, indices] = await Promise.all([
+  const [base, recebimentos, indices, catalogo] = await Promise.all([
     regrasDistrato(db, tenantId, c!.empreendimento_id, e.data),
     paginar((de, ate) =>
       db
@@ -126,7 +169,21 @@ export async function simularDistrato(
             .range(de, ate),
         )
       : Promise.resolve([] as { competencia: string; variacao_mensal: number }[]),
+    e.itens?.length ? itensDescontoDistrato(db, tenantId) : Promise.resolve([]),
   ])
+  // Nome e enquadramento vêm do cadastro do cliente; do formulário só o valor.
+  const itens = (e.itens ?? [])
+    .filter((i) => i.valorCentavos > 0)
+    .map((i) => {
+      const item = catalogo.find((x) => x.id === i.id)
+      if (!item)
+        throw new ErroAplicacao('Item de desconto não encontrado ou desativado.', 'invalido')
+      return {
+        descricao: item.nome,
+        valorCentavos: centavos(i.valorCentavos),
+        dentroDoLimite: item.dentroDoLimite,
+      }
+    })
   const fatorDesde = (data: string) =>
     fatorAcumulado(
       indices
@@ -154,6 +211,7 @@ export async function simularDistrato(
     posseDesde: e.posseDesde,
     comissaoPagaCentavos: centavos(Number(comissaoPaga.toDecimalPlaces(0).toFixed(0))),
     outrosDebitosCentavos: centavos(e.outrosDebitosCentavos),
+    itens,
     regras,
   })
   return {
@@ -166,6 +224,7 @@ export async function simularDistrato(
       deduzComissao: regras.deduzComissao,
       parcelasDevolucao: regras.parcelasDevolucao,
       carenciaMeses: regras.carenciaMeses,
+      limitePenal: regras.limitePenal?.toString() ?? null,
     },
   }
 }
@@ -190,7 +249,8 @@ export async function executarDistrato(
       valor_contrato_atualizado_centavos: s.valorContratoAtualizadoCentavos,
       meses_posse: s.mesesPosse,
       posse_desde: e.posseDesde,
-      deducoes: s.deducoes,
+      deducoes: { ...s.deducoes, itens: s.deducoes.itens.map((i) => ({ ...i })) },
+      limite: s.limite,
       regras: s.regras,
       indice: s.indice,
     },
