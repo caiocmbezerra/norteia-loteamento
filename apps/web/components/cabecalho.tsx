@@ -6,6 +6,7 @@ import type { Contexto } from '@/lib/contexto'
 const LINKS = [
   { href: '/painel', rotulo: 'Painel' },
   { href: '/alertas', rotulo: 'Alertas' },
+  { href: '/atendimento', rotulo: 'Atendimento' },
   { href: '/assistente', rotulo: 'Assistente' },
   { href: '/configuracoes', rotulo: 'Configurações' },
 ]
@@ -41,12 +42,12 @@ export function Cabecalho({ ctx }: { ctx: Contexto }) {
         ) : (
           <span className="truncate text-sm font-medium">{ctx.tenant.nome}</span>
         )}
-        <nav aria-label="Principal" className="flex items-center gap-1 sm:ml-auto">
+        <nav aria-label="Principal" className="flex flex-wrap items-center gap-1 sm:ml-auto">
           {LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className="rounded-md px-3 py-2 text-sm hover:bg-muted"
+              className="rounded-md px-2 py-2 text-sm hover:bg-muted sm:px-3"
             >
               {l.rotulo}
             </Link>

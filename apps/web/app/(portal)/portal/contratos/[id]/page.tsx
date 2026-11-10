@@ -1,4 +1,10 @@
-import { andamentoObra, carregarContratoPortal, quitacaoHoje } from '@norteia/aplicacao'
+import {
+  SITUACOES_CHAMADO,
+  type SituacaoChamado,
+  andamentoObra,
+  carregarContratoPortal,
+  quitacaoHoje,
+} from '@norteia/aplicacao'
 import { formatarData, formatarMoeda } from '@norteia/dominio'
 import { arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
@@ -9,9 +15,14 @@ import { Alerta } from '@/components/ui/formulario'
 import { exigirUsuario } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
 import { BotaoSegundaVia } from '../../botao-segunda-via'
+import { FormularioChamado } from './chamados/formulario'
 
 export const metadata: Metadata = { title: 'Meu contrato' }
 
+const dataSP = new Intl.DateTimeFormat('pt-BR', {
+  dateStyle: 'short',
+  timeZone: 'America/Sao_Paulo',
+})
 const moeda = (c: number) => formatarMoeda(arredondarCentavos(String(c)))
 
 export default async function PaginaContratoPortal({
@@ -21,7 +32,15 @@ export default async function PaginaContratoPortal({
 }) {
   const { id } = await params
   const { db } = await exigirUsuario()
-  const [c, obra] = await Promise.all([carregarContratoPortal(db, id), andamentoObra(db, id)])
+  const [c, obra, { data: chamados }] = await Promise.all([
+    carregarContratoPortal(db, id),
+    andamentoObra(db, id),
+    db
+      .from('chamados')
+      .select('id, assunto, situacao, ultima_mensagem_em')
+      .eq('contrato_id', id)
+      .order('ultima_mensagem_em', { ascending: false }),
+  ])
   if (!c) notFound()
   const obraOrcado = obra.reduce((t, e) => t + e.orcado, 0)
   const obraPago = obra.reduce((t, e) => t + e.pago, 0)
@@ -227,6 +246,33 @@ export default async function PaginaContratoPortal({
             </div>
           </>
         )}
+      </Cartao>
+      <Cartao className="flex flex-col gap-3" aria-label="Atendimento">
+        <h2 className="text-lg font-semibold">Atendimento</h2>
+        {(chamados ?? []).length > 0 && (
+          <ul className="divide-y text-sm">
+            {(chamados ?? []).map((ch) => (
+              <li key={ch.id} className="flex flex-wrap justify-between gap-2 py-2">
+                <Link
+                  href={`/portal/contratos/${c.id}/chamados/${ch.id}`}
+                  className="text-primary underline underline-offset-4"
+                >
+                  {ch.assunto}
+                </Link>
+                <span className="text-muted-foreground">
+                  {SITUACOES_CHAMADO[ch.situacao as SituacaoChamado]} ·{' '}
+                  {dataSP.format(new Date(ch.ultima_mensagem_em))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <details>
+          <summary className="cursor-pointer text-sm font-medium">Falar com a loteadora</summary>
+          <div className="mt-3">
+            <FormularioChamado contratoId={c.id} />
+          </div>
+        </details>
       </Cartao>
     </>
   )

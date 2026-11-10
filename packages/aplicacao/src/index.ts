@@ -157,3 +157,15 @@ export * from './assistente'
 export * from './alertas'
 export * from './leitura'
 export * from './implantacao'
+export {
+  CATEGORIAS_CHAMADO,
+  type CategoriaChamado,
+  type Chamado,
+  type MensagemChamado,
+  SITUACOES_CHAMADO,
+  type SituacaoChamado,
+  abrirChamado,
+  carregarChamado,
+  mudarSituacaoChamado,
+  responderChamado,
+} from './chamados'

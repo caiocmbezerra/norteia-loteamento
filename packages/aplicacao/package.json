@@ -5,7 +5,8 @@
   "description": "Casos de uso: orquestra repositórios, motor e integrações.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./chamados": "./src/chamados.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p .",
