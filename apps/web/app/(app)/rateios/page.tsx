@@ -31,6 +31,7 @@ export default async function PaginaRateios() {
         .from('centros_custo')
         .select('codigo, nome')
         .eq('tenant_id', ctx.tenant.id)
+        .eq('ativo', true)
         .order('ordem'),
       ctx.db.from('fornecedores').select('id, nome').eq('tenant_id', ctx.tenant.id).order('nome'),
       ctx.db

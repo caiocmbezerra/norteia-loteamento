@@ -22,7 +22,8 @@
 
 - Medições por percentual acumulado executado (D-103): o banco calcula o valor da diferença para o acumulado anterior e cria a conta a pagar; a soma das medições fecha exatamente com o valor do contrato; barra de execução por contrato.
 - Rateio de despesas comuns (D-104): por número de lotes, área, VGV de tabela ou percentuais; cada empreendimento recebe a sua conta a pagar, e os centavos fecham com o total.
+- Telas de centros de custo próprios (Configurações → Centros de custo: criar centro ou subcentro, desativar e reativar), encerrar contrato (o saldo não medido sai do compromisso) e cancelar conta sem pagamentos, com motivo.
 
 ## Pendente
 
-- Telas para criar centros de custo próprios, encerrar contrato e cancelar conta (o banco já suporta).
+- Nada de código; a Fase 3 está completa.

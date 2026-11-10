@@ -45,8 +45,10 @@ test('medições por percentual executado geram as contas do contrato', async ({
   const pav = contratos.getByRole('listitem').filter({ hasText: 'Pavimentação' })
   await expect(pav).toContainText('0,00% executado')
   const abrir = async () => {
-    if ((await pav.locator('details').getAttribute('open')) === null)
-      await pav.locator('summary').click()
+    const medicao = pav.locator('details', {
+      has: page.locator('summary', { hasText: 'Registrar medição' }),
+    })
+    if ((await medicao.getAttribute('open')) === null) await medicao.locator('summary').click()
   }
   await abrir()
   await pav.getByLabel('Executado acumulado (%)').fill('40')

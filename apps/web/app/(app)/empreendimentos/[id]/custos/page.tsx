@@ -16,6 +16,8 @@ import {
   FormularioContrato,
   FormularioEstorno,
   FormularioAnexo,
+  FormularioCancelarConta,
+  FormularioEncerrarContrato,
   FormularioMedicao,
   FormularioPagar,
 } from './formularios'
@@ -249,6 +251,16 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
                       hoje={hoje}
                     />
                     <FormularioAnexo empreendimentoId={id} contaId={c.id} />
+                    {c.saldo === c.valor_centavos && (
+                      <details>
+                        <summary className="cursor-pointer text-xs font-medium">
+                          Cancelar conta
+                        </summary>
+                        <div className="mt-2">
+                          <FormularioCancelarConta empreendimentoId={id} contaId={c.id} />
+                        </div>
+                      </details>
+                    )}
                   </>
                 )}
               </li>
@@ -340,6 +352,21 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
                     </summary>
                     <div className="mt-3">
                       <FormularioMedicao empreendimentoId={id} contratoId={k.id} hoje={hoje} />
+                    </div>
+                  </details>
+                )}
+                {k.situacao !== 'vigente' && (
+                  <span className="text-xs text-muted-foreground">
+                    Contrato {k.situacao === 'encerrado' ? 'encerrado' : 'cancelado'}.
+                  </span>
+                )}
+                {podeEditar && k.situacao === 'vigente' && (
+                  <details>
+                    <summary className="cursor-pointer text-xs font-medium">
+                      Encerrar contrato
+                    </summary>
+                    <div className="mt-2">
+                      <FormularioEncerrarContrato empreendimentoId={id} contratoId={k.id} />
                     </div>
                   </details>
                 )}
