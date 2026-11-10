@@ -65,6 +65,8 @@ export { type CondicoesContrato, type ParcelaContrato, gerarParcelasContrato } f
 export {
   type SimulacaoCessaoCarteira,
   descontoAntecipacao,
+  type QuitacaoAntecipada,
+  quitacaoAntecipada,
   simularCessaoCarteira,
 } from './antecipacao'
 export {

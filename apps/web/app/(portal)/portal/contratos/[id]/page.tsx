@@ -1,4 +1,4 @@
-import { andamentoObra, carregarContratoPortal } from '@norteia/aplicacao'
+import { andamentoObra, carregarContratoPortal, quitacaoHoje } from '@norteia/aplicacao'
 import { formatarData, formatarMoeda } from '@norteia/dominio'
 import { arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
@@ -29,6 +29,7 @@ export default async function PaginaContratoPortal({
   const hoje = hojeSaoPaulo()
   const abertas = c.parcelas.filter((p) => p.situacao === 'aberta')
   const saldo = abertas.reduce((t, p) => t + p.valor - p.pago, 0)
+  const quitacao = quitacaoHoje(c, hoje)
   const vencido = abertas
     .filter((p) => p.vencimento < hoje)
     .reduce((t, p) => t + p.valor - p.pago, 0)
@@ -65,6 +66,12 @@ export default async function PaginaContratoPortal({
             Termo de quitação
           </a>
         )}
+        <a
+          href={`/portal/contratos/${c.id}/extrato`}
+          className="text-primary underline underline-offset-4"
+        >
+          Extrato (PDF)
+        </a>
       </p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Indicador rotulo="Saldo a pagar" valor={moeda(saldo)} />
@@ -75,6 +82,33 @@ export default async function PaginaContratoPortal({
           {...(c.indice ? { nota: 'Aplicado no aniversário do contrato' } : {})}
         />
       </div>
+      {c.situacao === 'vigente' && saldo > 0 && (
+        <Cartao className="flex flex-col gap-2" aria-label="Quitar hoje">
+          <h2 className="text-lg font-semibold">Quanto custa quitar hoje</h2>
+          <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
+            <dt>Parcelas em aberto</dt>
+            <dd className="text-right">{moeda(quitacao.saldoCentavos)}</dd>
+            {quitacao.descontoCentavos > 0 && (
+              <>
+                <dt>Desconto por antecipar as parcelas a vencer</dt>
+                <dd className="text-right">− {moeda(quitacao.descontoCentavos)}</dd>
+              </>
+            )}
+            {quitacao.encargosCentavos > 0 && (
+              <>
+                <dt>Multa e juros das parcelas em atraso</dt>
+                <dd className="text-right">+ {moeda(quitacao.encargosCentavos)}</dd>
+              </>
+            )}
+            <dt className="font-semibold">Total para quitar em {formatarData(hoje)}</dt>
+            <dd className="text-right font-semibold">{moeda(quitacao.totalCentavos)}</dd>
+          </dl>
+          <p className="text-xs text-muted-foreground">
+            Estimativa pelas condições do seu contrato. Para quitar, fale com a loteadora: o valor é
+            confirmado na data do pagamento.
+          </p>
+        </Cartao>
+      )}
       {!c.boleto_disponivel && abertas.length > 0 && (
         <Alerta tipo="aviso">
           A loteadora ainda não emite boleto pelo portal. Para pagar, fale com ela.
