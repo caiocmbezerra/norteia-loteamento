@@ -192,7 +192,7 @@ function data(texto: string): string {
   return lerData(t)
 }
 
-const INDICES = ['IPCA', 'IGP-M', 'INCC']
+const INDICES = ['IPCA', 'INPC', 'IGP-M', 'INCC']
 function indice(texto: string): string | null {
   if (!texto) return null
   const t = texto
@@ -200,7 +200,7 @@ function indice(texto: string): string | null {
     .replace(/\s/g, '')
     .replace(/^IGPM$/, 'IGP-M')
   if (!INDICES.includes(t))
-    throw new Error(`Índice "${texto}" desconhecido (use IPCA, IGP-M ou INCC).`)
+    throw new Error(`Índice "${texto}" desconhecido (use IPCA, INPC, IGP-M ou INCC).`)
   return t
 }
 

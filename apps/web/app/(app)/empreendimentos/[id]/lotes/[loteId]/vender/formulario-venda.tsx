@@ -202,6 +202,7 @@ export function FormularioVenda({
           <Campo id="indice" rotulo="Reajuste">
             <Selecao id="indice" name="indice" defaultValue={v('indice', 'IPCA')}>
               <option value="IPCA">IPCA</option>
+              <option value="INPC">INPC</option>
               <option value="IGP-M">IGP-M</option>
               <option value="INCC">INCC</option>
               <option value="">Sem reajuste</option>

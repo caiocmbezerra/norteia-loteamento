@@ -94,18 +94,20 @@ describe('importação de carteira', () => {
   })
 })
 
-it('aceita IGPM e recusa índice desconhecido', () => {
+it('aceita IGPM e INPC e recusa índice desconhecido', () => {
   const cab = 'contrato;quadra;lote;comprador;data_venda;preco;indice;parcela;vencimento;valor'
   const { cabecalho, linhas } = lerCsv(
     [
       cab,
       '1;A;1;Ana;01/01/2024;100,00;igpm;1;01/02/2024;100,00',
       '2;A;2;Bia;01/01/2024;100,00;TR;1;01/02/2024;100,00',
+      '3;A;3;Caio;01/01/2024;100,00;inpc;1;01/02/2024;100,00',
     ].join('\n'),
   )
   const r = interpretarCarteira(linhas, sugerirMapeamento(cabecalho))
   expect(r.contratos[0]!.indice).toBe('IGP-M')
+  expect(r.contratos.find((c) => c.ref === '3')!.indice).toBe('INPC')
   expect(r.erros).toEqual([
-    { linha: 3, mensagem: 'Índice "TR" desconhecido (use IPCA, IGP-M ou INCC).' },
+    { linha: 3, mensagem: 'Índice "TR" desconhecido (use IPCA, INPC, IGP-M ou INCC).' },
   ])
 })
