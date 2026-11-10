@@ -1,16 +1,17 @@
 'use client'
 
-import { ROTULO_STATUS_LOTE, type StatusLote } from '@norteia/dominio'
+import { ROTULO_SITUACAO_MAPA, type SituacaoMapa } from '@norteia/dominio'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 // Preenchimento semitransparente para a planta continuar legível; o nome acessível traz a situação.
-export const COR_PLANTA: Record<StatusLote, string> = {
+export const COR_PLANTA: Record<SituacaoMapa, string> = {
   disponivel: 'fill-emerald-400/45 stroke-emerald-800',
   reservado: 'fill-amber-400/50 stroke-amber-800',
   vendido: 'fill-sky-500/45 stroke-sky-900',
+  quitado: 'fill-indigo-600/50 stroke-indigo-950',
   bloqueado: 'fill-zinc-500/45 stroke-zinc-800',
   permuta: 'fill-violet-500/45 stroke-violet-900',
 }
@@ -18,7 +19,7 @@ export const COR_PLANTA: Record<StatusLote, string> = {
 export interface LotePlanta {
   id: string
   rotulo: string
-  status: StatusLote
+  status: SituacaoMapa
   pontos: [number, number][]
   href?: string
 }
@@ -84,7 +85,7 @@ export function PlantaLotes({
                 className={cn(COR_PLANTA[l.status], 'transition-opacity hover:opacity-70')}
               />
             )
-            const nome = `${l.rotulo}: ${ROTULO_STATUS_LOTE[l.status]}`
+            const nome = `${l.rotulo}: ${ROTULO_SITUACAO_MAPA[l.status]}`
             return l.href ? (
               <Link key={l.id} href={l.href} aria-label={nome}>
                 <title>{nome}</title>
@@ -106,12 +107,12 @@ export function PlantaLotes({
 export function Legenda() {
   return (
     <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs" aria-label="Legenda">
-      {(Object.keys(COR_PLANTA) as StatusLote[]).map((s) => (
+      {(Object.keys(COR_PLANTA) as SituacaoMapa[]).map((s) => (
         <li key={s} className="flex items-center gap-1">
           <svg width="12" height="12" aria-hidden="true">
             <rect width="12" height="12" rx="2" strokeWidth="1.5" className={COR_PLANTA[s]} />
           </svg>
-          {ROTULO_STATUS_LOTE[s]}
+          {ROTULO_SITUACAO_MAPA[s]}
         </li>
       ))}
     </ul>
