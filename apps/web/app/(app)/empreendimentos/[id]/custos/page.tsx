@@ -108,9 +108,16 @@ export default async function PaginaCustos({ params }: { params: Promise<{ id: s
         titulo="Custos e obra"
         subtitulo={`Situação em ${formatarData(hoje)} (mês ${painel.custos.mesAtual} do fluxo).`}
         acoes={
-          <Button asChild variant="outline">
-            <Link href={`/empreendimentos/${id}/custos/orcamento`}>Orçamento</Link>
-          </Button>
+          <>
+            <Button asChild variant="outline">
+              <Link href={`/empreendimentos/${id}/custos/orcamento`}>Orçamento</Link>
+            </Button>
+            {podeEditar && (
+              <Button asChild variant="outline">
+                <Link href="/rateios">Ratear despesa comum</Link>
+              </Button>
+            )}
+          </>
         }
       />
 

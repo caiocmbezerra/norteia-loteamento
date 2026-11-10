@@ -602,6 +602,7 @@ export type Database = {
           fornecedor_id: string | null
           id: string
           motivo_cancelamento: string | null
+          rateio_id: string | null
           tenant_id: string
           valor_centavos: number
           vencimento: string
@@ -621,6 +622,7 @@ export type Database = {
           fornecedor_id?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          rateio_id?: string | null
           tenant_id: string
           valor_centavos: number
           vencimento: string
@@ -639,6 +641,7 @@ export type Database = {
           fornecedor_id?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          rateio_id?: string | null
           tenant_id?: string
           valor_centavos?: number
           vencimento?: string
@@ -670,6 +673,13 @@ export type Database = {
             columns: ['tenant_id', 'fornecedor_id']
             isOneToOne: false
             referencedRelation: 'fornecedores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'contas_pagar_tenant_id_rateio_id_fkey'
+            columns: ['tenant_id', 'rateio_id']
+            isOneToOne: false
+            referencedRelation: 'rateios'
             referencedColumns: ['tenant_id', 'id']
           },
         ]
@@ -3144,6 +3154,77 @@ export type Database = {
           },
         ]
       }
+      rateios: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          centro_codigo: string
+          criado_em: string
+          criado_por: string | null
+          criterio: string
+          descricao: string
+          documento_numero: string | null
+          fornecedor_id: string | null
+          id: string
+          tenant_id: string
+          valor_centavos: number
+          vencimento: string
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          centro_codigo: string
+          criado_em?: string
+          criado_por?: string | null
+          criterio: string
+          descricao: string
+          documento_numero?: string | null
+          fornecedor_id?: string | null
+          id?: string
+          tenant_id: string
+          valor_centavos: number
+          vencimento: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          centro_codigo?: string
+          criado_em?: string
+          criado_por?: string | null
+          criterio?: string
+          descricao?: string
+          documento_numero?: string | null
+          fornecedor_id?: string | null
+          id?: string
+          tenant_id?: string
+          valor_centavos?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'rateios_tenant_id_centro_codigo_fkey'
+            columns: ['tenant_id', 'centro_codigo']
+            isOneToOne: false
+            referencedRelation: 'centros_custo'
+            referencedColumns: ['tenant_id', 'codigo']
+          },
+          {
+            foreignKeyName: 'rateios_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'rateios_tenant_id_fornecedor_id_fkey'
+            columns: ['tenant_id', 'fornecedor_id']
+            isOneToOne: false
+            referencedRelation: 'fornecedores'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       reajustes: {
         Row: {
           aniversario: string
@@ -4079,6 +4160,10 @@ export type Database = {
           p_reajuste?: number
           p_vigente_desde: string
         }
+        Returns: string
+      }
+      ratear_despesa: {
+        Args: { p_empreendimentos: string[]; p_percentuais?: Json; p_rateio: Json }
         Returns: string
       }
       reajustar_contrato: { Args: { p_contrato: string }; Returns: number }

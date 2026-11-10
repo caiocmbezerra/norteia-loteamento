@@ -13,6 +13,7 @@ export {
   salvarViabilidade,
 } from './viabilidade'
 export {
+  type CriterioRateio,
   type NovaConta,
   type NovoContrato,
   type PainelCustos,
@@ -20,6 +21,7 @@ export {
   anexarDocumentoConta,
   carregarPainelCustos,
   criarOrcamentoDoPlano,
+  ratearDespesa,
   estornarPagamento,
   registrarConta,
   registrarContrato,
