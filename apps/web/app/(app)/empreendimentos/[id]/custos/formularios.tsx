@@ -7,6 +7,8 @@ import { Alerta, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/form
 import type { EstadoFormulario } from '@/lib/acao'
 import {
   anexarConta,
+  cancelarConta,
+  encerrarContrato,
   medir,
   estornar,
   lerDocumentoConta,
@@ -523,6 +525,72 @@ export function FormularioMedicao({
       <Button type="submit" variant="secondary" disabled={f.enviando}>
         {f.enviando ? 'Registrando…' : 'Registrar medição'}
       </Button>
+    </form>
+  )
+}
+
+/** Encerrar contrato, com a explicação do efeito no custo projetado. */
+export function FormularioEncerrarContrato({
+  empreendimentoId,
+  contratoId,
+}: {
+  empreendimentoId: string
+  contratoId: string
+}) {
+  const f = useFormulario(encerrarContrato.bind(null, empreendimentoId, contratoId))
+  return (
+    <form ref={f.ref} action={f.despachar} className="flex flex-col gap-2" noValidate>
+      <Mensagens estado={f.estado} />
+      <p className="text-xs text-muted-foreground">
+        O saldo ainda não medido deixa de contar como compromisso; as contas já lançadas continuam a
+        pagar.
+      </p>
+      <Button
+        type="submit"
+        size="sm"
+        variant="outline"
+        disabled={f.enviando}
+        className="self-start"
+      >
+        Confirmar encerramento
+      </Button>
+    </form>
+  )
+}
+
+/** Cancelar conta a pagar (sem pagamentos ativos), com motivo. */
+export function FormularioCancelarConta({
+  empreendimentoId,
+  contaId,
+}: {
+  empreendimentoId: string
+  contaId: string
+}) {
+  const f = useFormulario(cancelarConta.bind(null, empreendimentoId, contaId))
+  const id = `cancelar-${contaId}`
+  return (
+    <form ref={f.ref} action={f.despachar} className="flex flex-wrap items-end gap-2" noValidate>
+      <Mensagens estado={f.estado} />
+      <div className="flex flex-col gap-1">
+        <label htmlFor={id} className="text-xs text-muted-foreground">
+          Motivo do cancelamento
+        </label>
+        <Entrada
+          id={id}
+          name="motivo"
+          className="h-8"
+          aria-invalid={f.er.motivo ? true : undefined}
+          aria-describedby={f.er.motivo ? `${id}-erro` : undefined}
+        />
+      </div>
+      <Button type="submit" size="sm" variant="outline" disabled={f.enviando}>
+        Cancelar conta
+      </Button>
+      {f.er.motivo && (
+        <p id={`${id}-erro`} role="alert" className="basis-full text-xs text-destructive">
+          {f.er.motivo}
+        </p>
+      )}
     </form>
   )
 }

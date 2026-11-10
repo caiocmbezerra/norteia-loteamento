@@ -27,6 +27,11 @@ const SECOES = [
     texto: 'Multa, juros, reajuste, tributos e regras comerciais da sua loteadora.',
   },
   {
+    href: '/configuracoes/centros-custo',
+    titulo: 'Centros de custo',
+    texto: 'O plano de custos: centros padrão de loteamento e os seus próprios.',
+  },
+  {
     href: '/configuracoes/modelos',
     titulo: 'Modelos de documentos',
     texto: 'Contrato, termo de quitação e aditivos em Word, com o seu texto.',

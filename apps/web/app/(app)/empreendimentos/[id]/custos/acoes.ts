@@ -302,3 +302,56 @@ export async function medir(
   revalidatePath(caminho(empreendimentoId))
   return { ok: 'Medição registrada; a conta a pagar foi criada.' }
 }
+
+/** Encerra o contrato: o saldo não medido deixa de ser compromisso; contas abertas continuam. */
+export async function encerrarContrato(
+  empreendimentoId: string,
+  contratoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const { data, error } = await ctx.db
+      .from('contratos_fornecedor')
+      .update({ situacao: 'encerrado' })
+      .eq('id', contratoId)
+      .eq('empreendimento_id', empreendimentoId)
+      .eq('situacao', 'vigente')
+      .select('id')
+    if (error) throw traduzirErroBanco(error)
+    if (!data?.length) throw new ErroAplicacao('Contrato não encontrado ou já encerrado.')
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidatePath(caminho(empreendimentoId))
+  return { ok: 'Contrato encerrado.' }
+}
+
+/** Cancela uma conta sem pagamentos ativos (lançamento errado, nota substituída). */
+export async function cancelarConta(
+  empreendimentoId: string,
+  contaId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const motivo = String(form.get('motivo') ?? '').trim()
+    if (motivo.length < 3)
+      throw new ErroAplicacao('Informe o motivo do cancelamento.', 'motivo', 'motivo')
+    const { data, error } = await ctx.db
+      .from('contas_pagar')
+      .update({ cancelada_em: new Date().toISOString(), motivo_cancelamento: motivo })
+      .eq('id', contaId)
+      .eq('empreendimento_id', empreendimentoId)
+      .is('cancelada_em', null)
+      .select('id')
+    if (error) throw traduzirErroBanco(error)
+    if (!data?.length) throw new ErroAplicacao('Conta não encontrada ou já cancelada.')
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidatePath(caminho(empreendimentoId))
+  return { ok: 'Conta cancelada.' }
+}
