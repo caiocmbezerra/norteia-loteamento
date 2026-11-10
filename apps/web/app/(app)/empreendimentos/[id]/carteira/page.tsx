@@ -1,4 +1,4 @@
-import { carregarCarteira, simularCessao } from '@norteia/aplicacao'
+import { INDICES_REAJUSTE, carregarCarteira, simularCessao } from '@norteia/aplicacao'
 import { formatarData, formatarMoeda } from '@norteia/dominio'
 import { Decimal, arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
@@ -43,7 +43,7 @@ export default async function PaginaCarteira({
   const hoje = hojeSaoPaulo()
   const [painel, ...ultimos] = await Promise.all([
     carregarCarteira(ctx.db, id, hoje),
-    ...['IPCA', 'IGP-M', 'INCC'].map((codigo) =>
+    ...INDICES_REAJUSTE.map((codigo) =>
       ctx.db
         .from('indice_valores')
         .select('competencia')
@@ -53,7 +53,7 @@ export default async function PaginaCarteira({
         .maybeSingle(),
     ),
   ])
-  const indices = ['IPCA', 'IGP-M', 'INCC'].map((codigo, i) => {
+  const indices = INDICES_REAJUSTE.map((codigo, i) => {
     const c = ultimos[i]?.data?.competencia
     return `${codigo} ${c ? formatarData(c).slice(3) : 'sem dados'}`
   })
