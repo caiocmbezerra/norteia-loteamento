@@ -59,6 +59,7 @@ test('telas principais sem violações graves de acessibilidade', async ({ page 
     '/configuracoes',
     '/configuracoes/parametros',
     '/configuracoes/centros-custo',
+    '/configuracoes/distrato',
     '/configuracoes/contabilidade',
     '/configuracoes/implantacao',
   ]

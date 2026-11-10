@@ -27,6 +27,11 @@ const SECOES = [
     texto: 'Multa, juros, reajuste, tributos e regras comerciais da sua loteadora.',
   },
   {
+    href: '/configuracoes/distrato',
+    titulo: 'Distrato',
+    texto: 'Custos que a loteadora desconta no distrato (documentação, taxas…).',
+  },
+  {
     href: '/configuracoes/centros-custo',
     titulo: 'Centros de custo',
     texto: 'O plano de custos: centros padrão de loteamento e os seus próprios.',

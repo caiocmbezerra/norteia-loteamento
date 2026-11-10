@@ -69,6 +69,7 @@ export {
 } from './antecipacao'
 export {
   type EntradaDistrato,
+  type ItemDeducaoDistrato,
   type RegrasDistrato,
   type ResultadoDistrato,
   calcularDistrato,
