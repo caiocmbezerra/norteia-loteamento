@@ -91,6 +91,12 @@ export default async function PaginaContratoPortal({
         >
           Extrato (PDF)
         </a>
+        <a
+          href={`/portal/contratos/${c.id}/meus-dados`}
+          className="text-primary underline underline-offset-4"
+        >
+          Meus dados (LGPD)
+        </a>
       </p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Indicador rotulo="Saldo a pagar" valor={moeda(saldo)} />

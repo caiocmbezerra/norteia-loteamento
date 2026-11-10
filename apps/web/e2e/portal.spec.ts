@@ -143,6 +143,16 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
   expect(texto).toContain('Paulo Comprador')
   expect(texto).toMatch(new RegExp(`Total pago em ${ano}: R\\$\\s9\\.000,00`))
 
+  // LGPD: o comprador baixa os próprios dados.
+  const [meusDados] = await Promise.all([
+    comprador.waitForEvent('download'),
+    comprador.getByRole('link', { name: 'Meus dados (LGPD)' }).click(),
+  ])
+  const dadosTitular = JSON.parse(readFileSync((await meusDados.path())!, 'utf8'))
+  expect(dadosTitular.cadastro.nome).toBe('Paulo Comprador')
+  expect(dadosTitular.contratos).toHaveLength(1)
+  expect(dadosTitular.contratos[0].parcelas.length).toBeGreaterThan(1)
+
   // Chamado de atendimento: o comprador pergunta, a loteadora responde e resolve.
   const contratoPortal = comprador.url()
   await comprador.getByText('Falar com a loteadora').click()
@@ -187,5 +197,12 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
 
   // Na gestão, o convite aparece como aceito.
   await dona.goto(contratoGestao)
+  const [dadosGestao] = await Promise.all([
+    dona.waitForEvent('download'),
+    dona.getByRole('link', { name: 'Dados do comprador (LGPD)' }).click(),
+  ])
+  expect(JSON.parse(readFileSync((await dadosGestao.path())!, 'utf8')).cadastro.email).toBe(
+    emailComprador,
+  )
   await expect(dona.getByText(/O comprador já acessa o portal/)).toBeVisible()
 })
