@@ -349,3 +349,38 @@ export async function registrarMedicao(
   falhar(error)
   return data!
 }
+
+export type CriterioRateio = 'lotes' | 'area' | 'vgv' | 'manual'
+
+/** Divide uma despesa comum entre empreendimentos; cada parte vira uma conta a pagar. */
+export async function ratearDespesa(
+  db: ClienteBanco,
+  r: {
+    descricao: string
+    centro: string
+    fornecedorId: string | null
+    valorCentavos: number
+    vencimento: string
+    documentoNumero: string | null
+    criterio: CriterioRateio
+    empreendimentos: string[]
+    /** Só no critério manual: fração por empreendimento (somando 1). */
+    percentuais?: Record<string, string>
+  },
+): Promise<string> {
+  const { data, error } = await db.rpc('ratear_despesa', {
+    p_rateio: {
+      descricao: r.descricao,
+      centro_codigo: r.centro,
+      fornecedor_id: r.fornecedorId,
+      valor_centavos: r.valorCentavos,
+      vencimento: r.vencimento,
+      documento_numero: r.documentoNumero,
+      criterio: r.criterio,
+    },
+    p_empreendimentos: r.empreendimentos,
+    ...(r.percentuais ? { p_percentuais: r.percentuais } : {}),
+  })
+  falhar(error)
+  return data!
+}

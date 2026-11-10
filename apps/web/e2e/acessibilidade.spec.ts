@@ -54,6 +54,7 @@ test('telas principais sem violações graves de acessibilidade', async ({ page 
     `${empreendimento}/carteira`,
     `${empreendimento}/carteira/importar`,
     '/alertas',
+    '/rateios',
     '/assistente',
     '/configuracoes',
     '/configuracoes/parametros',

@@ -21,8 +21,8 @@
 - Anexo de notas, boletos e recibos às contas a pagar (D-102): o arquivo lido no lançamento fica anexado; dá para anexar depois; abre por link assinado curto.
 
 - Medições por percentual acumulado executado (D-103): o banco calcula o valor da diferença para o acumulado anterior e cria a conta a pagar; a soma das medições fecha exatamente com o valor do contrato; barra de execução por contrato.
+- Rateio de despesas comuns (D-104): por número de lotes, área, VGV de tabela ou percentuais; cada empreendimento recebe a sua conta a pagar, e os centavos fecham com o total.
 
 ## Pendente
 
-- Rateio de despesas comuns entre empreendimentos.
 - Telas para criar centros de custo próprios, encerrar contrato e cancelar conta (o banco já suporta).
