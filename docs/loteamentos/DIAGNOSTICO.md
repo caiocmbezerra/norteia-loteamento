@@ -1,6 +1,6 @@
 # Diagnóstico — "Prompt mestre: arquitetura, contratos de loteamento e governança"
 
-> Data: 10/11/2026. Situação: **aguardando aprovação** do dono do produto. Nenhum código ou banco foi alterado por este diagnóstico.
+> Data: 10/11/2026. Situação: **aprovado** pelo dono do produto em 10/11/2026 (decisões na seção 8).
 
 ## 1. Conclusão em uma frase
 
@@ -174,3 +174,17 @@ Cada entrega segue o padrão do projeto: migration com RLS e auditoria, teste pg
 2. **Nomes:** manter as tabelas atuais em português, sem recriar o modelo em inglês.
 3. **Lacunas:** fazer L1 a L5, nessa ordem ou em outra que você preferir.
 4. **Papel cartório:** definir o que ele pode ver (proposta: só cadastro e matrículas, sem financeiro).
+
+## 8. Decisões do dono do produto (10/11/2026)
+
+1. **Distrato:** cláusula penal padrão de 10% (art. 32-A), ajustável por cliente. Cada cliente pode cadastrar outros custos a descontar (documentação, taxas etc.), cada um marcado como dentro ou fora do limite de 10%; o sistema avisa quando o que conta dentro do limite passa de 10%. **VALIDAR COM ADVOGADO** (PL-02).
+2. **Nomes:** as tabelas atuais em português ficam.
+3. **Matrícula:** o cartório abre; o sistema só guarda o número e a data de cada lote, preenchidos pela equipe da loteadora. Sem papel "cartório" por enquanto.
+4. **Ordem de execução:**
+   1. itens de desconto do distrato por cliente;
+   2. INPC (L1);
+   3. "quitado" no mapa (L2);
+   4. matrícula por lote (L3);
+   5. portal: extrato em PDF e simulação de quitação antecipada;
+   6. chamados no portal (L4);
+   7. LGPD (L5).
