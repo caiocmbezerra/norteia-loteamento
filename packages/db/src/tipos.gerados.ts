@@ -1905,6 +1905,8 @@ export type Database = {
           criado_por: string | null
           empreendimento_id: string
           id: string
+          matricula: string | null
+          matricula_aberta_em: string | null
           numero: string
           observacao: string | null
           planta_poligono: Json | null
@@ -1923,6 +1925,8 @@ export type Database = {
           criado_por?: string | null
           empreendimento_id: string
           id?: string
+          matricula?: string | null
+          matricula_aberta_em?: string | null
           numero: string
           observacao?: string | null
           planta_poligono?: Json | null
@@ -1940,6 +1944,8 @@ export type Database = {
           criado_por?: string | null
           empreendimento_id?: string
           id?: string
+          matricula?: string | null
+          matricula_aberta_em?: string | null
           numero?: string
           observacao?: string | null
           planta_poligono?: Json | null

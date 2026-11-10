@@ -36,7 +36,7 @@ export default async function PaginaLote({
   const { data: lote } = await ctx.db
     .from('lotes')
     .select(
-      'id, numero, status, area_m2, testada_m, preco_base_centavos, observacao, tenant_id, quadras(codigo), empreendimentos(nome, data_registro), tabela_preco_itens(tabela_id)',
+      'id, numero, status, area_m2, testada_m, preco_base_centavos, observacao, matricula, matricula_aberta_em, tenant_id, quadras(codigo), empreendimentos(nome, data_registro), tabela_preco_itens(tabela_id)',
     )
     .eq('id', loteId)
     .eq('empreendimento_id', id)
@@ -113,7 +113,7 @@ export default async function PaginaLote({
       </Link>
       <TituloPagina
         titulo={`Quadra ${lote.quadras?.codigo} · Lote ${lote.numero}`}
-        subtitulo={`${String(lote.area_m2).replace('.', ',')} m²${lote.preco_base_centavos ? ` · tabela ${moeda(lote.preco_base_centavos)}` : ''}`}
+        subtitulo={`${String(lote.area_m2).replace('.', ',')} m²${lote.preco_base_centavos ? ` · tabela ${moeda(lote.preco_base_centavos)}` : ''}${lote.matricula ? ` · matrícula ${lote.matricula}${lote.matricula_aberta_em ? ` (aberta em ${formatarData(lote.matricula_aberta_em)})` : ''}` : ''}`}
         acoes={
           <SeloStatus
             status={situacaoNoMapa(lote.status, venda?.contratos[0]?.situacao === 'quitado')}
