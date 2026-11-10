@@ -34,7 +34,7 @@ export async function paginar<T>(
   }
 }
 
-export const INDICES_REAJUSTE = ['IPCA', 'IGP-M', 'INCC'] as const
+export const INDICES_REAJUSTE = ['IPCA', 'INPC', 'IGP-M', 'INCC'] as const
 export type IndiceReajuste = (typeof INDICES_REAJUSTE)[number]
 
 /** Gera o contrato da venda com as parcelas calculadas pelo motor (RN-K01, RN-K02). */

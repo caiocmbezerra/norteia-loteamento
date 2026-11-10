@@ -61,6 +61,7 @@ export function FormularioGerarContrato({
     <form action={acao} className="flex flex-wrap items-end gap-2" noValidate>
       <Selecao name="indice" aria-label="Índice de reajuste" defaultValue="IPCA" className="h-9">
         <option value="IPCA">Reajuste IPCA</option>
+        <option value="INPC">Reajuste INPC</option>
         <option value="IGP-M">Reajuste IGP-M</option>
         <option value="INCC">Reajuste INCC</option>
         <option value="">Sem reajuste</option>
