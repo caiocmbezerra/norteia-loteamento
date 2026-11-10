@@ -24,6 +24,8 @@ export function FormularioLote({
     testada_m: number | null
     preco_base_centavos: number | null
     observacao: string | null
+    matricula: string | null
+    matricula_aberta_em: string | null
   }
 }) {
   const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
@@ -95,6 +97,26 @@ export function FormularioLote({
           )}
         />
       </Campo>
+      <div className="grid grid-cols-2 gap-3">
+        <Campo
+          id="matricula"
+          rotulo="Matrícula no cartório"
+          ajuda="Preencha quando o cartório abrir a matrícula do lote."
+          erro={er.matricula}
+        >
+          <Entrada
+            {...ariaCampo('matricula', er.matricula, 'ajuda')}
+            defaultValue={v('matricula', lote.matricula ?? '')}
+          />
+        </Campo>
+        <Campo id="matriculaAbertaEm" rotulo="Aberta em" erro={er.matriculaAbertaEm}>
+          <Entrada
+            {...ariaCampo('matriculaAbertaEm', er.matriculaAbertaEm)}
+            type="date"
+            defaultValue={v('matriculaAbertaEm', lote.matricula_aberta_em ?? '')}
+          />
+        </Campo>
+      </div>
       <Campo id="observacao" rotulo="Observação" erro={er.observacao}>
         <AreaTexto
           {...ariaCampo('observacao', er.observacao)}

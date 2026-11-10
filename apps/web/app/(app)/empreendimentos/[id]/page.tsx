@@ -44,7 +44,9 @@ export default async function PaginaEmpreendimento({
 
   const { data: quadras, error } = await ctx.db
     .from('quadras')
-    .select('id, codigo, lotes(id, numero, status, area_m2, preco_base_centavos, planta_poligono)')
+    .select(
+      'id, codigo, lotes(id, numero, status, area_m2, preco_base_centavos, planta_poligono, matricula)',
+    )
     .eq('empreendimento_id', id)
     .order('codigo')
   if (error) throw error
@@ -179,7 +181,11 @@ export default async function PaginaEmpreendimento({
         <Indicador
           rotulo="Mês 0 / registro"
           valor={formatarData(e.data_base).slice(3)}
-          nota={e.data_registro ? `Registrado em ${formatarData(e.data_registro)}` : 'Sem registro'}
+          nota={
+            e.data_registro
+              ? `Registrado em ${formatarData(e.data_registro)} · ${lotes.filter((l) => l.matricula).length} de ${lotes.length} matrículas`
+              : 'Sem registro'
+          }
         />
       </div>
 

@@ -91,6 +91,8 @@ const esquemaLote = z.object({
   preco: moedaOpcional,
   status: opcional(z.enum(STATUS_LOTE_CADASTRO)),
   observacao: z.string().trim().max(500),
+  matricula: z.string().trim().max(40, 'Matrícula: até 40 caracteres.'),
+  matriculaAbertaEm: z.union([z.literal(''), z.iso.date({ error: 'Data de abertura inválida.' })]),
 })
 
 export async function editarLote(
@@ -101,7 +103,11 @@ export async function editarLote(
 ): Promise<EstadoFormulario> {
   const ctx = await exigirContexto()
   try {
-    const d = esquemaLote.parse(valoresDoFormulario(form))
+    const d = esquemaLote.parse({
+      matricula: '',
+      matriculaAbertaEm: '',
+      ...valoresDoFormulario(form),
+    })
     const { data, error } = await ctx.db
       .from('lotes')
       .update({
@@ -109,6 +115,8 @@ export async function editarLote(
         testada_m: d.testada ? Number(d.testada) : null,
         // Lote em tabela de preços: o preço não vem no formulário (segue a tabela vigente).
         ...(form.has('preco') ? { preco_base_centavos: d.preco } : {}),
+        matricula: d.matricula || null,
+        matricula_aberta_em: d.matricula ? d.matriculaAbertaEm || null : null,
         observacao: d.observacao || null,
         ...(d.status ? { status: d.status } : {}),
       })
