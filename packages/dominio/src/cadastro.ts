@@ -47,6 +47,16 @@ export const ROTULO_STATUS_LOTE = {
 
 export type StatusLote = keyof typeof ROTULO_STATUS_LOTE
 
+/** Situação mostrada no mapa: além do status do lote, "quitado" (vendido com contrato quitado). */
+export const ROTULO_SITUACAO_MAPA = { ...ROTULO_STATUS_LOTE, quitado: 'Quitado' } as const
+export type SituacaoMapa = keyof typeof ROTULO_SITUACAO_MAPA
+export const SITUACOES_MAPA = Object.keys(ROTULO_SITUACAO_MAPA) as SituacaoMapa[]
+
+/** A quitação vem do contrato; o lote continua "vendido" no cadastro. */
+export function situacaoNoMapa(status: StatusLote, contratoQuitado: boolean): SituacaoMapa {
+  return status === 'vendido' && contratoQuitado ? 'quitado' : status
+}
+
 export const ROTULO_SITUACAO_EMPREENDIMENTO = {
   estudo: 'Em estudo',
   aprovacao: 'Em aprovação',

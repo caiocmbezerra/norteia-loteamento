@@ -1,10 +1,12 @@
 import {
   ROTULO_SITUACAO_EMPREENDIMENTO,
-  ROTULO_STATUS_LOTE,
-  type StatusLote,
+  ROTULO_SITUACAO_MAPA,
+  SITUACOES_MAPA,
+  type SituacaoMapa,
   formatarData,
   formatarMoeda,
   resumirLotes,
+  situacaoNoMapa,
 } from '@norteia/dominio'
 import { centavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
@@ -19,8 +21,6 @@ import { exigirContexto, temPapel } from '@/lib/contexto'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Empreendimento' }
-
-const STATUS: StatusLote[] = ['disponivel', 'reservado', 'vendido', 'bloqueado', 'permuta']
 
 const area = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -48,13 +48,29 @@ export default async function PaginaEmpreendimento({
     .eq('empreendimento_id', id)
     .order('codigo')
   if (error) throw error
+  // Quitação vem do contrato (quem não lê a carteira vê o lote como vendido).
+  const { data: quitados } = await ctx.db
+    .from('contratos')
+    .select('lote_id')
+    .eq('empreendimento_id', id)
+    .eq('situacao', 'quitado')
+  const loteQuitado = new Set((quitados ?? []).map((c) => c.lote_id))
 
   const ordenarCodigo = (a: string, b: string) =>
     a.length - b.length || a.localeCompare(b, 'pt-BR', { numeric: true })
-  const todas = (quadras ?? []).sort((a, b) => ordenarCodigo(a.codigo, b.codigo))
+  const todas = (quadras ?? [])
+    .sort((a, b) => ordenarCodigo(a.codigo, b.codigo))
+    .map((q) => ({
+      ...q,
+      lotes: q.lotes.map((l) => ({
+        ...l,
+        situacao: situacaoNoMapa(l.status, loteQuitado.has(l.id)),
+      })),
+    }))
   const lotes = todas.flatMap((q) => q.lotes)
   const r = resumirLotes(lotes)
-  const statusFiltro = STATUS.find((s) => s === filtro)
+  const contagem = (s: SituacaoMapa) => lotes.filter((l) => l.situacao === s).length
+  const statusFiltro = SITUACOES_MAPA.find((s) => s === filtro)
   const podeEditar = temPapel(ctx, 'dono', 'engenharia', 'comercial_gestor')
   const comContorno = lotes.filter((l) => l.planta_poligono).length
   const planta =
@@ -67,11 +83,11 @@ export default async function PaginaEmpreendimento({
         }
       : null
   const verPlanta = !!planta?.url && vista !== 'grade'
-  const sufixo = (s?: StatusLote) =>
+  const sufixo = (s?: SituacaoMapa) =>
     [s && `status=${s}`, vista === 'grade' && planta?.url && 'vista=grade']
       .filter(Boolean)
       .join('&')
-  const hrefFiltro = (s?: StatusLote) => {
+  const hrefFiltro = (s?: SituacaoMapa) => {
     const q = sufixo(s)
     return `/empreendimentos/${id}${q ? `?${q}` : ''}`
   }
@@ -190,9 +206,9 @@ export default async function PaginaEmpreendimento({
             <FiltroLink href={hrefFiltro()} ativo={!statusFiltro}>
               Todos ({r.total})
             </FiltroLink>
-            {STATUS.filter((s) => r.porStatus[s] > 0).map((s) => (
+            {SITUACOES_MAPA.filter((s) => contagem(s) > 0).map((s) => (
               <FiltroLink key={s} href={hrefFiltro(s)} ativo={statusFiltro === s}>
-                {ROTULO_STATUS_LOTE[s]} ({r.porStatus[s]})
+                {ROTULO_SITUACAO_MAPA[s]} ({contagem(s)})
               </FiltroLink>
             ))}
           </nav>
@@ -206,11 +222,13 @@ export default async function PaginaEmpreendimento({
               altura={planta.altura}
               lotes={todas.flatMap((q) =>
                 q.lotes
-                  .filter((l) => l.planta_poligono && (!statusFiltro || l.status === statusFiltro))
+                  .filter(
+                    (l) => l.planta_poligono && (!statusFiltro || l.situacao === statusFiltro),
+                  )
                   .map((l) => ({
                     id: l.id,
                     rotulo: `Quadra ${q.codigo}, lote ${l.numero}`,
-                    status: l.status,
+                    status: l.situacao,
                     pontos: l.planta_poligono as [number, number][],
                     href: `/empreendimentos/${id}/lotes/${l.id}`,
                   })),
@@ -246,7 +264,7 @@ export default async function PaginaEmpreendimento({
         {!verPlanta &&
           todas.map((q) => {
             const visiveis = q.lotes
-              .filter((l) => !statusFiltro || l.status === statusFiltro)
+              .filter((l) => !statusFiltro || l.situacao === statusFiltro)
               .sort((a, b) => ordenarCodigo(a.numero, b.numero))
             if (visiveis.length === 0) return null
             return (
@@ -265,10 +283,10 @@ export default async function PaginaEmpreendimento({
                         href={`/empreendimentos/${id}/lotes/${l.id}`}
                         className={cn(
                           'flex min-h-14 flex-col items-center justify-center rounded-md border px-1 py-1.5 text-center transition-transform hover:scale-[1.03] focus-visible:ring-[3px] focus-visible:ring-ring/60',
-                          COR_STATUS[l.status],
+                          COR_STATUS[l.situacao],
                         )}
                       >
-                        <span className="sr-only">{`Quadra ${q.codigo}, lote ${l.numero}: ${ROTULO_STATUS_LOTE[l.status]}, ${area.format(l.area_m2)} m²`}</span>
+                        <span className="sr-only">{`Quadra ${q.codigo}, lote ${l.numero}: ${ROTULO_SITUACAO_MAPA[l.situacao]}, ${area.format(l.area_m2)} m²`}</span>
                         <span aria-hidden="true" className="text-sm font-semibold leading-none">
                           {l.numero}
                         </span>

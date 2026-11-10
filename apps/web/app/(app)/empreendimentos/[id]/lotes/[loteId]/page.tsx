@@ -1,4 +1,4 @@
-import { formatarData, formatarMoeda } from '@norteia/dominio'
+import { formatarData, formatarMoeda, situacaoNoMapa } from '@norteia/dominio'
 import { arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -74,7 +74,7 @@ export default async function PaginaLote({
     ctx.db
       .from('vendas')
       .select(
-        'id, data_venda, preco_centavos, entrada_centavos, parcelas, compradores(nome), corretores(nome), contratos(id)',
+        'id, data_venda, preco_centavos, entrada_centavos, parcelas, compradores(nome), corretores(nome), contratos(id, situacao)',
       )
       .eq('lote_id', loteId)
       .eq('situacao', 'ativa')
@@ -114,7 +114,11 @@ export default async function PaginaLote({
       <TituloPagina
         titulo={`Quadra ${lote.quadras?.codigo} · Lote ${lote.numero}`}
         subtitulo={`${String(lote.area_m2).replace('.', ',')} m²${lote.preco_base_centavos ? ` · tabela ${moeda(lote.preco_base_centavos)}` : ''}`}
-        acoes={<SeloStatus status={lote.status} />}
+        acoes={
+          <SeloStatus
+            status={situacaoNoMapa(lote.status, venda?.contratos[0]?.situacao === 'quitado')}
+          />
+        }
       />
       {vendido && (
         <Alerta tipo="sucesso">
