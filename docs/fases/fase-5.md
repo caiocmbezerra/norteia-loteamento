@@ -53,6 +53,5 @@
 
 - Validar no sandbox os campos do pagamento em atraso (`value`, `originalValue`, `interestValue`) — marcado `VALIDAR NO SANDBOX` no código.
 - Crédito por pagamento a maior.
-- Conferir o código do INCC no SGS e ativar a série.
 - **5c-2:** régua de cobrança (e-mail/WhatsApp, opt-out — RN-K10), com envio dos links do Asaas.
 - Assinatura eletrônica dos documentos (Clicksign/D4Sign — PL-06), quando o cliente tiver conta.
