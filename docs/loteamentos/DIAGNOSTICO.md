@@ -188,3 +188,16 @@ Cada entrega segue o padrão do projeto: migration com RLS e auditoria, teste pg
    5. portal: extrato em PDF e simulação de quitação antecipada;
    6. chamados no portal (L4);
    7. LGPD (L5).
+
+## 9. Situação da execução (11/11/2026)
+
+| Item                                         | Entrega                       | PR  |
+| -------------------------------------------- | ----------------------------- | --- |
+| Distrato: custos próprios e teto de 10%      | ✅                            | #45 |
+| L1 — INPC                                    | ✅                            | #46 |
+| L2 — "Quitado" no mapa                       | ✅                            | #47 |
+| L3 — Matrícula por lote                      | ✅                            | #48 |
+| Portal: extrato em PDF e quitação antecipada | ✅                            | #49 |
+| L4 — Chamados no portal                      | ✅                            | #50 |
+| L5 — LGPD: exportação                        | ✅                            | #51 |
+| L5 — LGPD: anonimização                      | aguardando o advogado (PL-23) | —   |
