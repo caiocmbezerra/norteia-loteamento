@@ -1165,6 +1165,70 @@ export type Database = {
           },
         ]
       }
+      creditos_comprador: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          cancelado_em: string | null
+          contrato_id: string
+          criado_em: string
+          criado_por: string | null
+          data: string
+          empreendimento_id: string
+          id: string
+          motivo_cancelamento: string | null
+          observacao: string
+          tenant_id: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cancelado_em?: string | null
+          contrato_id: string
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          empreendimento_id: string
+          id?: string
+          motivo_cancelamento?: string | null
+          observacao: string
+          tenant_id: string
+          valor_centavos: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cancelado_em?: string | null
+          contrato_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          empreendimento_id?: string
+          id?: string
+          motivo_cancelamento?: string | null
+          observacao?: string
+          tenant_id?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'creditos_comprador_tenant_id_contrato_id_fkey'
+            columns: ['tenant_id', 'contrato_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'creditos_comprador_tenant_id_empreendimento_id_fkey'
+            columns: ['tenant_id', 'empreendimento_id']
+            isOneToOne: false
+            referencedRelation: 'empreendimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       devolucoes: {
         Row: {
           atualizado_em: string
@@ -4019,6 +4083,67 @@ export type Database = {
           },
         ]
       }
+      usos_credito: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          credito_id: string
+          criado_em: string
+          criado_por: string | null
+          data: string
+          id: string
+          observacao: string | null
+          recebimento_id: string | null
+          tenant_id: string
+          tipo: string
+          valor_centavos: number
+        }
+        ComputedFields: never
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          credito_id: string
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          id?: string
+          observacao?: string | null
+          recebimento_id?: string | null
+          tenant_id: string
+          tipo: string
+          valor_centavos: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          credito_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          id?: string
+          observacao?: string | null
+          recebimento_id?: string | null
+          tenant_id?: string
+          tipo?: string
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'usos_credito_tenant_id_credito_id_fkey'
+            columns: ['tenant_id', 'credito_id']
+            isOneToOne: false
+            referencedRelation: 'creditos_comprador'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'usos_credito_tenant_id_recebimento_id_fkey'
+            columns: ['tenant_id', 'recebimento_id']
+            isOneToOne: false
+            referencedRelation: 'recebimentos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+        ]
+      }
       vendas: {
         Row: {
           aprovacao_desconto_id: string | null
@@ -4223,11 +4348,16 @@ export type Database = {
         Args: { p_contrato: string; p_data: string; p_itens: Json }
         Returns: number
       }
+      aplicar_credito: {
+        Args: { p_credito: string; p_parcela: string; p_valor: number }
+        Returns: string
+      }
       aprovar_viabilidade: {
         Args: { p_motivo?: string; p_resumo: Json; p_viabilidade: string }
         Returns: number
       }
       cancelar_cobranca: { Args: { p_cobranca: string; p_motivo: string }; Returns: undefined }
+      cancelar_credito: { Args: { p_credito: string; p_motivo: string }; Returns: undefined }
       cancelar_proposta: { Args: { p_motivo: string; p_proposta: string }; Returns: undefined }
       cancelar_reserva: { Args: { p_motivo: string; p_reserva: string }; Returns: undefined }
       ceder_contrato: {
@@ -4313,6 +4443,10 @@ export type Database = {
         Returns: string
       }
       desativar_asaas: { Args: { p_tenant: string }; Returns: undefined }
+      devolver_credito: {
+        Args: { p_credito: string; p_data: string; p_observacao?: string; p_valor: number }
+        Returns: string
+      }
       documento_portal: { Args: { p_contrato: string; p_tipo: string }; Returns: Json }
       estornar_movimento_socio: {
         Args: { p_motivo: string; p_movimento: string }
@@ -4393,6 +4527,10 @@ export type Database = {
         Returns: string
       }
       reajustar_contrato: { Args: { p_contrato: string }; Returns: number }
+      registrar_credito: {
+        Args: { p_contrato: string; p_data: string; p_observacao: string; p_valor: number }
+        Returns: string
+      }
       registrar_medicao: {
         Args: {
           p_contrato: string
