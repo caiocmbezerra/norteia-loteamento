@@ -27,8 +27,8 @@
 | Critério                                                               | Situação                                                                                |
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | Distrato bate com cálculo independente                                 | ✅ motor (`distrato.test.ts`); cenário oficial a definir com o advogado de cada cliente |
-| Soma dos resultados por sócio = resultado da SPE                       | ⏳ 6c                                                                                   |
-| Painel consolidado de 10 empreendimentos e 3.000 lotes em menos de 2 s | ⏳ 6d                                                                                   |
+| Soma dos resultados por sócio = resultado da SPE                       | ✅ propriedade em `socios.test.ts`                                                      |
+| Painel consolidado de 10 empreendimentos e 3.000 lotes em menos de 2 s | ✅ `019_painel_consolidado.test.sql`                                                    |
 
 ## Pendente
 
