@@ -1,4 +1,9 @@
-import { carregarContrato, itensDescontoDistrato, regrasDistrato } from '@norteia/aplicacao'
+import {
+  carregarContrato,
+  carregarCreditos,
+  itensDescontoDistrato,
+  regrasDistrato,
+} from '@norteia/aplicacao'
 import { formatarData, formatarMoeda, formatarPercentual } from '@norteia/dominio'
 import { Decimal, arredondarCentavos, somarMeses } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
@@ -11,6 +16,10 @@ import { exigirContexto, temPapel } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
 import {
   FormularioAntecipacao,
+  FormularioAplicarCredito,
+  FormularioCancelarCredito,
+  FormularioDevolverCredito,
+  FormularioRegistrarCredito,
   FormularioCancelarCobranca,
   FormularioEmitirCobranca,
   FormularioEstornoRecebimento,
@@ -71,6 +80,10 @@ export default async function PaginaContrato({
   if (!c || c.empreendimentoId !== id) notFound()
   const podeReceber = temPapel(ctx, 'dono', 'financeiro') && c.situacao === 'vigente'
   const proxima = c.parcelas.find((p) => p.situacao === 'aberta')
+  const podeCredito =
+    temPapel(ctx, 'dono', 'financeiro') && (c.situacao === 'vigente' || c.situacao === 'quitado')
+  const creditos = await carregarCreditos(ctx.db, c.id)
+  const saldoCreditos = creditos.reduce((t, cr) => t + cr.saldoCentavos, 0)
   const podeDistratar =
     temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor') && c.situacao === 'vigente'
   const [regras, itensDistrato] = podeDistratar
@@ -263,6 +276,81 @@ export default async function PaginaContrato({
             regra={regra}
             hoje={hoje}
           />
+        </Cartao>
+      )}
+
+      {(podeCredito || creditos.length > 0) && (
+        <Cartao className="flex flex-col gap-3">
+          <h2 className="font-semibold">Saldo a favor do comprador: {moeda(saldoCreditos)}</h2>
+          <p className="text-sm text-muted-foreground">
+            Pagamento a maior (boleto pago em dobro, valor acima da parcela) fica aqui até você
+            decidir: aplicar numa parcela em aberto, na data em que o dinheiro entrou, ou devolver.
+          </p>
+          {creditos.length > 0 && (
+            <ul className="flex flex-col gap-3">
+              {creditos.map((cr) => (
+                <li key={cr.id} className="flex flex-col gap-2 rounded-lg border p-3 text-sm">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span className={cr.cancelado ? 'line-through' : 'font-medium'}>
+                      {formatarData(cr.data)} · {moeda(cr.valorCentavos)} · {cr.observacao}
+                    </span>
+                    <span>
+                      {cr.cancelado
+                        ? `Cancelado: ${cr.motivoCancelamento}`
+                        : `Saldo ${moeda(cr.saldoCentavos)}`}
+                    </span>
+                  </div>
+                  {cr.usos.map((u) => (
+                    <div key={u.id} className="text-xs text-muted-foreground">
+                      <span className={u.estornado ? 'line-through' : undefined}>
+                        {u.tipo === 'parcela' ? 'Aplicado em parcela' : 'Devolvido'} em{' '}
+                        {formatarData(u.data)} · {moeda(u.valorCentavos)}
+                        {u.observacao && ` · ${u.observacao}`}
+                      </span>
+                      {u.estornado && ' · aplicação estornada'}
+                    </div>
+                  ))}
+                  {podeCredito && cr.saldoCentavos > 0 && (
+                    <div className="flex flex-col gap-2">
+                      {c.situacao === 'vigente' && abertas.length > 0 && (
+                        <FormularioAplicarCredito
+                          empreendimentoId={id}
+                          contratoId={c.id}
+                          creditoId={cr.id}
+                          saldoCentavos={cr.saldoCentavos}
+                          abertas={abertas}
+                        />
+                      )}
+                      <FormularioDevolverCredito
+                        empreendimentoId={id}
+                        contratoId={c.id}
+                        creditoId={cr.id}
+                        saldoCentavos={cr.saldoCentavos}
+                        hoje={hoje}
+                      />
+                      {cr.saldoCentavos === cr.valorCentavos && (
+                        <FormularioCancelarCredito
+                          empreendimentoId={id}
+                          contratoId={c.id}
+                          creditoId={cr.id}
+                        />
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {podeCredito && (
+            <details>
+              <summary className="cursor-pointer font-semibold">
+                Registrar pagamento a maior
+              </summary>
+              <div className="mt-3">
+                <FormularioRegistrarCredito empreendimentoId={id} contratoId={c.id} hoje={hoje} />
+              </div>
+            </details>
+          )}
         </Cartao>
       )}
 

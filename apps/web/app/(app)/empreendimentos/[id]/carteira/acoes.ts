@@ -18,6 +18,10 @@ import {
   gerarContrato,
   reajustarContrato,
   registrarRecebimento,
+  aplicarCredito,
+  cancelarCredito,
+  devolverCredito,
+  registrarCredito,
 } from '@norteia/aplicacao'
 import { lerMoeda } from '@norteia/dominio'
 import { revalidatePath } from 'next/cache'
@@ -443,4 +447,110 @@ export async function pagarDevolucaoAcao(
   }
   revalidar(empreendimentoId, contratoId)
   return { ok: 'Pagamento da devolução registrado.' }
+}
+
+// Crédito por pagamento a maior (D-114): registrar, aplicar em parcela, devolver ou cancelar.
+export async function registrarCreditoAcao(
+  empreendimentoId: string,
+  contratoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const hoje = hojeSaoPaulo()
+    const r = z
+      .object({
+        data: z.iso
+          .date({ error: 'Data inválida.' })
+          .refine((d) => d <= hoje, 'A data do pagamento não pode estar no futuro.'),
+        valor: dinheiro('Valor', 1),
+        observacao: z
+          .string()
+          .trim()
+          .min(3, 'Explique a origem do crédito (ex.: boleto pago em dobro).')
+          .max(300),
+      })
+      .parse(valoresDoFormulario(form))
+    await registrarCredito(ctx.db, contratoId, {
+      data: r.data,
+      valorCentavos: r.valor,
+      observacao: r.observacao,
+    })
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  return { ok: 'Crédito registrado. Decida abaixo se aplica em parcela ou devolve.' }
+}
+
+export async function aplicarCreditoAcao(
+  empreendimentoId: string,
+  contratoId: string,
+  creditoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const r = z
+      .object({
+        parcela: z.uuid({ error: 'Escolha a parcela.' }),
+        valor: dinheiro('Valor', 1),
+      })
+      .parse(valoresDoFormulario(form))
+    await aplicarCredito(ctx.db, creditoId, r.parcela, r.valor)
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  return { ok: 'Crédito aplicado na parcela.' }
+}
+
+export async function devolverCreditoAcao(
+  empreendimentoId: string,
+  contratoId: string,
+  creditoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const hoje = hojeSaoPaulo()
+    const r = z
+      .object({
+        data: z.iso
+          .date({ error: 'Data inválida.' })
+          .refine((d) => d <= hoje, 'A data da devolução não pode estar no futuro.'),
+        valor: dinheiro('Valor', 1),
+        observacao: z.string().trim().max(300),
+      })
+      .parse(valoresDoFormulario(form))
+    await devolverCredito(ctx.db, creditoId, {
+      data: r.data,
+      valorCentavos: r.valor,
+      observacao: r.observacao || null,
+    })
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  return { ok: 'Devolução registrada.' }
+}
+
+export async function cancelarCreditoAcao(
+  empreendimentoId: string,
+  contratoId: string,
+  creditoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    await cancelarCredito(ctx.db, creditoId, String(form.get('motivo') ?? ''))
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+  revalidar(empreendimentoId, contratoId)
+  return { ok: 'Crédito cancelado.' }
 }

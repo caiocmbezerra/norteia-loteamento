@@ -170,3 +170,12 @@ export {
   responderChamado,
 } from './chamados'
 export { exportarDadosTitular } from './lgpd'
+export {
+  type CreditoComprador,
+  type UsoCredito,
+  aplicarCredito,
+  cancelarCredito,
+  carregarCreditos,
+  devolverCredito,
+  registrarCredito,
+} from './creditos'

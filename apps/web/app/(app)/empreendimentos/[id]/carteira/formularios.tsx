@@ -16,7 +16,11 @@ import type { EstadoFormulario } from '@/lib/acao'
 import {
   type EstadoDistrato,
   antecipar,
+  aplicarCreditoAcao,
   cancelarCobrancaAcao,
+  cancelarCreditoAcao,
+  devolverCreditoAcao,
+  registrarCreditoAcao,
   ceder,
   executarDistratoAcao,
   pagarDevolucaoAcao,
@@ -1014,6 +1018,210 @@ export function FormularioPagarDevolucao({
           {estado.erro}
         </span>
       )}
+    </form>
+  )
+}
+
+function Retorno({ estado }: { estado: EstadoFormulario }) {
+  if (estado.erro)
+    return (
+      <p role="alert" className="w-full text-xs text-destructive">
+        {estado.erro}
+      </p>
+    )
+  if (estado.ok)
+    return (
+      <p role="status" className="w-full text-xs text-primary">
+        {estado.ok}
+      </p>
+    )
+  return null
+}
+
+/** Pagamento a maior vira crédito do comprador; a loteadora decide o destino (D-114). */
+export function FormularioRegistrarCredito({
+  empreendimentoId,
+  contratoId,
+  hoje,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  hoje: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    registrarCreditoAcao.bind(null, empreendimentoId, contratoId),
+    {},
+  )
+  const er = estado.erros ?? {}
+  return (
+    <form action={acao} className="flex flex-col gap-3" noValidate>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Campo id="cr-data" rotulo="Data em que o dinheiro entrou" erro={er.data}>
+          <Entrada
+            {...aria('cr', 'data', er.data)}
+            type="date"
+            max={hoje}
+            defaultValue={estado.valores?.data ?? hoje}
+          />
+        </Campo>
+        <Campo id="cr-valor" rotulo="Valor pago a mais (R$)" erro={er.valor}>
+          <Entrada
+            {...aria('cr', 'valor', er.valor)}
+            inputMode="decimal"
+            placeholder="0,00"
+            defaultValue={estado.valores?.valor}
+          />
+        </Campo>
+        <Campo id="cr-observacao" rotulo="Origem" erro={er.observacao}>
+          <Entrada
+            {...aria('cr', 'observacao', er.observacao)}
+            placeholder="Ex.: boleto pago em dobro"
+            defaultValue={estado.valores?.observacao}
+          />
+        </Campo>
+      </div>
+      <Button type="submit" size="sm" disabled={enviando} className="self-start">
+        {enviando ? 'Registrando…' : 'Registrar crédito'}
+      </Button>
+      <Retorno estado={estado} />
+    </form>
+  )
+}
+
+export function FormularioAplicarCredito({
+  empreendimentoId,
+  contratoId,
+  creditoId,
+  saldoCentavos,
+  abertas,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  creditoId: string
+  saldoCentavos: number
+  abertas: { id: string; numero: number; vencimento: string; saldoCentavos: number }[]
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    aplicarCreditoAcao.bind(null, empreendimentoId, contratoId, creditoId),
+    {},
+  )
+  const er = estado.erros ?? {}
+  const prefixo = `ap-${creditoId.slice(0, 8)}`
+  const primeira = abertas[0]
+  return (
+    <form action={acao} className="flex flex-wrap items-end gap-2" noValidate>
+      <Campo id={`${prefixo}-parcela`} rotulo="Parcela" erro={er.parcela}>
+        <Selecao
+          {...aria(prefixo, 'parcela', er.parcela)}
+          defaultValue={estado.valores?.parcela ?? primeira?.id}
+          className="h-9"
+        >
+          {abertas.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.numero === 0 ? 'Entrada' : `Parcela ${p.numero}`} · saldo {moeda(p.saldoCentavos)}
+            </option>
+          ))}
+        </Selecao>
+      </Campo>
+      <Campo id={`${prefixo}-valor`} rotulo="Valor (R$)" erro={er.valor}>
+        <Entrada
+          {...aria(prefixo, 'valor', er.valor)}
+          inputMode="decimal"
+          className="h-9 w-32"
+          defaultValue={
+            estado.valores?.valor ??
+            emTexto(Math.min(saldoCentavos, primeira?.saldoCentavos ?? saldoCentavos))
+          }
+        />
+      </Campo>
+      <Button type="submit" size="sm" disabled={enviando}>
+        Aplicar na parcela
+      </Button>
+      <Retorno estado={estado} />
+    </form>
+  )
+}
+
+export function FormularioDevolverCredito({
+  empreendimentoId,
+  contratoId,
+  creditoId,
+  saldoCentavos,
+  hoje,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  creditoId: string
+  saldoCentavos: number
+  hoje: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    devolverCreditoAcao.bind(null, empreendimentoId, contratoId, creditoId),
+    {},
+  )
+  const er = estado.erros ?? {}
+  const prefixo = `dv-${creditoId.slice(0, 8)}`
+  return (
+    <form action={acao} className="flex flex-wrap items-end gap-2" noValidate>
+      <Campo id={`${prefixo}-data`} rotulo="Data da devolução" erro={er.data}>
+        <Entrada
+          {...aria(prefixo, 'data', er.data)}
+          type="date"
+          max={hoje}
+          className="h-9"
+          defaultValue={estado.valores?.data ?? hoje}
+        />
+      </Campo>
+      <Campo id={`${prefixo}-valor`} rotulo="Valor (R$)" erro={er.valor}>
+        <Entrada
+          {...aria(prefixo, 'valor', er.valor)}
+          inputMode="decimal"
+          className="h-9 w-32"
+          defaultValue={estado.valores?.valor ?? emTexto(saldoCentavos)}
+        />
+      </Campo>
+      <Campo id={`${prefixo}-observacao`} rotulo="Como foi devolvido">
+        <Entrada
+          id={`${prefixo}-observacao`}
+          name="observacao"
+          className="h-9"
+          placeholder="Ex.: Pix ao comprador"
+          defaultValue={estado.valores?.observacao}
+        />
+      </Campo>
+      <Button type="submit" size="sm" variant="outline" disabled={enviando}>
+        Devolver
+      </Button>
+      <Retorno estado={estado} />
+    </form>
+  )
+}
+
+export function FormularioCancelarCredito({
+  empreendimentoId,
+  contratoId,
+  creditoId,
+}: {
+  empreendimentoId: string
+  contratoId: string
+  creditoId: string
+}) {
+  const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
+    cancelarCreditoAcao.bind(null, empreendimentoId, contratoId, creditoId),
+    {},
+  )
+  return (
+    <form action={acao} className="flex flex-wrap items-end gap-2" noValidate>
+      <Entrada
+        name="motivo"
+        aria-label="Motivo do cancelamento do crédito"
+        placeholder="Motivo (lançado por engano)"
+        className="h-8 w-56"
+      />
+      <Button type="submit" size="sm" variant="outline" disabled={enviando}>
+        Cancelar crédito
+      </Button>
+      <Retorno estado={estado} />
     </form>
   )
 }

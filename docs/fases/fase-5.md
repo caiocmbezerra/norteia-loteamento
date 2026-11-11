@@ -49,9 +49,12 @@
 | Ciclo venda → cobrança → pagamento → baixa → fluxo no sandbox do Asaas | ⏳ depende da chave sandbox do cliente             |
 | Recebimento com encargos em até 2 toques no celular                    | ✅ e2e/carteira.spec.ts (Pixel 7)                  |
 
+## Feito depois
+
+- Crédito por pagamento a maior (D-114): saldo a favor no contrato; a loteadora aplica numa parcela em aberto ou devolve. O comprador vê o saldo no portal.
+
 ## Pendente
 
 - Validar no sandbox os campos do pagamento em atraso (`value`, `originalValue`, `interestValue`) — marcado `VALIDAR NO SANDBOX` no código.
-- Crédito por pagamento a maior.
 - **5c-2:** régua de cobrança (e-mail/WhatsApp, opt-out — RN-K10), com envio dos links do Asaas.
 - Assinatura eletrônica dos documentos (Clicksign/D4Sign — PL-06), quando o cliente tiver conta.
