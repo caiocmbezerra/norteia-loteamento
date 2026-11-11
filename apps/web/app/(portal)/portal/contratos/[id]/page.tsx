@@ -3,6 +3,7 @@ import {
   type SituacaoChamado,
   andamentoObra,
   carregarContratoPortal,
+  carregarCreditos,
   quitacaoHoje,
 } from '@norteia/aplicacao'
 import { formatarData, formatarMoeda } from '@norteia/dominio'
@@ -32,7 +33,7 @@ export default async function PaginaContratoPortal({
 }) {
   const { id } = await params
   const { db } = await exigirUsuario()
-  const [c, obra, { data: chamados }] = await Promise.all([
+  const [c, obra, { data: chamados }, creditos] = await Promise.all([
     carregarContratoPortal(db, id),
     andamentoObra(db, id),
     db
@@ -40,6 +41,7 @@ export default async function PaginaContratoPortal({
       .select('id, assunto, situacao, ultima_mensagem_em')
       .eq('contrato_id', id)
       .order('ultima_mensagem_em', { ascending: false }),
+    carregarCreditos(db, id),
   ])
   if (!c) notFound()
   const obraOrcado = obra.reduce((t, e) => t + e.orcado, 0)
@@ -48,6 +50,7 @@ export default async function PaginaContratoPortal({
   const hoje = hojeSaoPaulo()
   const abertas = c.parcelas.filter((p) => p.situacao === 'aberta')
   const saldo = abertas.reduce((t, p) => t + p.valor - p.pago, 0)
+  const credito = creditos.reduce((t, cr) => t + cr.saldoCentavos, 0)
   const quitacao = quitacaoHoje(c, hoje)
   const vencido = abertas
     .filter((p) => p.vencimento < hoje)
@@ -107,6 +110,12 @@ export default async function PaginaContratoPortal({
           {...(c.indice ? { nota: 'Aplicado no aniversário do contrato' } : {})}
         />
       </div>
+      {credito > 0 && (
+        <Alerta tipo="aviso">
+          Você tem {moeda(credito)} pagos a mais. A loteadora vai usar esse valor numa parcela ou
+          devolvê-lo; se preferir um dos dois, abra um chamado abaixo.
+        </Alerta>
+      )}
       {c.situacao === 'vigente' && saldo > 0 && (
         <Cartao className="flex flex-col gap-2" aria-label="Quitar hoje">
           <h2 className="text-lg font-semibold">Quanto custa quitar hoje</h2>

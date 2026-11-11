@@ -295,3 +295,54 @@ test('distrato: simulação, execução e devolução', async ({ page }, info) =
   await page.goto(empreendimento)
   await expect(page.getByRole('link', { name: /Quadra A, lote 1: disponível/i })).toBeVisible()
 })
+
+// D-114: pagamento a maior vira crédito do comprador; a loteadora aplica numa parcela.
+test('crédito por pagamento a maior aplicado em parcela', async ({ page }, info) => {
+  await page.goto('/cadastrar')
+  await page.getByLabel('Seu nome').fill('Cris Crédito')
+  await page.getByLabel('E-mail').fill(`credito.${Date.now()}.${info.project.name}@exemplo.com.br`)
+  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await page.getByLabel('Nome da sua loteadora').fill('Loteadora Crédito')
+  await page.getByLabel('Nome do empreendimento').fill('Jardim Crédito')
+  await page.getByLabel('Município').fill('Goiânia')
+  await page.getByLabel('UF').selectOption('GO')
+  await page.getByLabel('Lotes por quadra').fill('1')
+  await page.getByLabel('Preço de cada lote (R$)').fill('90.000,00')
+  await page.getByRole('button', { name: 'Criar meu loteamento' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jardim Crédito')
+  const empreendimento = page.url().split('?')[0]!
+  await page.goto(`${empreendimento}/editar`)
+  await page.getByLabel('Situação').selectOption('em_vendas')
+  await page.getByLabel('Data do registro').fill('2026-01-02')
+  await page.getByRole('button', { name: 'Salvar' }).click()
+
+  await page.getByRole('link', { name: /Quadra A, lote 1:/ }).click()
+  await page.getByRole('link', { name: 'Registrar venda' }).click()
+  await page.getByLabel('Nome completo').fill('Clara Credora')
+  await page.getByLabel('Entrada (R$)').fill('9.000,00')
+  await page.getByLabel('Parcelas').fill('2')
+  await page.getByLabel('Juros ao mês (%)').fill('0')
+  await page.getByLabel('Data da venda').fill(dia(-40))
+  await page.getByLabel('1ª parcela').fill(dia(20))
+  await page.getByRole('button', { name: 'Registrar venda' }).click()
+  await page.getByRole('link', { name: 'Ver parcelas' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: /Saldo a favor do comprador: R\$\s0,00/ }),
+  ).toBeVisible()
+  await page.getByText('Registrar pagamento a maior').click()
+  await page.getByLabel('Data em que o dinheiro entrou').fill(dia(-5))
+  await page.getByLabel('Valor pago a mais (R$)').fill('500,00')
+  await page.getByLabel('Origem').fill('Entrada paga em dobro')
+  await page.getByRole('button', { name: 'Registrar crédito' }).click()
+  await expect(
+    page.getByRole('heading', { name: /Saldo a favor do comprador: R\$\s500,00/ }),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Aplicar na parcela' }).click()
+  await expect(
+    page.getByRole('heading', { name: /Saldo a favor do comprador: R\$\s0,00/ }),
+  ).toBeVisible()
+  await expect(page.getByText(/Aplicado em parcela em .* R\$\s500,00/)).toBeVisible()
+})
