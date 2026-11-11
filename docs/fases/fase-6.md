@@ -32,5 +32,4 @@
 
 ## Pendente
 
-- Portal do permutante (Fase 7): extrato somente leitura com login próprio.
-- Portal do sócio (Fase 7): a RLS já restringe cada sócio aos próprios dados.
+- Nada de código. Os portais do sócio e do permutante, previstos aqui, foram entregues na Fase 7a (`/portal`).
