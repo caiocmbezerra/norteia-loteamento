@@ -38,16 +38,16 @@
 
 ## Critérios
 
-| Critério                                                               | Situação                                           |
-| ---------------------------------------------------------------------- | -------------------------------------------------- |
-| Entrada + amortizações = preço, em centavos                            | ✅ motor (teste) e banco (`criar_contrato` recusa) |
-| Mesmo aviso de pagamento não baixa duas vezes (RN-K05)                 | ✅ pgTAP 010                                       |
-| Pagamento a menor mantém saldo em aberto (RN-K06)                      | ✅ pgTAP 010                                       |
-| Quitação só com saldo zero (RN-K09)                                    | ✅ pgTAP 010; estorno reabre                       |
-| Reajuste de 1.000 contratos por rotina idempotente, com auditoria      | ✅ pgTAP 011                                       |
-| Webhook duplicado não gera baixa dupla                                 | ✅ pgTAP 012 (API simulada)                        |
-| Ciclo venda → cobrança → pagamento → baixa → fluxo no sandbox do Asaas | ⏳ depende da chave sandbox do cliente             |
-| Recebimento com encargos em até 2 toques no celular                    | ✅ e2e/carteira.spec.ts (Pixel 7)                  |
+| Critério                                                               | Situação                                             |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| Entrada + amortizações = preço, em centavos                            | ✅ motor (teste) e banco (`criar_contrato` recusa)   |
+| Mesmo aviso de pagamento não baixa duas vezes (RN-K05)                 | ✅ pgTAP 010                                         |
+| Pagamento a menor mantém saldo em aberto (RN-K06)                      | ✅ pgTAP 010                                         |
+| Quitação só com saldo zero (RN-K09)                                    | ✅ pgTAP 010; estorno reabre                         |
+| Reajuste de 1.000 contratos por rotina idempotente, com auditoria      | ✅ pgTAP 011                                         |
+| Webhook duplicado não gera baixa dupla                                 | ✅ pgTAP 012 (API simulada)                          |
+| Ciclo venda → cobrança → pagamento → baixa → fluxo no sandbox do Asaas | ✅ em produção, 11 e 12/11/2026 (em dia e em atraso) |
+| Recebimento com encargos em até 2 toques no celular                    | ✅ e2e/carteira.spec.ts (Pixel 7)                    |
 
 ## Feito depois
 
@@ -55,6 +55,5 @@
 
 ## Pendente
 
-- Validar no sandbox os campos do pagamento em atraso (`value`, `originalValue`, `interestValue`) — marcado `VALIDAR NO SANDBOX` no código.
 - **5c-2:** régua de cobrança (e-mail/WhatsApp, opt-out — RN-K10), com envio dos links do Asaas.
 - Assinatura eletrônica dos documentos (Clicksign/D4Sign — PL-06), quando o cliente tiver conta.

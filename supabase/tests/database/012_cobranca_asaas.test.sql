@@ -1,7 +1,7 @@
 -- Fase 5b-2: cobrança pelo Asaas com a API simulada (sem rede).
 begin;
 \ir ../auxiliares/testes.psql
-select plan(23);
+select plan(24);
 
 -- API do Asaas simulada: respostas por método + caminho (LIKE) e registro das chamadas.
 create temp table asaas_falso (metodo text, caminho text, resposta jsonb, ordem serial);
@@ -104,9 +104,15 @@ select pg_temp.responder('POST', '/payments', '{"status":200,"corpo":{"id":"pay_
 select testes.entrar(testes.id('fabi'));
 select testes.guardar('c2', public.gerar_cobranca(testes.id('p2')));
 reset role;
-select pg_temp.responder('GET', '/payments/pay_2', '{"status":200,"corpo":{"id":"pay_2","status":"RECEIVED","value":460.50,"originalValue":450.00,"interestValue":10.50,"paymentDate":"2026-01-20"}}');
+-- Formato conferido no sandbox (12/11/2026): pago em atraso, "value" é o total e "interestValue" soma multa e juros.
+select pg_temp.responder('GET', '/payments/pay_2', format('{"status":200,"corpo":{"id":"pay_2","status":"RECEIVED","value":460.50,"originalValue":450.00,"interestValue":10.50,"paymentDate":"%s"}}',
+  current_date + 61)::jsonb);
 select is(public.conciliar_cobrancas(), 1, 'a varredura baixa o pagamento sem webhook');
-select is((select juros_mora_centavos from public.recebimentos where referencia_externa = 'pay_2'), 1050::bigint, 'acréscimo pago no Asaas vira juros de mora');
+select is((select multa_centavos || '/' || juros_mora_centavos from public.recebimentos where referencia_externa = 'pay_2'),
+  round(45000 * (select multa_atraso from public.contratos where id = testes.id('contrato')))::bigint || '/' ||
+    (1050 - round(45000 * (select multa_atraso from public.contratos where id = testes.id('contrato')))::bigint),
+  'acréscimo do Asaas separa a multa do contrato e o resto como juros de mora');
+select is((select valor_centavos from public.recebimentos where referencia_externa = 'pay_2'), 46050::bigint, 'recebimento com o valor total pago');
 select is((select situacao from public.contratos where id = testes.id('contrato')), 'vigente', 'entrada ainda aberta mantém o contrato vigente');
 
 -- Cancelamento
