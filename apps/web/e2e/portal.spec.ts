@@ -133,6 +133,14 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
       .toString('latin1'),
   ).toBe('%PDF-')
 
+  // Contrato de outra pessoa (ou link antigo): página em português, sem erro cru.
+  const atual = comprador.url()
+  await comprador.goto('/portal/contratos/00000000-0000-0000-0000-000000000000')
+  await expect(
+    comprador.getByRole('heading', { name: 'Não encontramos este contrato' }),
+  ).toBeVisible()
+  await comprador.goto(atual)
+
   // Lembretes por e-mail: o comprador desliga e religa (RN-K10).
   const lembretes = comprador.getByRole('region', { name: 'Lembretes por e-mail' })
   await lembretes.getByRole('button', { name: 'Não quero receber lembretes' }).click()
