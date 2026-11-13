@@ -144,6 +144,7 @@ export {
   carregarContratoPortal,
   carregarMeuPortal,
   convidarParaPortal,
+  enviarConvitePortal,
   emitirSegundaVia,
   extratoPermutante,
   extratoPortalPdf,

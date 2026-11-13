@@ -39,7 +39,10 @@ export function ConvitePortal({
       {estado.erro && <Alerta>{estado.erro}</Alerta>}
       {estado.ok && (
         <Alerta tipo="sucesso">
-          <p className="font-medium">Envie este link (vale por 30 dias):</p>
+          {estado.detalhe && <p className="font-medium">{estado.detalhe}</p>}
+          <p className={estado.detalhe ? 'mt-1' : 'font-medium'}>
+            Link do convite (vale por 30 dias), se quiser enviar também por outro canal:
+          </p>
           <div className="mt-2 flex flex-col gap-2 sm:flex-row">
             <input
               readOnly
