@@ -53,7 +53,9 @@
 
 - Crédito por pagamento a maior (D-114): saldo a favor no contrato; a loteadora aplica numa parcela em aberto ou devolve. O comprador vê o saldo no portal.
 
+- Lembrete de vencimento por e-mail (D-115): antes, no dia e depois do vencimento, configurável em Parâmetros e desligado até a loteadora ligar; link do boleto/Pix do Asaas ou do portal; descadastro sem login e no portal; cada envio registrado (RN-K10).
+
 ## Pendente
 
-- **5c-2:** régua de cobrança (e-mail/WhatsApp, opt-out — RN-K10), com envio dos links do Asaas.
+- **5c-2:** régua de cobrança por WhatsApp (o e-mail já está feito, D-115).
 - Assinatura eletrônica dos documentos (Clicksign/D4Sign — PL-06), quando o cliente tiver conta.

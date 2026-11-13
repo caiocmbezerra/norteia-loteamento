@@ -82,7 +82,17 @@ export default async function PaginaContrato({
   const proxima = c.parcelas.find((p) => p.situacao === 'aberta')
   const podeCredito =
     temPapel(ctx, 'dono', 'financeiro') && (c.situacao === 'vigente' || c.situacao === 'quitado')
-  const creditos = await carregarCreditos(ctx.db, c.id)
+  const [creditos, { data: emails }, { data: contato }] = await Promise.all([
+    carregarCreditos(ctx.db, c.id),
+    ctx.db
+      .from('envios_email')
+      .select('id, criado_em, assunto, situacao, erro')
+      .eq('contrato_id', c.id)
+      .order('criado_em', { ascending: false })
+      .limit(5),
+    ctx.db.from('contratos').select('compradores(email, recebe_lembretes)').eq('id', c.id).single(),
+  ])
+  const comprador = contato?.compradores ?? null
   const saldoCreditos = creditos.reduce((t, cr) => t + cr.saldoCentavos, 0)
   const podeDistratar =
     temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor') && c.situacao === 'vigente'
@@ -687,6 +697,37 @@ export default async function PaginaContrato({
             </tbody>
           </table>
         </div>
+      </Cartao>
+
+      <Cartao className="flex flex-col gap-2">
+        <h2 className="font-semibold">Lembretes por e-mail</h2>
+        <p className="text-sm text-muted-foreground">
+          {!comprador?.email
+            ? 'O comprador não tem e-mail cadastrado: não recebe lembretes.'
+            : comprador.recebe_lembretes
+              ? `Enviados para ${comprador.email} quando os lembretes estão ligados em Parâmetros.`
+              : `O comprador pediu para não receber lembretes (${comprador.email}).`}
+        </p>
+        {(emails ?? []).length > 0 && (
+          <ul className="flex flex-col gap-1 text-sm">
+            {(emails ?? []).map((e) => (
+              <li key={e.id} className="flex flex-wrap justify-between gap-2">
+                <span>
+                  {formatarData(e.criado_em.slice(0, 10))} · {e.assunto}
+                </span>
+                <span
+                  className={e.situacao === 'falhou' ? 'text-destructive' : 'text-muted-foreground'}
+                >
+                  {e.situacao === 'enviado'
+                    ? 'Enviado'
+                    : e.situacao === 'falhou'
+                      ? `Falhou: ${e.erro ?? ''}`
+                      : 'Enviando'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </Cartao>
 
       {c.compradorPortal && temPapel(ctx, 'dono', 'financeiro', 'comercial_gestor') && (

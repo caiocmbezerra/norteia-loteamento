@@ -133,6 +133,13 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
       .toString('latin1'),
   ).toBe('%PDF-')
 
+  // Lembretes por e-mail: o comprador desliga e religa (RN-K10).
+  const lembretes = comprador.getByRole('region', { name: 'Lembretes por e-mail' })
+  await lembretes.getByRole('button', { name: 'Não quero receber lembretes' }).click()
+  await expect(lembretes).toContainText('Desligados')
+  await lembretes.getByRole('button', { name: 'Voltar a receber lembretes' }).click()
+  await expect(lembretes).toContainText('Ligados')
+
   // Informe de IR do ano, no modelo padrão.
   const [download] = await Promise.all([
     comprador.waitForEvent('download'),
@@ -205,4 +212,12 @@ test('comprador aceita o convite e abre a segunda via em até 3 toques', async (
     emailComprador,
   )
   await expect(dona.getByText(/O comprador já acessa o portal/)).toBeVisible()
+})
+
+// RN-K10: o link de descadastro do e-mail funciona sem login; link inválido é recusado.
+test('descadastro de lembretes sem login', async ({ page }) => {
+  await page.goto('/descadastrar/00000000-0000-0000-0000-000000000000')
+  await expect(page.getByRole('heading', { name: 'Lembretes por e-mail' })).toBeVisible()
+  await page.getByRole('button', { name: 'Não quero mais receber lembretes' }).click()
+  await expect(page.getByText('Link inválido ou expirado.')).toBeVisible()
 })

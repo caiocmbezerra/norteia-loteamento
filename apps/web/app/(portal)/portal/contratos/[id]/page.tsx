@@ -16,6 +16,7 @@ import { Alerta } from '@/components/ui/formulario'
 import { exigirUsuario } from '@/lib/contexto'
 import { hojeSaoPaulo } from '@/lib/datas'
 import { BotaoSegundaVia } from '../../botao-segunda-via'
+import { definirLembretes } from '../../acoes'
 import { FormularioChamado } from './chamados/formulario'
 
 export const metadata: Metadata = { title: 'Meu contrato' }
@@ -33,7 +34,7 @@ export default async function PaginaContratoPortal({
 }) {
   const { id } = await params
   const { db } = await exigirUsuario()
-  const [c, obra, { data: chamados }, creditos] = await Promise.all([
+  const [c, obra, { data: chamados }, creditos, { data: recebeLembretes }] = await Promise.all([
     carregarContratoPortal(db, id),
     andamentoObra(db, id),
     db
@@ -42,6 +43,7 @@ export default async function PaginaContratoPortal({
       .eq('contrato_id', id)
       .order('ultima_mensagem_em', { ascending: false }),
     carregarCreditos(db, id),
+    db.rpc('meus_lembretes'),
   ])
   if (!c) notFound()
   const obraOrcado = obra.reduce((t, e) => t + e.orcado, 0)
@@ -262,6 +264,22 @@ export default async function PaginaContratoPortal({
           </>
         )}
       </Cartao>
+      <Cartao className="flex flex-col gap-2" aria-label="Lembretes por e-mail">
+        <h2 className="text-lg font-semibold">Lembretes por e-mail</h2>
+        <p className="text-sm text-muted-foreground">
+          {recebeLembretes === false
+            ? 'Desligados: você não recebe avisos de vencimento por e-mail.'
+            : 'Ligados: quando a loteadora usa lembretes, você recebe um aviso antes do vencimento de cada parcela.'}
+        </p>
+        <form action={definirLembretes.bind(null, recebeLembretes === false, c.id)}>
+          <button type="submit" className="text-sm text-primary underline underline-offset-4">
+            {recebeLembretes === false
+              ? 'Voltar a receber lembretes'
+              : 'Não quero receber lembretes'}
+          </button>
+        </form>
+      </Cartao>
+
       <Cartao className="flex flex-col gap-3" aria-label="Atendimento">
         <h2 className="text-lg font-semibold">Atendimento</h2>
         {(chamados ?? []).length > 0 && (

@@ -19,3 +19,11 @@ export async function segundaVia(
   }
   redirect(link)
 }
+
+/** Comprador liga ou desliga os lembretes de vencimento por e-mail (RN-K10). */
+export async function definirLembretes(recebe: boolean, contratoId: string): Promise<void> {
+  const { db } = await exigirUsuario()
+  const { error } = await db.rpc('definir_meus_lembretes', { p_recebe: recebe })
+  if (error) throw new Error('Não foi possível alterar os lembretes.')
+  redirect(`/portal/contratos/${contratoId}?lembretes=${recebe ? 'ligados' : 'desligados'}`)
+}
