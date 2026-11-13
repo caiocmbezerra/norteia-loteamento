@@ -4523,6 +4523,7 @@ export type Database = {
         Returns: string
       }
       documento_portal: { Args: { p_contrato: string; p_tipo: string }; Returns: Json }
+      enviar_convite_portal: { Args: { p_token: string }; Returns: string }
       enviar_lembretes_vencimento: { Args: { p_hoje?: string }; Returns: number }
       estornar_movimento_socio: {
         Args: { p_motivo: string; p_movimento: string }
