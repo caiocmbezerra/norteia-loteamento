@@ -1,6 +1,6 @@
 'use server'
 
-import { convidarParaPortal, criarDemonstracao } from '@norteia/aplicacao'
+import { convidarParaPortal, enviarConvitePortal, criarDemonstracao } from '@norteia/aplicacao'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
@@ -44,9 +44,14 @@ export async function convidarPortal(
       })
       .parse(valoresDoFormulario(form))
     const token = await convidarParaPortal(ctx.db, ctx.tenant.id, tipo, alvoId, email)
+    const envio = await enviarConvitePortal(ctx.db, token).catch(() => 'falhou')
     const h = await headers()
     return {
       ok: `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('host')}/portal-convite/${token}`,
+      detalhe:
+        envio === 'enviado'
+          ? `Convite enviado por e-mail para ${email}.`
+          : 'Não foi possível enviar o e-mail agora; envie o link abaixo por WhatsApp ou e-mail.',
     }
   } catch (e) {
     return estadoDeErro(e, form)

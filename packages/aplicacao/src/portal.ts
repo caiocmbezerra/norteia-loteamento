@@ -217,6 +217,13 @@ export async function convidarParaPortal(
   return data!
 }
 
+/** Envia o convite por e-mail (D-116): 'enviado', 'falhou' ou 'repetido'. */
+export async function enviarConvitePortal(db: ClienteBanco, token: string): Promise<string> {
+  const { data, error } = await db.rpc('enviar_convite_portal', { p_token: token })
+  falhar(error)
+  return data!
+}
+
 export async function aceitarConvitePortal(db: ClienteBanco, token: string): Promise<string> {
   const { data, error } = await db.rpc('aceitar_convite_portal', { p_token: token })
   falhar(error)

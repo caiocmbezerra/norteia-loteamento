@@ -8,6 +8,8 @@ export interface EstadoFormulario {
   erros?: Record<string, string>
   valores?: Record<string, string>
   ok?: string
+  /** Informação extra ao lado do sucesso (ex.: se o e-mail saiu). */
+  detalhe?: string
 }
 
 export function valoresDoFormulario(form: FormData): Record<string, string> {
