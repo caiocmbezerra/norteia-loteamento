@@ -652,8 +652,10 @@ export type Database = {
           email: string | null
           id: string
           nome: string
+          recebe_lembretes: boolean
           telefone: string | null
           tenant_id: string
+          token_descadastro: string
           usuario_id: string | null
         }
         ComputedFields: never
@@ -666,8 +668,10 @@ export type Database = {
           email?: string | null
           id?: string
           nome: string
+          recebe_lembretes?: boolean
           telefone?: string | null
           tenant_id: string
+          token_descadastro?: string
           usuario_id?: string | null
         }
         Update: {
@@ -679,8 +683,10 @@ export type Database = {
           email?: string | null
           id?: string
           nome?: string
+          recebe_lembretes?: boolean
           telefone?: string | null
           tenant_id?: string
+          token_descadastro?: string
           usuario_id?: string | null
         }
         Relationships: [
@@ -1472,6 +1478,73 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'empresas_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      envios_email: {
+        Row: {
+          assunto: string
+          atualizado_em: string
+          atualizado_por: string | null
+          contrato_id: string | null
+          criado_em: string
+          criado_por: string | null
+          destinatario: string
+          erro: string | null
+          id: string
+          provedor_id: string | null
+          referencia: string
+          situacao: string
+          tenant_id: string
+          tipo: string
+        }
+        ComputedFields: never
+        Insert: {
+          assunto: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          contrato_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          destinatario: string
+          erro?: string | null
+          id?: string
+          provedor_id?: string | null
+          referencia: string
+          situacao?: string
+          tenant_id: string
+          tipo: string
+        }
+        Update: {
+          assunto?: string
+          atualizado_em?: string
+          atualizado_por?: string | null
+          contrato_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          destinatario?: string
+          erro?: string | null
+          id?: string
+          provedor_id?: string | null
+          referencia?: string
+          situacao?: string
+          tenant_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'envios_email_tenant_id_contrato_id_fkey'
+            columns: ['tenant_id', 'contrato_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
+            referencedColumns: ['tenant_id', 'id']
+          },
+          {
+            foreignKeyName: 'envios_email_tenant_id_fkey'
             columns: ['tenant_id']
             isOneToOne: false
             referencedRelation: 'tenants'
@@ -4420,6 +4493,7 @@ export type Database = {
         Args: { p_aceitar: boolean; p_motivo?: string; p_proposta: string }
         Returns: undefined
       }
+      definir_meus_lembretes: { Args: { p_recebe: boolean }; Returns: undefined }
       definir_parametro: {
         Args: {
           p_chave: string
@@ -4443,11 +4517,13 @@ export type Database = {
         Returns: string
       }
       desativar_asaas: { Args: { p_tenant: string }; Returns: undefined }
+      descadastrar_lembretes: { Args: { p_token: string }; Returns: string }
       devolver_credito: {
         Args: { p_credito: string; p_data: string; p_observacao?: string; p_valor: number }
         Returns: string
       }
       documento_portal: { Args: { p_contrato: string; p_tipo: string }; Returns: Json }
+      enviar_lembretes_vencimento: { Args: { p_hoje?: string }; Returns: number }
       estornar_movimento_socio: {
         Args: { p_motivo: string; p_movimento: string }
         Returns: undefined
@@ -4489,6 +4565,7 @@ export type Database = {
       }
       informe_pagamentos: { Args: { p_ano: number; p_contrato: string }; Returns: Json }
       meu_portal: { Args: { p_hoje?: string }; Returns: Json }
+      meus_lembretes: { Args: Record<PropertyKey, never>; Returns: boolean }
       mudar_situacao_chamado: {
         Args: { p_chamado: string; p_situacao: string }
         Returns: undefined
