@@ -2,6 +2,8 @@
 
 import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { EntradaSenha } from '@/components/entrada-senha'
 import { Alerta, Campo, Entrada } from '@/components/ui/formulario'
 import { type EstadoAuth, entrar, enviarLinkMagico } from '../acoes'
 
@@ -30,8 +32,14 @@ export function FormularioEntrar({ proximo }: { proximo?: string }) {
         />
       </Campo>
       <Campo id="senha" rotulo="Senha">
-        <Entrada id="senha" name="senha" type="password" autoComplete="current-password" />
+        <EntradaSenha id="senha" name="senha" autoComplete="current-password" />
       </Campo>
+      <Link
+        href="/recuperar-senha"
+        className="-mt-2 self-end text-sm text-primary underline underline-offset-4"
+      >
+        Esqueci minha senha
+      </Link>
       <Button type="submit" size="lg" disabled={entrando}>
         {entrando ? 'Entrando…' : 'Entrar'}
       </Button>

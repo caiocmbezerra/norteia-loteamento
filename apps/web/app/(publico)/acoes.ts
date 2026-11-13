@@ -80,3 +80,53 @@ export async function cadastrar(_: EstadoAuth, form: FormData): Promise<EstadoAu
   }
   redirect(proximo)
 }
+
+/** Login com o Google: o Supabase devolve a URL de consentimento; a volta passa por /auth/confirmar. */
+export async function entrarComGoogle(_: EstadoAuth, form: FormData): Promise<EstadoAuth> {
+  const proximo = destinoSeguro(form.get('proximo'))
+  const db = await clienteServidor()
+  const { data, error } = await db.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${await origem()}/auth/confirmar?proximo=${encodeURIComponent(proximo)}`,
+    },
+  })
+  if (error || !data.url) return { erro: 'Não foi possível abrir o login do Google agora.' }
+  redirect(data.url)
+}
+
+/** Esqueci a senha: envia o link de redefinição (mesma resposta exista ou não a conta). */
+export async function recuperarSenha(_: EstadoAuth, form: FormData): Promise<EstadoAuth> {
+  const dados = email.safeParse(form.get('email'))
+  if (!dados.success) return { erro: dados.error.issues[0]!.message }
+  const db = await clienteServidor()
+  const { error } = await db.auth.resetPasswordForEmail(dados.data, {
+    redirectTo: `${await origem()}/auth/confirmar?proximo=${encodeURIComponent('/redefinir-senha')}`,
+  })
+  if (error && error.status === 429) {
+    return { erro: 'Muitos pedidos seguidos. Aguarde um minuto e tente de novo.' }
+  }
+  return {
+    mensagem: `Se houver uma conta para ${dados.data}, enviamos um link para criar uma nova senha. Confira também o spam.`,
+  }
+}
+
+/** Nova senha, depois de entrar pelo link de redefinição. */
+export async function redefinirSenha(_: EstadoAuth, form: FormData): Promise<EstadoAuth> {
+  const dados = z
+    .object({ senha, confirmacao: z.string() })
+    .refine((d) => d.senha === d.confirmacao, { message: 'As senhas não conferem.' })
+    .safeParse({ senha: form.get('senha'), confirmacao: form.get('confirmacao') })
+  if (!dados.success) return { erro: dados.error.issues[0]!.message }
+  const db = await clienteServidor()
+  const { error } = await db.auth.updateUser({ password: dados.data.senha })
+  if (error) {
+    return {
+      erro:
+        error.code === 'same_password'
+          ? 'A nova senha precisa ser diferente da atual.'
+          : 'O link expirou. Peça outro em "Esqueci minha senha".',
+    }
+  }
+  redirect('/painel?senha=1')
+}

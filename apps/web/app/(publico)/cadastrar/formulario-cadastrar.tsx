@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { EntradaSenha } from '@/components/entrada-senha'
 import { Button } from '@/components/ui/button'
 import { Alerta, Campo, Entrada } from '@/components/ui/formulario'
 import { type EstadoAuth, cadastrar } from '../acoes'
@@ -28,10 +29,9 @@ export function FormularioCadastrar({ proximo }: { proximo?: string | undefined 
         />
       </Campo>
       <Campo id="senha" rotulo="Senha" ajuda="Mínimo de 8 caracteres.">
-        <Entrada
+        <EntradaSenha
           id="senha"
           name="senha"
-          type="password"
           autoComplete="new-password"
           minLength={8}
           required

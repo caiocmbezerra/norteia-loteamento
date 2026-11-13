@@ -13,7 +13,7 @@ test('exportação contábil configurável e caixa × competência', async ({ pa
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Dora Dona')
   await page.getByLabel('E-mail').fill(`contabil.${Date.now()}.${info.project.name}@exemplo.com.br`)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.getByLabel('Nome da sua loteadora').fill('Loteadora Contábil')
   await page.getByLabel('Nome do empreendimento').fill('Jardim Contábil')

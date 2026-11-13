@@ -5,7 +5,7 @@ test('dona define a multa da loteadora no lugar da sugestão', async ({ page }, 
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Pat Parâmetros')
   await page.getByLabel('E-mail').fill(`param.${Date.now()}.${info.project.name}@exemplo.com.br`)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.getByLabel('Nome da sua loteadora').fill('Loteadora Parâmetros')
   await page.getByLabel('Nome do empreendimento').fill('Jardim Parâmetros')

@@ -14,7 +14,7 @@ test('DIMOB: pendências, dados fiscais e arquivo para o programa da Receita', a
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Dora Dona')
   await page.getByLabel('E-mail').fill(`dimob.${Date.now()}.${info.project.name}@exemplo.com.br`)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.getByLabel('Nome da sua loteadora').fill('Loteadora Dimob')
   await page.getByLabel('Nome do empreendimento').fill('Jardim Dimob')

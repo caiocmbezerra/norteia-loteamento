@@ -8,7 +8,7 @@ test('medições por percentual executado geram as contas do contrato', async ({
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Edu Engenharia')
   await page.getByLabel('E-mail').fill(`medicoes.${Date.now()}.${info.project.name}@exemplo.com.br`)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.getByLabel('Nome da sua loteadora').fill('Loteadora Medições')
   await page.getByLabel('Nome do empreendimento').fill('Primeiro')

@@ -8,7 +8,7 @@ test('pequeno loteador cria conta, loteamento e ajusta um lote', async ({ page }
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Marina Souza')
   await page.getByLabel('E-mail').fill(email)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
 
   await expect(page).toHaveURL(/\/comecar$/)
