@@ -5,7 +5,7 @@ test('leads no funil e meta do mês acompanhando as vendas', async ({ page }, in
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Mel Metas')
   await page.getByLabel('E-mail').fill(`metas.${Date.now()}.${info.project.name}@exemplo.com.br`)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.getByLabel('Nome da sua loteadora').fill('Loteadora Metas')
   await page.getByLabel('Nome do empreendimento').fill('Jardim Metas')

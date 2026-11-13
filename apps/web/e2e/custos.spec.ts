@@ -13,7 +13,7 @@ test('custos da obra alimentam o fluxo sem dupla contagem', async ({ page }, inf
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Edu Engenheiro')
   await page.getByLabel('E-mail').fill(`custos.${Date.now()}.${info.project.name}@exemplo.com.br`)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.getByLabel('Nome da sua loteadora').fill('Loteadora Obra')
   await page.getByLabel('Nome do empreendimento').fill('Primeiro')

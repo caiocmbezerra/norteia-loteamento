@@ -5,7 +5,7 @@ test('proposta aceita vira a venda com as condições negociadas', async ({ page
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Paula Proposta')
   await page.getByLabel('E-mail').fill(`proposta.${Date.now()}.${info.project.name}@exemplo.com.br`)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.getByLabel('Nome da sua loteadora').fill('Loteadora Propostas')
   await page.getByLabel('Nome do empreendimento').fill('Jardim Propostas')

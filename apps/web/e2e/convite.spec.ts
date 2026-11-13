@@ -4,7 +4,7 @@ async function criarConta(page: Page, nome: string, email: string, proximo?: str
   await page.goto(proximo ? `/cadastrar?proximo=${encodeURIComponent(proximo)}` : '/cadastrar')
   await page.getByLabel('Seu nome').fill(nome)
   await page.getByLabel('E-mail').fill(email)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
 }
 
@@ -40,7 +40,7 @@ test('dona convida corretor; corretor aceita e só consulta', async ({ browser }
   await corretor.getByRole('link', { name: 'Criar conta' }).click()
   await corretor.getByLabel('Seu nome').fill('Caio Corretor')
   await corretor.getByLabel('E-mail').fill(emailCorretor)
-  await corretor.getByLabel('Senha').fill('senha-forte-123')
+  await corretor.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await corretor.getByRole('button', { name: 'Criar conta' }).click()
   await expect(corretor).toHaveURL(new RegExp(`${caminho}$`))
   await corretor.getByRole('button', { name: 'Aceitar convite' }).click()

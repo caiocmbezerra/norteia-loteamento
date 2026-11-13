@@ -5,7 +5,7 @@ test('dona configura o Asaas; chave errada não é aceita', async ({ page }, inf
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Dora Dona')
   await page.getByLabel('E-mail').fill(`asaas.${Date.now()}.${info.project.name}@exemplo.com.br`)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.getByLabel('Nome da sua loteadora').fill('Loteadora Asaas')
   await page.getByLabel('Nome do empreendimento').fill('Jardim Asaas')

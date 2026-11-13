@@ -5,7 +5,7 @@ test('sócios, participações e movimentos da SPE', async ({ page }, info) => {
   await page.goto('/cadastrar')
   await page.getByLabel('Seu nome').fill('Sol Sócia')
   await page.getByLabel('E-mail').fill(`socios.${Date.now()}.${info.project.name}@exemplo.com.br`)
-  await page.getByLabel('Senha').fill('senha-forte-123')
+  await page.getByLabel('Senha', { exact: true }).fill('senha-forte-123')
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.getByLabel('Nome da sua loteadora').fill('Loteadora Sócios')
   await page.getByLabel('Nome do empreendimento').fill('Jardim Sócios')
