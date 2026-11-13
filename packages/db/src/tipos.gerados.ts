@@ -4417,6 +4417,7 @@ export type Database = {
       }
       aceitar_convite: { Args: { p_token: string }; Returns: string }
       aceitar_convite_portal: { Args: { p_token: string }; Returns: string }
+      aceitar_convites_pendentes: { Args: Record<PropertyKey, never>; Returns: number }
       antecipar_parcelas: {
         Args: { p_contrato: string; p_data: string; p_itens: Json }
         Returns: number
