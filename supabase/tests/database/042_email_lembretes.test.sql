@@ -1,7 +1,7 @@
 -- Lembrete de vencimento por e-mail (régua, RN-K10) com o Resend simulado (sem rede).
 begin;
 \ir ../auxiliares/testes.psql
-select plan(14);
+select plan(15);
 
 create temp table resend_chamadas (corpo jsonb, ordem serial);
 create temp table resend_resposta (resposta jsonb);
@@ -54,6 +54,8 @@ select ok((select bool_and(corpo ->> 'html' like '%/descadastrar/' || (select to
   from pg_temp.resend_chamadas), 'todo e-mail traz o link de descadastro');
 select ok((select bool_and(corpo ->> 'html' like '%R$ 225,00%') from pg_temp.resend_chamadas), 'valor da parcela em reais');
 select is((select count(*) from public.envios_email where tenant_id = testes.id('tenant') and situacao = 'enviado'), 3::bigint, 'cada envio fica registrado');
+select ok((select bool_and(corpo ->> 'html' not like '%/portal/%' and corpo ->> 'html' like '%entre em contato com Loteadora &lt;Lembrete&gt;%') from pg_temp.resend_chamadas),
+  'sem boleto e sem acesso ao portal, o e-mail orienta a falar com a loteadora em vez de mandar ao portal');
 
 -- Leitura do registro
 select testes.entrar(testes.id('ana'));
