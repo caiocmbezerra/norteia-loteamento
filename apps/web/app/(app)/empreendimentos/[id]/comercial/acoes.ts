@@ -245,3 +245,32 @@ export async function definirMeta(
   revalidatePath(`/empreendimentos/${empreendimentoId}/comercial`)
   return { ok: 'Meta salva.' }
 }
+
+/** Publica, despublica e configura a vitrine pública do empreendimento (D-118). */
+export async function configurarVitrine(
+  empreendimentoId: string,
+  _: EstadoFormulario,
+  form: FormData,
+): Promise<EstadoFormulario> {
+  const ctx = await exigirContexto()
+  try {
+    const d = z
+      .object({
+        publicada: z.string().transform((v) => v === 'sim'),
+        precos: z.enum(['lote', 'a_partir', 'nenhum'], { error: 'Escolha como mostrar o preço.' }),
+        descricao: z.string().trim().max(1000, 'Descrição: no máximo 1.000 caracteres.'),
+      })
+      .parse(valoresDoFormulario(form))
+    const { error } = await ctx.db.rpc('configurar_vitrine', {
+      p_empreendimento: empreendimentoId,
+      p_publicada: d.publicada,
+      p_precos: d.precos,
+      p_descricao: d.descricao,
+    })
+    if (error) throw traduzirErroBanco(error)
+    revalidatePath(`/empreendimentos/${empreendimentoId}/comercial`)
+    return { ok: d.publicada ? 'Vitrine publicada.' : 'Vitrine salva (não publicada).' }
+  } catch (e) {
+    return estadoDeErro(e, form)
+  }
+}
