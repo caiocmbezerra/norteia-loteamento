@@ -11,6 +11,7 @@ const PREFIXOS_PUBLICOS = [
   '/convite',
   '/portal-convite',
   '/recuperar-senha',
+  '/v',
   '/descadastrar',
   '/api/webhooks',
 ]

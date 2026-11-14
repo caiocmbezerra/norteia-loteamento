@@ -29,7 +29,20 @@ const MOVIMENTO: Record<string, string> = {
 export default async function PaginaPortal() {
   const { db, usuario } = await exigirUsuario()
   const hoje = hojeSaoPaulo()
-  const p = await carregarMeuPortal(db, hoje)
+  const [p, { data: vitrinesBrutas }] = await Promise.all([
+    carregarMeuPortal(db, hoje),
+    db.rpc('vitrines_do_portal'),
+  ])
+  const vitrines = (vitrinesBrutas ?? []) as {
+    slug: string
+    nome: string
+    municipio: string | null
+    uf: string | null
+    loteadora: string
+    em_vendas: boolean
+    disponiveis: number
+    a_partir_centavos: number | null
+  }[]
   const primeiroNome = usuario.nome.split(' ')[0]
 
   return (
@@ -147,6 +160,33 @@ export default async function PaginaPortal() {
               </Button>
             </Cartao>
           ))}
+        </section>
+      )}
+
+      {vitrines.length > 0 && (
+        <section className="flex flex-col gap-3" aria-labelledby="t-lancamentos">
+          <h2 id="t-lancamentos" className="text-lg font-semibold">
+            Lançamentos e lotes disponíveis
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {vitrines.map((v) => (
+              <Cartao key={v.slug} className="flex flex-col gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {v.loteadora} · {v.em_vendas ? 'Vendas abertas' : 'Lançamento em breve'}
+                </span>
+                <span className="font-semibold">{v.nome}</span>
+                <span className="text-sm text-muted-foreground">
+                  {[v.municipio, v.uf].filter(Boolean).join(' - ')}
+                  {' · '}
+                  {v.disponiveis} {v.disponiveis === 1 ? 'lote disponível' : 'lotes disponíveis'}
+                  {v.a_partir_centavos != null && ` · a partir de ${moeda(v.a_partir_centavos)}`}
+                </span>
+                <Button asChild variant="outline" className="self-start">
+                  <Link href={`/v/${v.slug}`}>Ver lotes</Link>
+                </Button>
+              </Cartao>
+            ))}
+          </div>
         </section>
       )}
     </>

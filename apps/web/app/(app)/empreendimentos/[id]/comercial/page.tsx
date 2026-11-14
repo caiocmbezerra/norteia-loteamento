@@ -1,6 +1,7 @@
 import { formatarData, formatarMoeda, formatarPercentual } from '@norteia/dominio'
 import { Decimal, arredondarCentavos } from '@norteia/motor-financeiro'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { hojeSaoPaulo } from '@/lib/datas'
 import { decidirDesconto, decidirPropostaAcao } from './acoes'
 import { Decisao } from './decisao'
 import { FormularioMeta } from './formularios'
+import { FormularioVitrine } from './vitrine'
 
 export const metadata: Metadata = { title: 'Comercial' }
 
@@ -27,7 +29,7 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
   const ctx = await exigirContexto()
   const { data: e } = await ctx.db
     .from('empreendimentos')
-    .select('id, nome')
+    .select('id, nome, vitrine_publicada, vitrine_slug, vitrine_precos, vitrine_descricao')
     .eq('id', id)
     .maybeSingle()
   if (!e) notFound()
@@ -123,6 +125,11 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(`${mes}-01T12:00:00Z`))
+  const h = await headers()
+  const linkVitrine = e.vitrine_slug
+    ? `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('host')}/v/${e.vitrine_slug}`
+    : null
+  const podeVitrine = temPapel(ctx, 'dono', 'comercial_gestor')
   const nomeLote = (l: { numero: string; quadras: { codigo: string } | null } | null) =>
     l ? `Quadra ${l.quadras?.codigo} · Lote ${l.numero}` : '—'
 
@@ -157,6 +164,19 @@ export default async function PaginaComercial({ params }: { params: Promise<{ id
         <Button asChild variant="secondary" className="self-start">
           <Link href={`/empreendimentos/${id}/comercial/leads`}>Meus leads</Link>
         </Button>
+      )}
+
+      {podeVitrine && (
+        <Cartao className="flex flex-col gap-3">
+          <h2 className="font-semibold">Vitrine pública</h2>
+          <FormularioVitrine
+            empreendimentoId={id}
+            publicada={e.vitrine_publicada}
+            precos={e.vitrine_precos}
+            descricao={e.vitrine_descricao}
+            link={linkVitrine}
+          />
+        </Cartao>
       )}
 
       {((metas ?? []).length > 0 || podeRegistrar) && (
