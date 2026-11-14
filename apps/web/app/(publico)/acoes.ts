@@ -121,11 +121,21 @@ export async function redefinirSenha(_: EstadoAuth, form: FormData): Promise<Est
   const db = await clienteServidor()
   const { error } = await db.auth.updateUser({ password: dados.data.senha })
   if (error) {
+    // Só sessão ausente ou vencida significa link expirado; o resto é sobre a senha escolhida.
+    const expirou =
+      error.code === 'session_not_found' ||
+      error.code === 'session_expired' ||
+      error.status === 401 ||
+      error.status === 403
     return {
       erro:
         error.code === 'same_password'
           ? 'A nova senha precisa ser diferente da atual.'
-          : 'O link expirou. Peça outro em "Esqueci minha senha".',
+          : error.code === 'weak_password' || error.status === 422
+            ? 'Essa senha é muito comum ou já apareceu em vazamentos de dados na internet. Escolha outra, misturando letras, números e símbolos.'
+            : expirou
+              ? 'O link expirou. Peça outro em "Esqueci minha senha".'
+              : 'Não foi possível salvar a senha agora. Tente de novo.',
     }
   }
   redirect('/painel?senha=1')
