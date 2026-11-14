@@ -1365,6 +1365,10 @@ export type Database = {
           tipo: Database['public']['Enums']['empreendimento_tipo']
           tipo_imovel: string
           uf: string | null
+          vitrine_descricao: string | null
+          vitrine_precos: string
+          vitrine_publicada: boolean
+          vitrine_slug: string | null
         }
         ComputedFields: never
         Insert: {
@@ -1394,6 +1398,10 @@ export type Database = {
           tipo?: Database['public']['Enums']['empreendimento_tipo']
           tipo_imovel?: string
           uf?: string | null
+          vitrine_descricao?: string | null
+          vitrine_precos?: string
+          vitrine_publicada?: boolean
+          vitrine_slug?: string | null
         }
         Update: {
           area_total_m2?: number | null
@@ -1422,6 +1430,10 @@ export type Database = {
           tipo?: Database['public']['Enums']['empreendimento_tipo']
           tipo_imovel?: string
           uf?: string | null
+          vitrine_descricao?: string | null
+          vitrine_precos?: string
+          vitrine_publicada?: boolean
+          vitrine_slug?: string | null
         }
         Relationships: [
           {
@@ -2079,6 +2091,7 @@ export type Database = {
         Row: {
           atualizado_em: string
           atualizado_por: string | null
+          consentimento_em: string | null
           corretor_id: string | null
           criado_em: string
           criado_por: string | null
@@ -2098,6 +2111,7 @@ export type Database = {
         Insert: {
           atualizado_em?: string
           atualizado_por?: string | null
+          consentimento_em?: string | null
           corretor_id?: string | null
           criado_em?: string
           criado_por?: string | null
@@ -2116,6 +2130,7 @@ export type Database = {
         Update: {
           atualizado_em?: string
           atualizado_por?: string | null
+          consentimento_em?: string | null
           corretor_id?: string | null
           criado_em?: string
           criado_por?: string | null
@@ -4443,6 +4458,15 @@ export type Database = {
         Args: { p_ambiente: string; p_chave: string; p_tenant: string }
         Returns: string
       }
+      configurar_vitrine: {
+        Args: {
+          p_descricao?: string
+          p_empreendimento: string
+          p_precos: string
+          p_publicada: boolean
+        }
+        Returns: string
+      }
       criar_contrato: {
         Args: { p_indice?: string; p_parcelas: Json; p_venda: string }
         Returns: string
@@ -4610,6 +4634,18 @@ export type Database = {
         Args: { p_contrato: string; p_data: string; p_observacao: string; p_valor: number }
         Returns: string
       }
+      registrar_interesse: {
+        Args: {
+          p_consentimento: boolean
+          p_email: string
+          p_lote: string
+          p_mensagem: string
+          p_nome: string
+          p_slug: string
+          p_telefone: string
+        }
+        Returns: string
+      }
       registrar_medicao: {
         Args: {
           p_contrato: string
@@ -4689,6 +4725,8 @@ export type Database = {
         Args: { p_justificativa?: string; p_lote: string; p_venda: Json }
         Returns: string
       }
+      vitrine_publica: { Args: { p_slug: string }; Returns: Json }
+      vitrines_do_portal: { Args: Record<PropertyKey, never>; Returns: Json }
       webhook_asaas: {
         Args: { p_evento: Json; p_tenant: string; p_token: string }
         Returns: string
