@@ -6,7 +6,7 @@
 begin;
 \ir ../auxiliares/testes.psql
 \ir ../auxiliares/qa_cenario.psql
-select plan(26);
+select plan(29);
 
 select testes.guardar('dona_a', testes.criar_usuario('dona.a@exemplo.test', 'Dona A'));
 select testes.entrar(testes.id('dona_a'));
@@ -35,10 +35,8 @@ select throws_ok($$ select public.aplicar_credito(testes.id('a_cred'), testes.id
 select throws_ok($$ select public.registrar_recebimento(testes.id('a_p2'), '2026-04-01', 2500001) $$,
   null, null, 'REC-BANCO-106: principal acima do saldo da parcela é recusado (RN-K06: o excedente vira crédito)');
 
--- ── A-01 (ALTA): o banco aceita plano de parcelas que não corresponde às condições da venda ──
--- RN-K01: o plano é gerado pelo motor (Price/SAC, taxa, prazo, 1ª parcela). criar_contrato só
--- confere soma das amortizações, entrada, quantidade e números; juros e datas não são conferidos.
-select todo('A-01: criar_contrato não confere juros nem vencimentos com a venda', 2);
+-- ── A-01 (ALTA, CORRIGIDO em 20261115120000): o plano do contrato é exatamente o da venda ──
+-- RN-K01: o banco recalcula o plano (privado.plano_da_venda, idêntico ao motor) e recusa divergência.
 select throws_ok($$ select public.criar_contrato(testes.id('v2'), '[
   {"numero":0,"vencimento":"2026-02-01","valor_centavos":11000000,"amortizacao_centavos":11000000,"juros_centavos":0},
   {"numero":1,"vencimento":"2026-03-01","valor_centavos":500000,"amortizacao_centavos":500000,"juros_centavos":0},
@@ -49,6 +47,11 @@ select throws_ok($$ select public.criar_contrato(testes.id('v3'), '[
   {"numero":1,"vencimento":"2099-03-01","valor_centavos":507512,"amortizacao_centavos":497512,"juros_centavos":10000},
   {"numero":2,"vencimento":"2099-04-01","valor_centavos":507513,"amortizacao_centavos":502488,"juros_centavos":5025}]'::jsonb) $$,
   '23514', null, 'CON-BANCO-102: vencimentos precisam seguir a 1ª parcela da venda (março e abril de 2026)');
+select lives_ok($$ select public.criar_contrato(testes.id('v2'), testes.plano_da_venda(testes.id('v2'))) $$,
+  'CON-BANCO-103: o plano oficial da venda (Price 1% a.m.) é aceito');
+select is((select string_agg(p.valor_centavos || '/' || p.juros_centavos, ' ' order by p.numero) from public.parcelas p
+            join public.contratos c on c.id = p.contrato_id where c.venda_id = testes.id('v2')),
+  '11000000/0 507512/10000 507513/5025', 'CON-BANCO-104: Price 2× sobre 10.000,00 a 1% a.m. (prestação 5.075,12; a última fecha o centavo)');
 
 -- ── A-02 (ALTA): encargos de mora não são conferidos com o contrato nem com o atraso ──
 -- RN-K04: multa e juros de mora são parâmetros do contrato (aqui multa 1,5%, juros 1% a.m.).
@@ -106,15 +109,16 @@ select is((select plano_id from public.tenants where id = testes.id('a_tenant'))
 select lives_ok($$ update public.tenants set nome = 'Loteadora QA a (renomeada)' where id = testes.id('a_tenant') $$,
   'TEN-SEG-103: o dono continua alterando o nome da loteadora');
 
--- ── A-10 (MÉDIA): nova baixa com a referência de um recebimento estornado some em silêncio ──
--- A idempotência (RN-K05) devolve o id do recebimento ESTORNADO: sem erro, sem baixa.
+-- ── A-10 (MÉDIA, CORRIGIDO em 20261115120000): referência de recebimento estornado é recusada ──
+-- Antes a idempotência (RN-K05) devolvia o id do recebimento ESTORNADO, sem erro e sem baixa.
 select testes.guardar('r77', public.registrar_recebimento(testes.id('a_p4'), '2026-06-01', 2500000, p_referencia => 'aviso-77'));
 select public.estornar_recebimento(testes.id('r77'), 'Banco devolveu o pagamento (QA)');
-select todo('A-10: reuso da referência após estorno devolve o recebimento estornado sem baixar', 1);
-select isnt(public.registrar_recebimento(testes.id('a_p4'), '2026-06-05', 2500000, p_referencia => 'aviso-77'), testes.id('r77'),
-  'REC-BANCO-111: nova baixa após estorno não devolve o recebimento estornado (baixa ou recusa explícita)');
-select is((select pago_centavos from public.parcelas where id = testes.id('a_p4')), 0::bigint,
-  'A-10 confirmado: a parcela continua em aberto, e quem chamou recebeu um id como se tivesse baixado');
+select throws_ok($$ select public.registrar_recebimento(testes.id('a_p4'), '2026-06-05', 2500000, p_referencia => 'aviso-77') $$,
+  '23514', null, 'REC-BANCO-111: nova baixa com a referência de um recebimento estornado é recusada com mensagem clara');
+select lives_ok($$ select public.registrar_recebimento(testes.id('a_p4'), '2026-06-05', 2500000, p_referencia => 'aviso-77b') $$,
+  'REC-BANCO-112: com outra referência, a nova baixa entra');
+select is((select pago_centavos from public.parcelas where id = testes.id('a_p4')), 2500000::bigint,
+  'REC-BANCO-113: e a parcela fica paga');
 
 -- Confirmação de que os achados são reais (sem todo): o banco aceitou as operações acima.
 select lives_ok($$ select public.registrar_recebimento(testes.id('a_p3'), '2026-05-01', 100000, 500000, 0) $$,
