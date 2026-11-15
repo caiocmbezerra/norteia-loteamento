@@ -68,13 +68,13 @@ Pendências legais e contábeis em aberto, sem alteração: PL-01 a PL-24 (`docs
 
 ## 5. Testes bloqueados ou não executados
 
-| ID                                         | Motivo                                                                                                                                                                                      |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fluxos FLX-003, 036, 037, 042, 043         | Dependem de funcionalidade inexistente ou de integração externa (ver 04)                                                                                                                    |
-| LEGAL-* da fonte oficial                   | Rede bloqueada                                                                                                                                                                              |
-| Backup e restauração                       | Sem ambiente com PITR                                                                                                                                                                       |
-| Reajuste em lote sobre a massa de carga    | Exige séries de índice para 3.000 aniversários; coberto funcionalmente por 011                                                                                                              |
-| E2E de duplo clique em operação financeira | Não automatizado; o banco é idempotente por referência só quando o app envia referência (baixa manual sem referência pode duplicar em duplo clique: **HIPÓTESE**, a confirmar na interface) |
+| ID                                         | Motivo                                                                                                    |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Fluxos FLX-003, 036, 037, 042, 043         | Dependem de funcionalidade inexistente ou de integração externa (ver 04)                                  |
+| LEGAL-* da fonte oficial                   | Rede bloqueada                                                                                            |
+| Backup e restauração                       | Sem ambiente com PITR                                                                                     |
+| Reajuste em lote sobre a massa de carga    | Exige séries de índice para 3.000 aniversários; coberto funcionalmente por 011                            |
+| E2E de duplo clique em operação financeira | **Resolvido:** a hipótese se confirmou (achado A-14) e foi corrigida; `duplo-clique.spec.ts` cobre o caso |
 
 ## 6. Informações necessárias para completar a auditoria
 

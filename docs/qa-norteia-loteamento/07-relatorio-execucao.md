@@ -130,6 +130,12 @@
 - **Impacto:** a geração da DIMOB anual falharia num cliente desse porte.
 - **Causa provável:** a mesma do A-12 (recebimentos sem índice por parcela). **A confirmar** com EXPLAIN.
 
+### A-14 (ALTA) — clique repetido em "Registrar recebimento" pagava o saldo inteiro — **CORRIGIDO** (D-123)
+
+- **Evidência:** e2e `apps/web/e2e/duplo-clique.spec.ts`, conferido no banco. Pagamento parcial de R$ 1.000,00 da entrada e uma segunda clicada 150 ms depois: foram gravados **R$ 1.000,00 + R$ 8.000,00**, mesmo com o botão desativado durante o envio.
+- **Causa:** depois do sucesso, a página recria o formulário com o saldo restante preenchido e o botão liberado; a baixa manual não tem referência que o banco possa usar para recusar a repetição.
+- **Correção:** o formulário seguinte a um recebimento fica com o botão travado por 1,2 s. Sem a trava o teste falha (2 de 3 execuções); com ela passou em 6 de 6.
+
 ### Baixa severidade (registro)
 
 - **B-01:** `modelos_documento` não tem gatilho de auditoria (as escritas só ocorrem por `publicar_modelo` e `usar_modelo_padrao`).
