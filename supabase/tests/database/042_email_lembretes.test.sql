@@ -28,14 +28,15 @@ select testes.guardar('venda', public.vender_lote((select id from public.lotes w
   json_build_object('comprador_id', (select id from public.compradores where tenant_id = testes.id('tenant')), 'data_venda', current_date - 10,
     'preco_centavos', 100000, 'entrada_centavos', 10000, 'parcelas', 4, 'juros_mensal', 0, 'sistema', 'sac', 'primeira_parcela_em', current_date - 3)::jsonb));
 -- Parcelas: vencida há 3 dias, vence hoje, vence em 3 dias, vence em 10 dias.
-select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), json_build_array(
-  json_build_object('numero', 0, 'vencimento', current_date - 10, 'valor_centavos', 10000, 'amortizacao_centavos', 10000, 'juros_centavos', 0),
-  json_build_object('numero', 1, 'vencimento', current_date - 3, 'valor_centavos', 22500, 'amortizacao_centavos', 22500, 'juros_centavos', 0),
-  json_build_object('numero', 2, 'vencimento', current_date, 'valor_centavos', 22500, 'amortizacao_centavos', 22500, 'juros_centavos', 0),
-  json_build_object('numero', 3, 'vencimento', current_date + 3, 'valor_centavos', 22500, 'amortizacao_centavos', 22500, 'juros_centavos', 0),
-  json_build_object('numero', 4, 'vencimento', current_date + 10, 'valor_centavos', 22500, 'amortizacao_centavos', 22500, 'juros_centavos', 0))::jsonb));
+select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), testes.plano_da_venda(testes.id('venda'))));
 select public.registrar_recebimento((select id from public.parcelas where contrato_id = testes.id('contrato') and numero = 0), current_date - 10, 10000);
 reset role;
+-- Vencimentos em dias específicos (como numa carteira importada): ajuste direto como dono do banco.
+select set_config('app.carteira', 'on', true);
+update public.parcelas p set vencimento = current_date + d.dias
+  from (values (1, -3), (2, 0), (3, 3), (4, 10)) d(numero, dias)
+ where p.contrato_id = testes.id('contrato') and p.numero = d.numero;
+select set_config('app.carteira', '', true);
 
 select is(public.enviar_lembretes_vencimento(), 0, 'lembretes desligados por padrão: nada é enviado');
 

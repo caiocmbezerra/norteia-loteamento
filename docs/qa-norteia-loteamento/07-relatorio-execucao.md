@@ -38,7 +38,7 @@
 - **MÉDIA:** A-03, A-04, A-05, A-07 e A-10.
 - **BAIXA:** B-01 a B-04.
 
-### A-01 (ALTA) — `criar_contrato` não confere o plano com a venda
+### A-01 (ALTA) — `criar_contrato` não confere o plano com a venda — **CORRIGIDO** (migration `20261115120000`, D-121)
 
 - **Evidência:** `047` (CON-BANCO-101, 102), FALHOU como esperado. Uma venda Price a 1% a.m. em 2× recebeu um contrato com parcelas **sem juros** e outro com **vencimentos em 2099**, e ambos foram gravados.
 - **Reprodução:** com `venda.registrar`, chamar `rpc/criar_contrato` direto pelo PostgREST com parcelas cuja soma das amortizações é igual ao preço.
@@ -46,23 +46,23 @@
 - **Impacto:** a regra RN-K01 ("plano gerado pelo motor") vale só no app. Extrato, DIMOB, informe de IR e distrato herdam o plano gravado.
 - **Recomendação:** recalcular o plano no banco (Price/SAC em `numeric`, espelhando o motor e testado contra `oraculo.test.ts`) ou conferir cada parcela com uma tolerância de 0 centavo.
 
-### A-02 (ALTA) — multa e juros de mora informados livremente no recebimento
+### A-02 (ALTA) — multa e juros de mora informados livremente no recebimento — **CONFIGURÁVEL POR LOTEADORA** (migration `20261115130000`, D-122)
 
 - **Evidência:** `047` (REC-BANCO-107, 108). Uma multa de R$ 5.000,00 sobre R$ 1.000,00 pagos **no dia do vencimento** foi gravada. Também foi aceita uma multa acima do percentual do contrato (1,5%).
 - **Impacto:** encargos fora da RN-K04 e da D-045 entram na DIMOB (que soma encargos por padrão), no informe de IR e no distrato (dedução de encargos).
 - **Recomendação:** calcular multa e juros no banco a partir de `contratos.multa_atraso`/`juros_mora_mensal` e dos dias de atraso. Uma dispensa, quando houver, entra como desconto com motivo.
 
-### A-03 (MÉDIA) — recebimento datado antes da venda é aceito
+### A-03 (MÉDIA) — recebimento datado antes da venda é aceito — **CONFIGURÁVEL POR LOTEADORA** (`carteira.pagamento_antes_venda_dias`, migration `20261115130000`, D-122)
 
 - **Evidência:** `047` (REC-BANCO-109): pagamento em 01/01/2020 numa venda de 01/02/2026.
 - **Recomendação:** recusar `data_pagamento < vendas.data_venda`.
 
-### A-04 (MÉDIA, regra a confirmar) — desconto no recebimento sem limite nem alçada
+### A-04 (MÉDIA, regra a confirmar) — desconto no recebimento sem limite nem alçada — **CONFIGURÁVEL POR LOTEADORA** (migration `20261115130000`, D-122)
 
 - **Evidência:** `047` (REC-BANCO-110): desconto de R$ 999,99 sobre R$ 1.000,00, sem aprovação.
 - **Pendência:** a regra não está documentada. O DP precisa definir o limite ou a alçada (análogo ao `comercial.desconto_maximo_sem_aprovacao`).
 
-### A-05 (MÉDIA, regra a confirmar) — condições de venda sem plausibilidade
+### A-05 (MÉDIA, regra a confirmar) — condições de venda sem plausibilidade — **CONFIGURÁVEL POR LOTEADORA** (migration `20261115130000`, D-122)
 
 - **Evidência:** `047` (VEN-BANCO-101…103). O banco aceitou:
   - juros de **50% a.m.** em 480×;
@@ -103,7 +103,7 @@
 - **Impacto:** o rateio de resultado (RN-S01) e o portal do sócio ficam errados.
 - **Recomendação:** `perform pg_advisory_xact_lock(hashtextextended('participacao:' || p_spe, 0))` ou `select … for update` na SPE antes de conferir, como já é feito em `verificar_limite_lotes`.
 
-### A-10 (MÉDIA) — nova baixa com a referência de um recebimento estornado some em silêncio
+### A-10 (MÉDIA) — nova baixa com a referência de um recebimento estornado some em silêncio — **CORRIGIDO** (migration `20261115120000`, D-121)
 
 - **Evidência:** `047` (REC-BANCO-111). Depois do estorno, `registrar_recebimento(…, p_referencia => 'aviso-77')` devolve o id do recebimento **estornado**, sem erro, e a parcela continua em aberto.
 - **Impacto:** quem chamou acredita que baixou. No Asaas, um pagamento estornado e refeito com o mesmo id seria ignorado.

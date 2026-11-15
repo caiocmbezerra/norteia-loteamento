@@ -28,10 +28,7 @@ update public.empreendimentos set situacao = 'em_vendas', data_registro = '2026-
 select testes.guardar('venda', public.vender_lote((select id from public.lotes where empreendimento_id = testes.id('emp')),
   json_build_object('comprador_id', testes.id('comprador'), 'data_venda', current_date, 'preco_centavos', 100000,
     'entrada_centavos', 10000, 'parcelas', 2, 'juros_mensal', 0, 'sistema', 'sac', 'primeira_parcela_em', current_date + 30)::jsonb));
-select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), json_build_array(
-  json_build_object('numero', 0, 'vencimento', current_date, 'valor_centavos', 10000, 'amortizacao_centavos', 10000, 'juros_centavos', 0),
-  json_build_object('numero', 1, 'vencimento', current_date + 30, 'valor_centavos', 45000, 'amortizacao_centavos', 45000, 'juros_centavos', 0),
-  json_build_object('numero', 2, 'vencimento', current_date + 60, 'valor_centavos', 45000, 'amortizacao_centavos', 45000, 'juros_centavos', 0))::jsonb));
+select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), testes.plano_da_venda(testes.id('venda'))));
 select public.registrar_recebimento((select id from public.parcelas where contrato_id = testes.id('contrato') and numero = 0), current_date, 10000);
 insert into public.permutantes (tenant_id, nome) values (testes.id('tenant'), 'Pedro Dono do Terreno');
 select testes.guardar('perm', (select id from public.permutantes where tenant_id = testes.id('tenant')));

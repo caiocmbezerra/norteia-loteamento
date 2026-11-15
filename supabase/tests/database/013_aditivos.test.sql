@@ -17,12 +17,8 @@ update public.empreendimentos set situacao = 'em_vendas', data_registro = '2026-
 select testes.guardar('venda', public.vender_lote((select id from public.lotes where empreendimento_id = testes.id('emp')),
   json_build_object('comprador_id', (select id from public.compradores where tenant_id = testes.id('tenant')),
     'data_venda', current_date - 70, 'preco_centavos', 100000, 'entrada_centavos', 10000, 'parcelas', 3,
-    'juros_mensal', 0.01, 'sistema', 'sac', 'primeira_parcela_em', current_date - 40)::jsonb));
-select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), json_build_array(
-  json_build_object('numero', 0, 'vencimento', current_date - 70, 'valor_centavos', 10000, 'amortizacao_centavos', 10000, 'juros_centavos', 0),
-  json_build_object('numero', 1, 'vencimento', current_date - 40, 'valor_centavos', 30000, 'amortizacao_centavos', 30000, 'juros_centavos', 0),
-  json_build_object('numero', 2, 'vencimento', current_date - 10, 'valor_centavos', 30000, 'amortizacao_centavos', 30000, 'juros_centavos', 0),
-  json_build_object('numero', 3, 'vencimento', current_date + 20, 'valor_centavos', 30000, 'amortizacao_centavos', 30000, 'juros_centavos', 0))::jsonb));
+    'juros_mensal', 0, 'sistema', 'sac', 'primeira_parcela_em', current_date - 40)::jsonb));
+select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), testes.plano_da_venda(testes.id('venda'))));
 select public.registrar_recebimento((select id from public.parcelas where contrato_id = testes.id('contrato') and numero = 0), current_date - 70, 10000);
 select testes.guardar('r1', public.registrar_recebimento((select id from public.parcelas where contrato_id = testes.id('contrato') and numero = 1), current_date - 30, 5000));
 
