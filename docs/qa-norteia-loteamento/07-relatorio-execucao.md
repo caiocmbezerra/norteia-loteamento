@@ -109,7 +109,7 @@
 - **Impacto:** quem chamou acredita que baixou. No Asaas, um pagamento estornado e refeito com o mesmo id seria ignorado.
 - **Recomendação:** quando o recebimento da referência estiver estornado, recusar com mensagem clara ou registrar um novo com sufixo.
 
-### A-11 (ALTA, desempenho) — consulta de recebimentos com RLS aninhada
+### A-11 (ALTA, desempenho) — consulta de recebimentos com RLS aninhada — **CORRIGIDO** (migration `20261115110000`, D-120)
 
 - **Evidência:** CAR-006 com p50 de **14,25 s**. A consulta da tela da carteira (`packages/aplicacao/src/carteira.ts:490`, recebimentos do mês por empreendimento) foi **cancelada pelo tempo limite de 8 s** do papel `authenticated`. O volume era de 3.000 contratos, 201.000 parcelas e 56.750 recebimentos.
 - **Plano de execução:** a política de `recebimentos` faz `EXISTS (parcelas ⨝ contratos … privado.pode())`. A RLS de `parcelas` é aplicada outra vez dentro do EXISTS, o que dá 201.000 avaliações de `privado.pode`; não há índice por `data_pagamento`.
@@ -118,13 +118,13 @@
   - índice `(tenant_id, data_pagamento)`;
   - medir de novo com `carga.sh`.
 
-### A-12 (ALTA, desempenho) — `inadimplencia_historico` não escala
+### A-12 (ALTA, desempenho) — `inadimplencia_historico` não escala — **CORRIGIDO** (migration `20261115110000`, D-120)
 
 - **Evidência:** CAR-009 com **mais de 180 s**, mesmo com uma única data (cancelado). Afeta os alertas de inadimplência (D-093) e o gráfico da carteira.
 - **Plano:** `Seq Scan on recebimentos` para cada parcela (subconsulta lateral por `parcela_id`). Os índices existentes começam por `tenant_id`, `(tenant_id, parcela_id)`, e não servem para um filtro só por `parcela_id`.
 - **Recomendação:** índice `recebimentos (parcela_id) where estornado_em is null` ou incluir `r.tenant_id = p.tenant_id` na subconsulta; agregar os recebimentos uma vez por data.
 
-### A-13 (ALTA, desempenho) — `dados_dimob` com 3.000 contratos
+### A-13 (ALTA, desempenho) — `dados_dimob` com 3.000 contratos — **CORRIGIDO** (migration `20261115110000`, D-120)
 
 - **Evidência:** CAR-011 com **28,7 s**, acima do limite de 8 s.
 - **Impacto:** a geração da DIMOB anual falharia num cliente desse porte.
@@ -177,6 +177,8 @@ Volume: 5.000 lotes, 3.000 contratos, 201.000 parcelas, 56.750 recebimentos e ce
 | CAR-012 | `registrar_recebimento` (50 baixas)                      | 0,6 ms                      | 1,5 ms        | OK                |
 | CAR-013 | Invariantes no banco inteiro                             | ~1 s                        | —             | OK                |
 | CAR-014 | Consulta da tela da carteira (recebimentos do mês, join) | **14,7 s, cancelada a 8 s** | —             | **FALHOU (A-11)** |
+
+**Depois da correção (D-120, mesma massa):** CAR-006 2,1 s; CAR-009 (1 data) 0,6 s, 12 meses ≈ 4,4 s; CAR-011 0,58 s; CAR-014 0,98 s; CAR-012 sem alteração (0,6 ms). Todas abaixo do limite de 8 s.
 
 **Metas sugeridas** (recomendação; o produto não tem requisito formal): leituras de tela com p95 < 1 s e relatórios anuais < 8 s (o tempo limite atual) no volume acima.
 
