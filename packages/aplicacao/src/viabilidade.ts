@@ -242,13 +242,32 @@ export async function criarDemonstracao(
     .eq('codigo', 'C')
     .single()
   if (e3) throw traduzirErroBanco(e3)
-  const permuta = Array.from({ length: 18 }, (_, i) => String(23 + i))
-  const { error: e4 } = await db
+  // O status "permuta" só nasce do contrato de permuta física (D-065, achado A-06 da auditoria).
+  const numerosPermuta = Array.from({ length: 18 }, (_, i) => String(23 + i))
+  const { data: lotesPermuta, error: e4 } = await db
     .from('lotes')
-    .update({ status: 'permuta' })
+    .select('id')
     .eq('quadra_id', quadraC.id)
-    .in('numero', permuta)
+    .in('numero', numerosPermuta)
   if (e4) throw traduzirErroBanco(e4)
+  const { data: permutante, error: e5 } = await db
+    .from('permutantes')
+    .insert({ tenant_id: tenantId, nome: 'Dono da terra (demonstração)' })
+    .select('id')
+    .single()
+  if (e5) throw traduzirErroBanco(e5)
+  const { error: e6 } = await db.rpc('criar_permuta', {
+    p_empreendimento: empreendimentoId,
+    p_permutante: permutante.id,
+    p_dados: {
+      tipo: 'fisica',
+      inicio: '2026-01-01',
+      valor_economico_centavos: lotesPermuta.length * CASO_REFERENCIA.precoLoteCentavos,
+      observacao: 'Demonstração: 18 lotes da quadra C entregues ao dono da terra.',
+    },
+    p_lotes: lotesPermuta.map((l) => l.id),
+  })
+  if (e6) throw traduzirErroBanco(e6)
 
   const id = await criarViabilidade(
     db,

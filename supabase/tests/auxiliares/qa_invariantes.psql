@@ -96,9 +96,9 @@ inv024 as ( -- devoluções do distrato somam o valor a devolver
 inv025 as ( -- cobrança pendente só para parcela em aberto
   select co.id from public.cobrancas co join public.parcelas p on p.id = co.parcela_id
    where co.situacao = 'pendente' and p.situacao <> 'aberta'),
-inv026 as ( -- lote em permuta física ⇔ vínculo com permuta física ativa
+inv026 as ( -- lote de permuta física vigente está com status permuta (fora do estoque, RN-T01)
   select l.id from public.lotes l
-   where (l.status = 'permuta') <> exists (select 1 from public.permuta_lotes pl join public.permutas pm on pm.id = pl.permuta_id
+   where l.status <> 'permuta' and exists (select 1 from public.permuta_lotes pl join public.permutas pm on pm.id = pl.permuta_id
                                             where pl.lote_id = l.id and pm.tipo = 'fisica' and pm.situacao = 'vigente'))
 select invariante, descricao, violacoes, exemplos from (
   select 'INV-001' invariante, 'entrada + amortizações = preço da venda' descricao, (select count(*) from inv001) violacoes, (select array_agg(id) from (select id from inv001 limit 5) x) exemplos
@@ -122,6 +122,6 @@ select invariante, descricao, violacoes, exemplos from (
   union all select 'INV-023', 'distrato completo (venda, contrato, parcelas)', (select count(*) from inv023), (select array_agg(id) from (select id from inv023 limit 5) x)
   union all select 'INV-024', 'devoluções = valor do distrato', (select count(*) from inv024), (select array_agg(id) from (select id from inv024 limit 5) x)
   union all select 'INV-025', 'cobrança pendente só em parcela aberta', (select count(*) from inv025), (select array_agg(id) from (select id from inv025 limit 5) x)
-  union all select 'INV-026', 'lote em permuta ⇔ permuta física ativa', (select count(*) from inv026), (select array_agg(id) from (select id from inv026 limit 5) x)
+  union all select 'INV-026', 'lote de permuta física vigente fora do estoque', (select count(*) from inv026), (select array_agg(id) from (select id from inv026 limit 5) x)
 ) r order by invariante
 $invariantes$;
