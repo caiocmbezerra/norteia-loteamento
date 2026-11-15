@@ -6,7 +6,7 @@
 begin;
 \ir ../auxiliares/testes.psql
 \ir ../auxiliares/qa_cenario.psql
-select plan(24);
+select plan(27);
 
 select testes.guardar('dona_a', testes.criar_usuario('dona.a@exemplo.test', 'Dona A'));
 select testes.entrar(testes.id('dona_a'));
@@ -82,28 +82,38 @@ select throws_ok($$ select public.vender_lote(testes.id('a_l10'), jsonb_build_ob
   'data_venda', current_date + 400, 'preco_centavos', 12000000, 'entrada_centavos', 12000000, 'parcelas', 0,
   'juros_mensal', 0, 'sistema', 'sac')) $$, '23514', null, 'VEN-BANCO-103: venda não é datada mais de um ano no futuro');
 
--- ── A-06 (ALTA): status "permuta" do lote muda por edição direta (RN-T01, RN-C04) ──
--- validar_status_lote protege só reservado/vendido. Quem tem empreendimento.editar devolve ao
--- estoque um lote de permuta física vigente — e ele pode ser vendido — ou marca "permuta" sem contrato.
+-- ── A-06 (ALTA, CORRIGIDO em 20261115100000): status "permuta" do lote só pelo contrato ──
+-- Antes, quem tinha empreendimento.editar devolvia ao estoque um lote de permuta física vigente
+-- (e ele podia ser vendido) ou marcava "permuta" sem contrato.
 select testes.guardar('fisica', public.criar_permuta(testes.id('a_emp'), testes.id('a_perm'),
   '{"tipo":"fisica","valor_economico_centavos":100}', array[testes.id('a_l11')]));
-select todo('A-06: status permuta do lote não é protegido', 2);
 select throws_ok($$ update public.lotes set status = 'disponivel' where id = testes.id('a_l11') $$,
   '23514', null, 'LOT-BANCO-101: lote de permuta física vigente não volta ao estoque por edição direta');
 select throws_ok($$ update public.lotes set status = 'permuta' where id = testes.id('a_l12') $$,
   '23514', null, 'LOT-BANCO-102: status permuta só nasce de um contrato de permuta física');
-select lives_ok($$ select public.vender_lote(testes.id('a_l11'), jsonb_build_object('comprador_id', testes.id('a_comprador'),
+select throws_ok($$ select public.vender_lote(testes.id('a_l11'), jsonb_build_object('comprador_id', testes.id('a_comprador'),
   'data_venda', current_date, 'preco_centavos', 12000000, 'entrada_centavos', 12000000, 'parcelas', 0, 'juros_mensal', 0, 'sistema', 'sac')) $$,
-  'A-06 confirmado: o lote do permutante foi vendido com a permuta física ainda vigente');
+  '23514', null, 'LOT-BANCO-103: o lote do permutante continua fora do estoque e não é vendido');
 
--- ── A-08 (ALTA): dono troca o próprio plano direto pela API (RN-G07, INV-019) ──
--- A política de UPDATE de tenants (tenant.administrar) não restringe colunas e authenticated tem
--- UPDATE em plano_id: o limite de lotes do plano é contornado sem contratação.
-select todo('A-08: plano_id do tenant é editável pelo próprio cliente', 1);
+-- Lote marcado "permuta" sem contrato (cadastros antigos, como a demonstração anterior) pode ser liberado.
+reset role;
+select set_config('app.transicao_lote', 'on', true);
+update public.lotes set status = 'permuta' where id = testes.id('a_l12');
+select set_config('app.transicao_lote', '', true);
+select testes.entrar(testes.id('dona_a'));
+select lives_ok($$ update public.lotes set status = 'disponivel' where id = testes.id('a_l12') $$,
+  'LOT-BANCO-104: lote em permuta sem contrato pode voltar ao estoque');
+select throws_ok($$ insert into public.lotes (tenant_id, empreendimento_id, quadra_id, numero, area_m2, status)
+  select tenant_id, empreendimento_id, quadra_id, '99', 300, 'permuta' from public.lotes where id = testes.id('a_l1') $$,
+  '23514', null, 'LOT-BANCO-105: lote não é cadastrado já como permuta');
+
+-- ── A-08 (ALTA, CORRIGIDO em 20261115100000): o cliente não troca o próprio plano (RN-G07) ──
 select throws_ok($$ update public.tenants set plano_id = 'empresarial' where id = testes.id('a_tenant') $$,
-  null, null, 'TEN-SEG-101: o cliente não troca o próprio plano (só a plataforma)');
-select is((select plano_id from public.tenants where id = testes.id('a_tenant')), 'empresarial',
-  'A-08 confirmado: o plano mudou para Empresarial (sem limite de lotes)');
+  '42501', null, 'TEN-SEG-101: o cliente não troca o próprio plano (só a plataforma)');
+select is((select plano_id from public.tenants where id = testes.id('a_tenant')), 'essencial',
+  'TEN-SEG-102: o plano continua Essencial (200 lotes)');
+select lives_ok($$ update public.tenants set nome = 'Loteadora QA a (renomeada)' where id = testes.id('a_tenant') $$,
+  'TEN-SEG-103: o dono continua alterando o nome da loteadora');
 
 -- ── A-10 (MÉDIA): nova baixa com a referência de um recebimento estornado some em silêncio ──
 -- A idempotência (RN-K05) devolve o id do recebimento ESTORNADO: sem erro, sem baixa.
