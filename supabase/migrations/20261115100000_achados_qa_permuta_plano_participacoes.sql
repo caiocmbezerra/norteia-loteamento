@@ -1,15 +1,14 @@
 -- Correções de achados da auditoria de QA (docs/qa-norteia-loteamento/07-relatorio-execucao.md),
 -- autorizadas pelo dono do produto em 15/11/2026.
---   A-06: status "permuta" do lote só nasce de um contrato de permuta física (RN-T01, RN-C04).
+--   A-06: lote de permuta física vigente não volta ao estoque pelo cadastro (RN-T01, RN-C04).
 --   A-08: o plano contratado (tenants.plano_id) não é alterado pelo próprio cliente (RN-G07).
 --   A-09: participações de sócios conferidas sob trava por SPE (sem 120% em corrida, D-067).
 
 -- ── A-06 ────────────────────────────────────────────────────────────────────
--- Antes, pelo cadastro, um lote podia virar ou deixar de ser "permuta" livremente; com isso um
--- lote entregue ao dono da terra voltava ao estoque e podia ser vendido. Agora:
---   • entrar em "permuta" só por criar_permuta (que liga app.transicao_lote);
---   • sair de "permuta" é recusado enquanto o lote estiver numa permuta física vigente;
---   • lote marcado "permuta" sem contrato (cadastros antigos) pode ser liberado pelo cadastro.
+-- Antes, pelo cadastro, um lote entregue ao dono da terra numa permuta física vigente voltava ao
+-- estoque e podia ser vendido. Agora sair de "permuta" é recusado enquanto o lote estiver numa
+-- permuta física vigente. Continua valendo o cadastro simples: o pequeno loteador marca ou
+-- desmarca "permuta" num lote sem contrato de permuta (cadastro inicial).
 create or replace function privado.validar_status_lote()
 returns trigger
 language plpgsql
@@ -19,8 +18,8 @@ begin
   if current_setting('app.transicao_lote', true) = 'on' then
     return new;
   end if;
-  if tg_op = 'INSERT' and new.status in ('reservado', 'vendido', 'permuta') then
-    raise exception 'Lote não pode ser cadastrado como %; use o fluxo comercial ou a permuta.', new.status
+  if tg_op = 'INSERT' and new.status in ('reservado', 'vendido') then
+    raise exception 'Lote não pode ser cadastrado como %; use o fluxo comercial.', new.status
       using errcode = 'check_violation';
   end if;
   if tg_op = 'UPDATE' and new.status is distinct from old.status then
@@ -28,10 +27,6 @@ begin
       raise exception 'Transição de % para % só pelo fluxo comercial ou distrato (RN-C04).',
         old.status, new.status
         using errcode = 'check_violation';
-    end if;
-    if new.status = 'permuta' then
-      raise exception 'Lote só passa a permuta por um contrato de permuta física (RN-T01).'
-        using errcode = 'check_violation', hint = 'permuta';
     end if;
     if old.status = 'permuta' and exists (
       select 1 from public.permuta_lotes pl join public.permutas p on p.id = pl.permuta_id

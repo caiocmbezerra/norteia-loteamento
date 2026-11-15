@@ -6,7 +6,7 @@
 begin;
 \ir ../auxiliares/testes.psql
 \ir ../auxiliares/qa_cenario.psql
-select plan(27);
+select plan(26);
 
 select testes.guardar('dona_a', testes.criar_usuario('dona.a@exemplo.test', 'Dona A'));
 select testes.entrar(testes.id('dona_a'));
@@ -82,30 +82,21 @@ select throws_ok($$ select public.vender_lote(testes.id('a_l10'), jsonb_build_ob
   'data_venda', current_date + 400, 'preco_centavos', 12000000, 'entrada_centavos', 12000000, 'parcelas', 0,
   'juros_mensal', 0, 'sistema', 'sac')) $$, '23514', null, 'VEN-BANCO-103: venda não é datada mais de um ano no futuro');
 
--- ── A-06 (ALTA, CORRIGIDO em 20261115100000): status "permuta" do lote só pelo contrato ──
--- Antes, quem tinha empreendimento.editar devolvia ao estoque um lote de permuta física vigente
--- (e ele podia ser vendido) ou marcava "permuta" sem contrato.
+-- ── A-06 (ALTA, CORRIGIDO em 20261115100000): lote de permuta física vigente não volta ao estoque ──
+-- Antes, quem tinha empreendimento.editar devolvia ao estoque um lote de permuta física vigente,
+-- e ele podia ser vendido. A marcação simples de "permuta" no cadastro (sem contrato) continua.
 select testes.guardar('fisica', public.criar_permuta(testes.id('a_emp'), testes.id('a_perm'),
   '{"tipo":"fisica","valor_economico_centavos":100}', array[testes.id('a_l11')]));
 select throws_ok($$ update public.lotes set status = 'disponivel' where id = testes.id('a_l11') $$,
   '23514', null, 'LOT-BANCO-101: lote de permuta física vigente não volta ao estoque por edição direta');
-select throws_ok($$ update public.lotes set status = 'permuta' where id = testes.id('a_l12') $$,
-  '23514', null, 'LOT-BANCO-102: status permuta só nasce de um contrato de permuta física');
+select lives_ok($$ update public.lotes set status = 'permuta' where id = testes.id('a_l12') $$,
+  'LOT-BANCO-102: pelo cadastro, o lote ainda pode ser marcado como permuta sem contrato (cadastro inicial)');
 select throws_ok($$ select public.vender_lote(testes.id('a_l11'), jsonb_build_object('comprador_id', testes.id('a_comprador'),
   'data_venda', current_date, 'preco_centavos', 12000000, 'entrada_centavos', 12000000, 'parcelas', 0, 'juros_mensal', 0, 'sistema', 'sac')) $$,
   '23514', null, 'LOT-BANCO-103: o lote do permutante continua fora do estoque e não é vendido');
 
--- Lote marcado "permuta" sem contrato (cadastros antigos, como a demonstração anterior) pode ser liberado.
-reset role;
-select set_config('app.transicao_lote', 'on', true);
-update public.lotes set status = 'permuta' where id = testes.id('a_l12');
-select set_config('app.transicao_lote', '', true);
-select testes.entrar(testes.id('dona_a'));
 select lives_ok($$ update public.lotes set status = 'disponivel' where id = testes.id('a_l12') $$,
-  'LOT-BANCO-104: lote em permuta sem contrato pode voltar ao estoque');
-select throws_ok($$ insert into public.lotes (tenant_id, empreendimento_id, quadra_id, numero, area_m2, status)
-  select tenant_id, empreendimento_id, quadra_id, '99', 300, 'permuta' from public.lotes where id = testes.id('a_l1') $$,
-  '23514', null, 'LOT-BANCO-105: lote não é cadastrado já como permuta');
+  'LOT-BANCO-104: lote marcado permuta sem contrato pode voltar ao estoque');
 
 -- ── A-08 (ALTA, CORRIGIDO em 20261115100000): o cliente não troca o próprio plano (RN-G07) ──
 select throws_ok($$ update public.tenants set plano_id = 'empresarial' where id = testes.id('a_tenant') $$,

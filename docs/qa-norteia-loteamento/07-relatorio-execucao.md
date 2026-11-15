@@ -72,6 +72,8 @@
 
 ### A-06 (ALTA) — status "permuta" do lote editável direto — **CORRIGIDO** (migration `20261115100000`, D-119)
 
+> **Correção aplicada:** sair de `permuta` passou a ser recusado enquanto o lote estiver numa permuta física vigente. A marcação manual de "permuta" no cadastro, sem contrato, foi **mantida**: é uma funcionalidade do cadastro inicial e tem e2e próprio (`cadastro-inicial.spec.ts`). A demonstração passou a criar a permuta física de verdade.
+
 - **Evidência:** `047` (LOT-BANCO-101, 102). O lote de uma **permuta física vigente** voltou a `disponivel` por `update` e foi **vendido**. Um lote também foi marcado `permuta` sem contrato de permuta.
 - **Confirmação nos dados:** a invariante INV-026 acusa 36 lotes no banco local e **18 em produção**: os lotes da demonstração, que a carga do caso de referência grava com `update … status = 'permuta'` (`packages/aplicacao/src/viabilidade.ts:248`).
 - **Causa:** `privado.validar_status_lote` protege só `reservado`/`vendido`.
