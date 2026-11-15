@@ -18,10 +18,7 @@ insert into public.compradores (tenant_id, nome, cpf) values (testes.id('tenant'
 select testes.guardar('venda', public.vender_lote((select id from public.lotes where empreendimento_id = testes.id('emp')),
   json_build_object('comprador_id', (select id from public.compradores where tenant_id = testes.id('tenant')), 'data_venda', current_date - 10,
     'preco_centavos', 100000, 'entrada_centavos', 10000, 'parcelas', 2, 'juros_mensal', 0, 'sistema', 'sac', 'primeira_parcela_em', current_date + 20)::jsonb));
-select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), json_build_array(
-  json_build_object('numero', 0, 'vencimento', current_date - 10, 'valor_centavos', 10000, 'amortizacao_centavos', 10000, 'juros_centavos', 0),
-  json_build_object('numero', 1, 'vencimento', current_date + 20, 'valor_centavos', 45000, 'amortizacao_centavos', 45000, 'juros_centavos', 0),
-  json_build_object('numero', 2, 'vencimento', current_date + 50, 'valor_centavos', 45000, 'amortizacao_centavos', 45000, 'juros_centavos', 0))::jsonb));
+select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), testes.plano_da_venda(testes.id('venda'))));
 select testes.guardar('p1', (select id from public.parcelas where contrato_id = testes.id('contrato') and numero = 1));
 select set_config('teste.convite', public.criar_convite_portal(testes.id('tenant'), 'comprador', (select id from public.compradores where tenant_id = testes.id('tenant')), 'joana@credito.com.br'), true);
 select set_config('teste.cc', public.criar_convite(testes.id('tenant'), 'ciro@credito.com.br', 'contador'), true);

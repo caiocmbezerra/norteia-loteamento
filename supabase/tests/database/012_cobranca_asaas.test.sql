@@ -35,10 +35,7 @@ select testes.guardar('venda', public.vender_lote((select id from public.lotes w
   json_build_object('comprador_id', testes.id('comprador'), 'data_venda', current_date, 'preco_centavos', 100000,
     'entrada_centavos', 10000, 'parcelas', 2, 'juros_mensal', 0, 'sistema', 'sac',
     'primeira_parcela_em', current_date + 30)::jsonb));
-select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), json_build_array(
-  json_build_object('numero', 0, 'vencimento', current_date, 'valor_centavos', 10000, 'amortizacao_centavos', 10000, 'juros_centavos', 0),
-  json_build_object('numero', 1, 'vencimento', current_date + 30, 'valor_centavos', 45000, 'amortizacao_centavos', 45000, 'juros_centavos', 0),
-  json_build_object('numero', 2, 'vencimento', current_date + 60, 'valor_centavos', 45000, 'amortizacao_centavos', 45000, 'juros_centavos', 0))::jsonb));
+select testes.guardar('contrato', public.criar_contrato(testes.id('venda'), testes.plano_da_venda(testes.id('venda'))));
 select testes.guardar('p0', (select id from public.parcelas where contrato_id = testes.id('contrato') and numero = 0));
 select testes.guardar('p1', (select id from public.parcelas where contrato_id = testes.id('contrato') and numero = 1));
 select testes.guardar('p2', (select id from public.parcelas where contrato_id = testes.id('contrato') and numero = 2));
@@ -106,7 +103,7 @@ select testes.guardar('c2', public.gerar_cobranca(testes.id('p2')));
 reset role;
 -- Formato conferido no sandbox (12/11/2026): pago em atraso, "value" é o total e "interestValue" soma multa e juros.
 select pg_temp.responder('GET', '/payments/pay_2', format('{"status":200,"corpo":{"id":"pay_2","status":"RECEIVED","value":460.50,"originalValue":450.00,"interestValue":10.50,"paymentDate":"%s"}}',
-  current_date + 61)::jsonb);
+  (select vencimento + 1 from public.parcelas where id = testes.id('p2')))::jsonb);
 select is(public.conciliar_cobrancas(), 1, 'a varredura baixa o pagamento sem webhook');
 select is((select multa_centavos || '/' || juros_mora_centavos from public.recebimentos where referencia_externa = 'pay_2'),
   round(45000 * (select multa_atraso from public.contratos where id = testes.id('contrato')))::bigint || '/' ||

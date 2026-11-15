@@ -98,4 +98,16 @@ begin
 end;
 $$;
 
+-- Plano oficial da venda (o mesmo do motor, privado.plano_da_venda) no formato de criar_contrato.
+create or replace function testes.plano_da_venda(p_venda uuid)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+  select jsonb_agg(jsonb_build_object('numero', numero, 'vencimento', vencimento, 'valor_centavos', valor,
+                                      'amortizacao_centavos', amortizacao, 'juros_centavos', juros) order by numero)
+    from privado.plano_da_venda(p_venda)
+$$;
+
 grant execute on all functions in schema testes to authenticated, anon;
