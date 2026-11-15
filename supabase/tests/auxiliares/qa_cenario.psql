@@ -1,0 +1,214 @@
+-- Auditoria de QA (docs/qa-norteia-loteamento): cenário sintético completo de uma loteadora e
+-- ferramentas de varredura entre tenants. Só dados fictícios (e-mails @exemplo.test).
+-- Carregar depois de testes.psql, dentro da transação do teste.
+
+-- Monta, com o usuário atual (que vira dono), uma loteadora com carteira, comercial, sócios,
+-- permuta e custos. Guarda os ids como teste.<rotulo>_<nome>.
+create or replace function testes.qa_cenario(r text)
+returns void
+language plpgsql
+as $$
+declare
+  t uuid; spe uuid; emp uuid; comp uuid; v uuid; c uuid; socio uuid; perm uuid; forn uuid; cf uuid; conta uuid;
+  l uuid[];
+begin
+  t := public.criar_tenant('Loteadora QA ' || r);
+  perform testes.guardar(r || '_tenant', t);
+  select id into spe from public.spes where tenant_id = t;
+  perform testes.guardar(r || '_spe', spe);
+  emp := public.criar_empreendimento_com_lotes(t, spe, 'Residencial QA ' || r, 'Goiânia', 'GO', '2026-01-01',
+    (select jsonb_agg(jsonb_build_object('quadra', 'A', 'numero', n::text, 'area_m2', '300', 'preco_base_centavos', 12000000))
+       from generate_series(1, 12) n));
+  perform testes.guardar(r || '_emp', emp);
+  update public.empreendimentos set situacao = 'em_vendas', data_registro = '2026-01-15' where id = emp;
+  select array_agg(id order by numero::int) into l from public.lotes where empreendimento_id = emp;
+  for i in 1..12 loop perform testes.guardar(r || '_l' || i, l[i]); end loop;
+
+  insert into public.compradores (tenant_id, nome, cpf, email)
+    values (t, 'Comprador QA ' || r, '52998224725', 'comprador.' || r || '@exemplo.test') returning id into comp;
+  perform testes.guardar(r || '_comprador', comp);
+  perform testes.guardar(r || '_token_lembrete', (select token_descadastro from public.compradores where id = comp));
+
+  -- Venda: R$ 120.000,00 = entrada 20.000,00 + 4 × 25.000,00 sem juros (SAC).
+  v := public.vender_lote(l[1], jsonb_build_object('comprador_id', comp, 'data_venda', '2026-02-01',
+    'preco_centavos', 12000000, 'entrada_centavos', 2000000, 'parcelas', 4, 'juros_mensal', 0,
+    'sistema', 'sac', 'primeira_parcela_em', '2026-03-01'));
+  perform testes.guardar(r || '_venda', v);
+  c := public.criar_contrato(v, '[
+    {"numero":0,"vencimento":"2026-02-01","valor_centavos":2000000,"amortizacao_centavos":2000000,"juros_centavos":0},
+    {"numero":1,"vencimento":"2026-03-01","valor_centavos":2500000,"amortizacao_centavos":2500000,"juros_centavos":0},
+    {"numero":2,"vencimento":"2026-04-01","valor_centavos":2500000,"amortizacao_centavos":2500000,"juros_centavos":0},
+    {"numero":3,"vencimento":"2026-05-01","valor_centavos":2500000,"amortizacao_centavos":2500000,"juros_centavos":0},
+    {"numero":4,"vencimento":"2026-06-01","valor_centavos":2500000,"amortizacao_centavos":2500000,"juros_centavos":0}]'::jsonb, 'IPCA');
+  perform testes.guardar(r || '_contrato', c);
+  for i in 0..4 loop
+    perform testes.guardar(r || '_p' || i, (select id from public.parcelas where contrato_id = c and numero = i));
+  end loop;
+  perform testes.guardar(r || '_rec0', public.registrar_recebimento(testes.id(r || '_p0'), '2026-02-01', 2000000,
+    p_referencia => 'qa-' || r || '-0'));
+  perform testes.guardar(r || '_rec1', public.registrar_recebimento(testes.id(r || '_p1'), '2026-03-01', 1000000));
+  perform testes.guardar(r || '_cred', public.registrar_credito(c, '2026-03-01', 5000, 'Pagamento em duplicidade (QA)'));
+
+  -- Comercial (limite de desconto de 5% para exigir aprovação)
+  perform public.definir_parametro(t, 'comercial.desconto_maximo_sem_aprovacao', '0.05', '2026-01-01', 'Política comercial (QA)');
+  perform testes.guardar(r || '_res', public.reservar_lote(l[2], 'Cliente reserva QA'));
+  perform testes.guardar(r || '_prop', public.criar_proposta(l[3], jsonb_build_object(
+    'cliente_nome', 'Cliente proposta QA', 'preco_centavos', 12000000, 'entrada_centavos', 1200000,
+    'parcelas', 12, 'juros_mensal', 0.005, 'sistema', 'price', 'primeira_parcela_em', current_date + 30)));
+  perform testes.guardar(r || '_aprov', public.solicitar_aprovacao_desconto(l[4], 9000000, current_date,
+    'Desconto de teste da auditoria QA'));
+
+  -- Sócios
+  insert into public.socios (tenant_id, nome) values (t, 'Sócio QA ' || r) returning id into socio;
+  perform testes.guardar(r || '_socio', socio);
+  perform public.definir_participacao(spe, socio, 1, '2026-01-01', 'Constituição (QA)');
+  perform testes.guardar(r || '_mov', public.registrar_movimento_socio(spe, socio, 'aporte', '2026-02-01', 100000));
+
+  -- Permuta financeira com repasse
+  insert into public.permutantes (tenant_id, nome, documento) values (t, 'Permutante QA ' || r, '11144477735') returning id into perm;
+  perform testes.guardar(r || '_perm', perm);
+  perform testes.guardar(r || '_permuta', public.criar_permuta(emp, perm,
+    '{"tipo":"financeira","inicio":"2026-01-01","percentual":0.1,"base":"recebido","abate_distrato":true}'));
+  perform testes.guardar(r || '_rep', public.registrar_repasse(testes.id(r || '_permuta'), current_date, 1000, 'Repasse QA'));
+
+  -- Custos
+  insert into public.fornecedores (tenant_id, nome) values (t, 'Fornecedor QA ' || r) returning id into forn;
+  perform testes.guardar(r || '_forn', forn);
+  insert into public.contratos_fornecedor (tenant_id, empreendimento_id, fornecedor_id, centro_codigo, descricao, valor_centavos, data_inicio, data_fim_prevista)
+    values (t, emp, forn, 'infraestrutura.terraplenagem', 'Terraplenagem QA', 1000000, '2026-03-01', '2026-08-31') returning id into cf;
+  perform testes.guardar(r || '_cf', cf);
+  insert into public.contas_pagar (tenant_id, empreendimento_id, centro_codigo, descricao, valor_centavos, vencimento)
+    values (t, emp, 'administracao', 'Conta QA', 50000, '2026-04-10') returning id into conta;
+  perform testes.guardar(r || '_conta', conta);
+  insert into public.pagamentos (tenant_id, conta_id, data_pagamento, valor_centavos) values (t, conta, '2026-04-10', 50000);
+
+  -- Portal e parâmetro próprio
+  perform set_config('teste.' || r || '_convite_portal',
+    public.criar_convite_portal(t, 'comprador', comp, 'comprador.' || r || '@exemplo.test'), true);
+  perform public.definir_parametro(t, 'carteira.multa_atraso', '0.015', '2026-01-01', 'Parâmetro próprio (QA)');
+end;
+$$;
+
+-- Impressão digital de todos os dados de um tenant (todas as tabelas de public com tenant_id).
+-- SECURITY DEFINER: lê como dono do banco, ignorando a RLS, para comparar antes × depois.
+create or replace function testes.qa_impressao(p_tenant uuid)
+returns table (tabela text, hash text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  t record;
+begin
+  for t in
+    select c.table_name from information_schema.columns c
+      join information_schema.tables tb on tb.table_schema = c.table_schema and tb.table_name = c.table_name
+     where c.table_schema = 'public' and c.column_name = 'tenant_id' and tb.table_type = 'BASE TABLE'
+     order by 1
+  loop
+    tabela := t.table_name;
+    execute format('select md5(coalesce(string_agg(x::text, ''|'' order by x::text), '''')) from public.%I x where tenant_id = $1',
+                   t.table_name) into hash using p_tenant;
+    return next;
+  end loop;
+end;
+$$;
+
+-- Valor de teste (literal SQL) para um argumento de RPC, apontando para os objetos do tenant `r`.
+create or replace function testes.qa_argumento(p_funcao text, p_nome text, p_tipo text, r text)
+returns text
+language plpgsql
+as $$
+declare
+  ids constant jsonb := jsonb_build_object(
+    'p_tenant', '_tenant', 'p_spe', '_spe', 'p_empreendimento', '_emp', 'p_lote', '_l5', 'p_lote_novo', '_l6',
+    'p_contrato', '_contrato', 'p_parcela', '_p2', 'p_venda', '_venda', 'p_recebimento', '_rec0', 'p_credito', '_cred',
+    'p_comprador', '_comprador', 'p_cessionario', '_comprador', 'p_alvo', '_comprador', 'p_proposta', '_prop',
+    'p_reserva', '_res', 'p_aprovacao', '_aprov', 'p_permuta', '_permuta', 'p_permutante', '_perm',
+    'p_socio', '_socio', 'p_movimento', '_mov', 'p_repasse', '_rep', 'p_escopo_id', '_emp', 'p_token', '_token_lembrete');
+  v_tipo text := lower(p_tipo);
+begin
+  if v_tipo = 'uuid' then
+    if ids ? p_nome then return quote_literal(testes.id(r || (ids ->> p_nome))) || '::uuid'; end if;
+    return 'gen_random_uuid()';
+  elsif v_tipo = 'uuid[]' then
+    return format('array[%L::uuid]', case when p_nome = 'p_empreendimentos' then testes.id(r || '_emp') else testes.id(r || '_l5') end);
+  elsif v_tipo = 'text' then
+    return quote_literal(case
+      when p_nome = 'p_token' then current_setting('teste.' || r || '_convite_portal')
+      when p_nome = 'p_slug' then 'residencial-qa-' || r
+      when p_nome = 'p_chave' then 'carteira.multa_atraso'
+      when p_nome = 'p_email' then 'intruso@exemplo.test'
+      when p_nome = 'p_tipo' and p_funcao = 'registrar_movimento_socio' then 'aporte'
+      when p_nome = 'p_tipo' and p_funcao = 'criar_convite_portal' then 'comprador'
+      when p_nome = 'p_tipo' then 'contrato'
+      when p_nome = 'p_situacao' then 'resolvido'
+      when p_nome = 'p_ambiente' then 'sandbox'
+      when p_nome = 'p_precos' then 'lote'
+      when p_nome = 'p_categoria' then 'outro'
+      when p_nome = 'p_origem' and p_funcao = 'registrar_recebimento' then 'manual'
+      when p_nome = 'p_indice' then 'IPCA'
+      when p_nome = 'p_uf' then 'GO'
+      when p_nome = 'p_escopo' then 'empreendimento'
+      else 'Teste de isolamento QA' end);
+  elsif v_tipo = 'date' then
+    return case when p_nome = 'p_vigente_desde' then 'current_date + 1' else 'current_date' end;
+  elsif v_tipo = 'date[]' then return 'array[current_date]';
+  elsif v_tipo in ('integer', 'bigint') then
+    return case when p_nome = 'p_ano' then '2026' when p_nome = 'p_horas' then '24' when p_nome = 'p_validade_dias' then '7' else '100' end;
+  elsif v_tipo = 'numeric' then return '0.5';
+  elsif v_tipo = 'boolean' then return 'true';
+  elsif v_tipo = 'papel' then return '''dono''::public.papel';
+  elsif v_tipo = 'escopo' then return '''tenant''::public.escopo';
+  elsif v_tipo = 'jsonb' then
+    return quote_literal(case p_nome
+      when 'p_venda' then jsonb_build_object('comprador_id', testes.id(r || '_comprador'), 'preco_centavos', 12000000,
+        'entrada_centavos', 12000000, 'parcelas', 0, 'juros_mensal', 0, 'sistema', 'sac')::text
+      when 'p_proposta' then jsonb_build_object('cliente_nome', 'Intruso', 'preco_centavos', 12000000, 'entrada_centavos', 12000000,
+        'parcelas', 0, 'juros_mensal', 0, 'sistema', 'sac')::text
+      when 'p_evento' then jsonb_build_object('id', 'evt_qa', 'event', 'PAYMENT_RECEIVED',
+        'payment', jsonb_build_object('id', 'pay_qa', 'value', 1, 'paymentDate', current_date))::text
+      when 'p_valor' then '0.05'
+      when 'p_dados' then '{"tipo":"financeira","inicio":"2026-01-01","percentual":0.1,"base":"recebido","abate_distrato":true}'
+      when 'p_parcelas' then '[]' when 'p_devolucoes' then '[]' when 'p_itens' then '[]' when 'p_contratos' then '[]'
+      when 'p_lotes' then '[]' when 'p_datas' then '[]'
+      else '{}' end) || '::jsonb';
+  end if;
+  return 'null';
+end;
+$$;
+
+-- Chama cada função de public executável pelo papel atual com os ids do tenant `r` e registra o
+-- desfecho. Toda chamada roda num bloco próprio: o que falha é desfeito; o que passa fica.
+create or replace function testes.qa_varrer_rpcs(r text, p_ignorar text[] default '{}')
+returns table (funcao text, desfecho text, estado text, retorno text)
+language plpgsql
+as $$
+declare
+  f record;
+  v_args text;
+  v_ret text;
+begin
+  for f in
+    select p.oid, p.proname, coalesce(p.proargnames, '{}') as nomes, p.proargtypes::oid[] as tipos, p.pronargs
+      from pg_proc p
+     where p.pronamespace = 'public'::regnamespace and p.prokind = 'f'
+       and has_function_privilege(current_user, p.oid, 'execute')
+       and p.proname <> all (p_ignorar)
+     order by p.proname
+  loop
+    select string_agg(testes.qa_argumento(f.proname, f.nomes[i], format_type(f.tipos[i - 1], null), r), ', ' order by i)
+      into v_args from generate_series(1, f.pronargs) i;
+    funcao := f.proname;
+    begin
+      execute format('select (public.%I(%s))::text', f.proname, coalesce(v_args, '')) into v_ret;
+      desfecho := 'executou'; estado := '00000'; retorno := left(v_ret, 2000);
+    exception when others then
+      desfecho := 'recusou'; estado := sqlstate; retorno := left(sqlerrm, 300);
+    end;
+    return next;
+  end loop;
+end;
+$$;
+
+grant execute on all functions in schema testes to authenticated, anon;

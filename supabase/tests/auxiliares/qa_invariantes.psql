@@ -1,0 +1,127 @@
+-- Auditoria de QA (docs/qa-norteia-loteamento/05-invariantes.md): invariantes do banco.
+-- Fonte única: o corpo da função é um SELECT somente leitura. Nos testes (048) a função é criada
+-- dentro da transação; em qualquer outro ambiente, inclusive produção, use
+-- `scripts/qa/invariantes.sh <url-do-banco>`, que extrai este SELECT e o roda em transação READ ONLY.
+-- Cada linha: invariante, descrição, nº de violações e até 5 ids de exemplo.
+create or replace function testes.qa_invariantes()
+returns table (invariante text, descricao text, violacoes bigint, exemplos uuid[])
+language sql
+stable
+security definer
+set search_path = ''
+as $invariantes$
+with
+inv001 as ( -- entrada + amortizações = preço (contratos sem aditivo, sem importação, não distratados)
+  select c.id from public.contratos c join public.vendas v on v.id = c.venda_id
+    left join (select contrato_id, sum(amortizacao_centavos) s from public.parcelas group by contrato_id) p on p.contrato_id = c.id
+   where v.importacao_id is null and c.situacao <> 'distratado'
+     and not exists (select 1 from public.aditivos a where a.contrato_id = c.id)
+     and coalesce(p.s, 0) <> v.preco_centavos),
+inv003 as ( -- parcela quitada antes do 1º reajuste aplicado não pode ter correção
+  select p.id from public.parcelas p
+   where p.correcao_centavos <> 0 and p.situacao = 'paga'
+     and (select max(r.data_pagamento) from public.recebimentos r where r.parcela_id = p.id and r.estornado_em is null)
+         < (select min(j.aniversario) from public.reajustes j where j.contrato_id = p.contrato_id and j.fator_aplicado <> 1)),
+inv004 as ( -- pago da parcela = soma do principal dos recebimentos não estornados
+  select p.id from public.parcelas p
+    left join (select parcela_id, sum(principal_centavos) s from public.recebimentos where estornado_em is null group by parcela_id) r
+      on r.parcela_id = p.id
+   where p.pago_centavos <> coalesce(r.s, 0)),
+inv005 as ( -- no máximo uma venda ativa por lote
+  select lote_id as id from public.vendas where situacao = 'ativa' group by lote_id having count(*) > 1),
+inv006 as ( -- no máximo uma reserva ativa por lote
+  select lote_id as id from public.reservas where situacao = 'ativa' group by lote_id having count(*) > 1),
+inv007 as ( -- cobrança paga aponta para recebimento não estornado da mesma parcela; recebimento em no máximo uma cobrança
+  select co.id from public.cobrancas co left join public.recebimentos r on r.id = co.recebimento_id
+   where co.situacao = 'paga' and (r.id is null or r.estornado_em is not null or r.parcela_id <> co.parcela_id)
+  union all
+  select recebimento_id from public.cobrancas where recebimento_id is not null group by recebimento_id having count(*) > 1),
+inv008 as ( -- mesmo aviso externo não gera dois recebimentos ativos
+  select tenant_id as id from public.recebimentos
+   where referencia_externa is not null and estornado_em is null
+   group by tenant_id, origem, referencia_externa having count(*) > 1),
+inv009 as ( -- estorno sempre com data e motivo (histórico preservado)
+  select id from public.recebimentos where (estornado_em is null) <> (motivo_estorno is null)
+  union all select id from public.pagamentos where (estornado_em is null) <> (motivo_estorno is null)),
+inv010 as ( -- participações vigentes por SPE nunca passam de 100% em nenhuma data de início
+  select distinct p.spe_id as id from public.participacoes p
+   where (select sum(q.percentual) from public.participacoes q
+           where q.spe_id = p.spe_id and q.vigencia @> lower(p.vigencia)) > 1),
+inv012 as ( -- única FK sem tenant_id (vendas.importacao_id) aponta para o mesmo tenant
+  select v.id from public.vendas v join public.importacoes i on i.id = v.importacao_id where i.tenant_id <> v.tenant_id),
+inv013 as ( -- toda venda, contrato e recebimento tem registro de criação na auditoria
+  select x.id from (
+    select id, 'vendas' t from public.vendas union all select id, 'contratos' from public.contratos
+    union all select id, 'recebimentos' from public.recebimentos) x
+    left join (select distinct tabela, registro_id from public.auditoria
+                where operacao = 'INSERT' and tabela in ('vendas', 'contratos', 'recebimentos')) a
+      on a.tabela = x.t and a.registro_id = x.id::text
+   where a.registro_id is null),
+inv014 as ( -- saldo do crédito do comprador nunca negativo; crédito cancelado sem uso
+  select c.id from public.creditos_comprador c
+   where c.valor_centavos < (select coalesce(sum(u.valor_centavos), 0) from public.usos_credito u where u.credito_id = c.id)
+      or (c.cancelado_em is not null and exists (select 1 from public.usos_credito u where u.credito_id = c.id))),
+inv015 as ( -- soma das contas do rateio = valor do rateio
+  select r.id from public.rateios r
+   where r.valor_centavos <> (select coalesce(sum(cp.valor_centavos), 0) from public.contas_pagar cp where cp.rateio_id = r.id)),
+inv016 as ( -- medições: acumulado crescente e total medido ≤ valor do contrato do fornecedor
+  select m.contrato_id as id from public.medicoes m join public.contratos_fornecedor cf on cf.id = m.contrato_id
+   group by m.contrato_id, cf.valor_centavos having sum(m.valor_centavos) > cf.valor_centavos
+  union all
+  select m.id from public.medicoes m join public.medicoes ant on ant.contrato_id = m.contrato_id and ant.numero = m.numero - 1
+   where m.percentual_acumulado <= ant.percentual_acumulado),
+inv017 as ( -- importação: quantidade de contratos e parcelas gravados = a registrada no lote de importação
+  select i.id from public.importacoes i
+    left join (select v.importacao_id, count(distinct v.id) nc, count(p.id) filter (where p.aditivo_origem_id is null) np
+                 from public.vendas v join public.contratos c on c.venda_id = v.id
+                 left join public.parcelas p on p.contrato_id = c.id
+                where v.importacao_id is not null group by v.importacao_id) g on g.importacao_id = i.id
+   where i.contratos <> coalesce(g.nc, 0) or i.parcelas <> coalesce(g.np, 0)),
+inv020 as ( -- conta a pagar: pagamentos ativos não passam do valor da conta
+  select cp.id from public.contas_pagar cp
+   where (select coalesce(sum(pg.valor_centavos), 0) from public.pagamentos pg where pg.conta_id = cp.id and pg.estornado_em is null) > cp.valor_centavos),
+inv021 as ( -- contrato quitado não tem parcela em aberto (RN-K09)
+  select c.id from public.contratos c where c.situacao = 'quitado'
+     and exists (select 1 from public.parcelas p where p.contrato_id = c.id and p.situacao = 'aberta')),
+inv022 as ( -- lote vendido ⇔ venda ativa
+  select l.id from public.lotes l
+   where (l.status = 'vendido') <> exists (select 1 from public.vendas v where v.lote_id = l.id and v.situacao = 'ativa')),
+inv023 as ( -- distrato: venda distratada, contrato distratado e nenhuma parcela em aberto
+  select c.id from public.distratos d join public.contratos c on c.id = d.contrato_id join public.vendas v on v.id = c.venda_id
+   where c.situacao <> 'distratado' or v.situacao <> 'distratada'
+      or exists (select 1 from public.parcelas p where p.contrato_id = c.id and p.situacao = 'aberta')),
+inv024 as ( -- devoluções do distrato somam o valor a devolver
+  select d.id from public.distratos d
+   where d.devolucao_centavos <> (select coalesce(sum(x.valor_centavos), 0) from public.devolucoes x where x.distrato_id = d.id)),
+inv025 as ( -- cobrança pendente só para parcela em aberto
+  select co.id from public.cobrancas co join public.parcelas p on p.id = co.parcela_id
+   where co.situacao = 'pendente' and p.situacao <> 'aberta'),
+inv026 as ( -- lote em permuta física ⇔ vínculo com permuta física ativa
+  select l.id from public.lotes l
+   where (l.status = 'permuta') <> exists (select 1 from public.permuta_lotes pl join public.permutas pm on pm.id = pl.permuta_id
+                                            where pl.lote_id = l.id and pm.tipo = 'fisica' and pm.situacao = 'vigente'))
+select invariante, descricao, violacoes, exemplos from (
+  select 'INV-001' invariante, 'entrada + amortizações = preço da venda' descricao, (select count(*) from inv001) violacoes, (select array_agg(id) from (select id from inv001 limit 5) x) exemplos
+  union all select 'INV-003', 'parcela paga antes do reajuste não recebe correção', (select count(*) from inv003), (select array_agg(id) from (select id from inv003 limit 5) x)
+  union all select 'INV-004', 'pago da parcela = soma dos principais não estornados', (select count(*) from inv004), (select array_agg(id) from (select id from inv004 limit 5) x)
+  union all select 'INV-005', 'uma venda ativa por lote', (select count(*) from inv005), (select array_agg(id) from (select id from inv005 limit 5) x)
+  union all select 'INV-006', 'uma reserva ativa por lote', (select count(*) from inv006), (select array_agg(id) from (select id from inv006 limit 5) x)
+  union all select 'INV-007', 'cobrança paga ↔ recebimento ativo da mesma parcela', (select count(*) from inv007), (select array_agg(id) from (select id from inv007 limit 5) x)
+  union all select 'INV-008', 'aviso externo sem recebimento duplicado', (select count(*) from inv008), (select array_agg(id) from (select id from inv008 limit 5) x)
+  union all select 'INV-009', 'estorno com data e motivo', (select count(*) from inv009), (select array_agg(id) from (select id from inv009 limit 5) x)
+  union all select 'INV-010', 'participações ≤ 100% em cada data', (select count(*) from inv010), (select array_agg(id) from (select id from inv010 limit 5) x)
+  union all select 'INV-012', 'vendas.importacao_id do mesmo tenant', (select count(*) from inv012), (select array_agg(id) from (select id from inv012 limit 5) x)
+  union all select 'INV-013', 'venda/contrato/recebimento com auditoria de criação', (select count(*) from inv013), (select array_agg(id) from (select id from inv013 limit 5) x)
+  union all select 'INV-014', 'saldo de crédito ≥ 0 e crédito cancelado sem uso', (select count(*) from inv014), (select array_agg(id) from (select id from inv014 limit 5) x)
+  union all select 'INV-015', 'rateio = soma das contas', (select count(*) from inv015), (select array_agg(id) from (select id from inv015 limit 5) x)
+  union all select 'INV-016', 'medição crescente e ≤ contrato', (select count(*) from inv016), (select array_agg(id) from (select id from inv016 limit 5) x)
+  union all select 'INV-017', 'importação sem duplicar contratos/parcelas', (select count(*) from inv017), (select array_agg(id) from (select id from inv017 limit 5) x)
+  union all select 'INV-020', 'pagamentos ≤ valor da conta', (select count(*) from inv020), (select array_agg(id) from (select id from inv020 limit 5) x)
+  union all select 'INV-021', 'contrato quitado sem parcela aberta', (select count(*) from inv021), (select array_agg(id) from (select id from inv021 limit 5) x)
+  union all select 'INV-022', 'lote vendido ⇔ venda ativa', (select count(*) from inv022), (select array_agg(id) from (select id from inv022 limit 5) x)
+  union all select 'INV-023', 'distrato completo (venda, contrato, parcelas)', (select count(*) from inv023), (select array_agg(id) from (select id from inv023 limit 5) x)
+  union all select 'INV-024', 'devoluções = valor do distrato', (select count(*) from inv024), (select array_agg(id) from (select id from inv024 limit 5) x)
+  union all select 'INV-025', 'cobrança pendente só em parcela aberta', (select count(*) from inv025), (select array_agg(id) from (select id from inv025 limit 5) x)
+  union all select 'INV-026', 'lote em permuta ⇔ permuta física ativa', (select count(*) from inv026), (select array_agg(id) from (select id from inv026 limit 5) x)
+) r order by invariante
+$invariantes$;
