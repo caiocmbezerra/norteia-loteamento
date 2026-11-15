@@ -46,23 +46,23 @@
 - **Impacto:** a regra RN-K01 ("plano gerado pelo motor") vale só no app. Extrato, DIMOB, informe de IR e distrato herdam o plano gravado.
 - **Recomendação:** recalcular o plano no banco (Price/SAC em `numeric`, espelhando o motor e testado contra `oraculo.test.ts`) ou conferir cada parcela com uma tolerância de 0 centavo.
 
-### A-02 (ALTA) — multa e juros de mora informados livremente no recebimento
+### A-02 (ALTA) — multa e juros de mora informados livremente no recebimento — **CONFIGURÁVEL POR LOTEADORA** (migration `20261115130000`, D-122)
 
 - **Evidência:** `047` (REC-BANCO-107, 108). Uma multa de R$ 5.000,00 sobre R$ 1.000,00 pagos **no dia do vencimento** foi gravada. Também foi aceita uma multa acima do percentual do contrato (1,5%).
 - **Impacto:** encargos fora da RN-K04 e da D-045 entram na DIMOB (que soma encargos por padrão), no informe de IR e no distrato (dedução de encargos).
 - **Recomendação:** calcular multa e juros no banco a partir de `contratos.multa_atraso`/`juros_mora_mensal` e dos dias de atraso. Uma dispensa, quando houver, entra como desconto com motivo.
 
-### A-03 (MÉDIA) — recebimento datado antes da venda é aceito — **AGUARDA DECISÃO** (pode ser legítimo: sinal pago na reserva, antes da data formal da venda; D-121)
+### A-03 (MÉDIA) — recebimento datado antes da venda é aceito — **CONFIGURÁVEL POR LOTEADORA** (`carteira.pagamento_antes_venda_dias`, migration `20261115130000`, D-122)
 
 - **Evidência:** `047` (REC-BANCO-109): pagamento em 01/01/2020 numa venda de 01/02/2026.
 - **Recomendação:** recusar `data_pagamento < vendas.data_venda`.
 
-### A-04 (MÉDIA, regra a confirmar) — desconto no recebimento sem limite nem alçada
+### A-04 (MÉDIA, regra a confirmar) — desconto no recebimento sem limite nem alçada — **CONFIGURÁVEL POR LOTEADORA** (migration `20261115130000`, D-122)
 
 - **Evidência:** `047` (REC-BANCO-110): desconto de R$ 999,99 sobre R$ 1.000,00, sem aprovação.
 - **Pendência:** a regra não está documentada. O DP precisa definir o limite ou a alçada (análogo ao `comercial.desconto_maximo_sem_aprovacao`).
 
-### A-05 (MÉDIA, regra a confirmar) — condições de venda sem plausibilidade
+### A-05 (MÉDIA, regra a confirmar) — condições de venda sem plausibilidade — **CONFIGURÁVEL POR LOTEADORA** (migration `20261115130000`, D-122)
 
 - **Evidência:** `047` (VEN-BANCO-101…103). O banco aceitou:
   - juros de **50% a.m.** em 480×;
