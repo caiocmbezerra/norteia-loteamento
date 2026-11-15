@@ -83,12 +83,12 @@ EOF
 done
 fim=$(date +%s.%N)
 echo "3.000 contratos / 201.000 parcelas (10 importações): $(echo "$fim - $inicio" | bc) s" | tee -a "$saida"
-sql -c "select 'volume: lotes=' || (select count(*) from public.lotes where tenant_id = '$tenant') || ' contratos=' || (select count(*) from public.contratos where tenant_id = '$tenant') || ' parcelas=' || (select count(*) from public.parcelas where tenant_id = '$tenant') || ' recebimentos=' || (select count(*) from public.recebimentos where tenant_id = '$tenant')" | tee -a "$saida"
 fi
 uid="$(sql -c "select usuario from testes.qa_carga where rotulo = '$r'")"
 emp="$(sql -c "select empreendimento from testes.qa_carga where rotulo = '$r'")"
 tenant="$(sql -c "select tenant from testes.qa_carga where rotulo = '$r'")"
 spe="$(sql -c "select id from public.spes where tenant_id = '$tenant'")"
+sql -c "select 'volume: lotes=' || (select count(*) from public.lotes where tenant_id = '$tenant') || ' contratos=' || (select count(*) from public.contratos where tenant_id = '$tenant') || ' parcelas=' || (select count(*) from public.parcelas where tenant_id = '$tenant') || ' recebimentos=' || (select count(*) from public.recebimentos where tenant_id = '$tenant')" | tee -a "$saida"
 
 sql -q -c "analyze"
 
