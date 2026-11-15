@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { IlustracaoLoteamento } from '@/components/ilustracao-loteamento'
+import Image from 'next/image'
 
 const DESTAQUES = [
   'Viabilidade, custos e fluxo de caixa de cada empreendimento',
@@ -12,8 +12,15 @@ export default function LayoutPublico({ children }: { children: React.ReactNode 
     <div className="grid min-h-dvh bg-background lg:grid-cols-[1.1fr_1fr]">
       {/* Painel ilustrado: faixa no celular, metade da tela no computador */}
       <aside className="relative isolate overflow-hidden bg-[#1d4a31] text-white">
-        <IlustracaoLoteamento className="absolute inset-0 -z-20 size-full" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0f2d1d]/95 via-[#14402a]/70 to-[#14402a]/30 lg:bg-gradient-to-br lg:from-[#0f2d1d]/90 lg:via-[#14402a]/55 lg:to-transparent" />
+        <Image
+          src="/fundo-entrada.jpg"
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1024px) 55vw, 100vw"
+          className="-z-20 object-cover object-[50%_60%]"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0b2416]/95 via-[#0f2d1d]/60 to-[#0f2d1d]/25 lg:bg-gradient-to-tr lg:from-[#0b2416]/90 lg:via-[#0f2d1d]/45 lg:to-[#0f2d1d]/10" />
         <div className="flex h-full min-h-44 flex-col justify-between gap-8 p-6 sm:p-10 lg:min-h-dvh lg:p-14">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold tracking-wide">
             <span className="grid size-8 place-items-center rounded-md bg-white/15 ring-1 ring-white/30 backdrop-blur">
