@@ -70,7 +70,7 @@
   - venda datada **+400 dias**.
 - **Pendência:** o DP define os limites.
 
-### A-06 (ALTA) — status "permuta" do lote editável direto
+### A-06 (ALTA) — status "permuta" do lote editável direto — **CORRIGIDO** (migration `20261115100000`, D-119)
 
 - **Evidência:** `047` (LOT-BANCO-101, 102). O lote de uma **permuta física vigente** voltou a `disponivel` por `update` e foi **vendido**. Um lote também foi marcado `permuta` sem contrato de permuta.
 - **Confirmação nos dados:** a invariante INV-026 acusa 36 lotes no banco local e **18 em produção**: os lotes da demonstração, que a carga do caso de referência grava com `update … status = 'permuta'` (`packages/aplicacao/src/viabilidade.ts:248`).
@@ -86,14 +86,14 @@
   - em condições usuais (0,5–1% a.m., até 240×), a diferença ficou dentro do limite teórico (MOT-UNID-112).
 - **Recomendação:** junto com o A-05, limitar taxa e prazo; ou redistribuir o resíduo (decisão do DP).
 
-### A-08 (ALTA) — o cliente troca o próprio plano
+### A-08 (ALTA) — o cliente troca o próprio plano — **CORRIGIDO** (migration `20261115100000`, D-119)
 
 - **Evidência:** `047` (TEN-SEG-101). O dono passou de Essencial (200 lotes) para **Empresarial (sem limite)** com `update tenants set plano_id = 'empresarial'`. Isso também foi reproduzido manualmente no banco local.
 - **Causa:** a política `UPDATE` de `tenants` (tenant.administrar) não restringe colunas, e `authenticated` tem `UPDATE` em `plano_id`.
 - **Impacto:** RN-G07 e INV-019; perda de receita.
 - **Recomendação:** `revoke update (plano_id) on tenants from authenticated`, ou um gatilho que só permita a troca pela plataforma.
 
-### A-09 (ALTA) — corrida em `definir_participacao`
+### A-09 (ALTA) — corrida em `definir_participacao` — **CORRIGIDO** (migration `20261115100000`, D-119; CONC-008 passou 5/5 depois da correção)
 
 - **Evidência:** `concorrencia.sh`, CONC-008 **falhou em 10 de 10** corridas. Com um sócio em 20% desde 01/07/2026, duas sessões simultâneas definiram outros dois sócios em 50%, e a soma ficou em **120%** nessa data. O banco local guarda as 11 ocorrências (INV-010 = 11).
 - **Em sequência**, o mesmo caso é recusado (`018_socios`).
