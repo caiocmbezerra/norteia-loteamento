@@ -1,7 +1,7 @@
 -- Fase 5b-2: cobrança pelo Asaas com a API simulada (sem rede).
 begin;
 \ir ../auxiliares/testes.psql
-select plan(24);
+select plan(28);
 
 -- API do Asaas simulada: respostas por método + caminho (LIKE) e registro das chamadas.
 create temp table asaas_falso (metodo text, caminho text, resposta jsonb, ordem serial);
@@ -120,6 +120,34 @@ select testes.guardar('c0', public.gerar_cobranca(testes.id('p0')));
 select lives_ok($$ select public.cancelar_cobranca(testes.id('c0'), 'cliente pagou em dinheiro') $$, 'cobrança cancelada no Asaas');
 select throws_ok($$ select public.registrar_recebimento(testes.id('p0'), current_date, 10000, p_origem => 'asaas', p_referencia => 'pay_x') $$,
   '23514', null, 'usuário não registra recebimento como se viesse do Asaas');
+
+-- D-125: reajuste aplicado depois da emissão do boleto — o pagamento baixa o valor emitido e a
+-- diferença do reajuste fica em aberto na parcela.
+select pg_temp.responder('POST', '/payments', '{"status":200,"corpo":{"id":"pay_3"}}');
+select testes.entrar(testes.id('fabi'));
+select testes.guardar('c3', public.gerar_cobranca(testes.id('p0')));
+reset role;
+select set_config('app.carteira', 'on', true);
+update public.parcelas set correcao_centavos = correcao_centavos + 500, valor_centavos = valor_centavos + 500 where id = testes.id('p0');
+select set_config('app.carteira', '', true);
+select pg_temp.responder('GET', '/payments/pay_3', format('{"status":200,"corpo":{"id":"pay_3","status":"RECEIVED","value":100.00,"paymentDate":"%s"}}',
+  (select vencimento from public.parcelas where id = testes.id('p0')))::jsonb);
+select is(public.conciliar_cobrancas(), 1, 'boleto emitido antes do reajuste é baixado (D-125)');
+select is((select situacao from public.cobrancas where id = testes.id('c3')), 'paga', 'a cobrança fica paga, não divergente');
+select is((select pago_centavos || '/' || valor_centavos || '/' || situacao from public.parcelas where id = testes.id('p0')), '10000/10500/aberta',
+  'a parcela recebe o valor do boleto e a diferença do reajuste (5,00) fica em aberto');
+
+-- Baixa manual parcial depois da emissão continua divergente (saldo menor que o boleto).
+select pg_temp.responder('POST', '/payments', '{"status":200,"corpo":{"id":"pay_4"}}');
+select testes.entrar(testes.id('fabi'));
+select testes.guardar('c4', public.gerar_cobranca(testes.id('p0')));
+select public.registrar_recebimento(testes.id('p0'), (select vencimento from public.parcelas where id = testes.id('p0')), 100);
+reset role;
+select pg_temp.responder('GET', '/payments/pay_4', format('{"status":200,"corpo":{"id":"pay_4","status":"RECEIVED","value":5.00,"paymentDate":"%s"}}',
+  (select vencimento from public.parcelas where id = testes.id('p0')))::jsonb);
+select public.conciliar_cobrancas();
+select is((select situacao from public.cobrancas where id = testes.id('c4')), 'divergente',
+  'saldo menor que o boleto (baixa manual parcial) continua divergente para conferência');
 
 select * from finish();
 rollback;
