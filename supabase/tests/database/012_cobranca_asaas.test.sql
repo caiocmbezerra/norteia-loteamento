@@ -1,7 +1,7 @@
 -- Fase 5b-2: cobrança pelo Asaas com a API simulada (sem rede).
 begin;
 \ir ../auxiliares/testes.psql
-select plan(28);
+select plan(32);
 
 -- API do Asaas simulada: respostas por método + caminho (LIKE) e registro das chamadas.
 create temp table asaas_falso (metodo text, caminho text, resposta jsonb, ordem serial);
@@ -148,6 +148,34 @@ select pg_temp.responder('GET', '/payments/pay_4', format('{"status":200,"corpo"
 select public.conciliar_cobrancas();
 select is((select situacao from public.cobrancas where id = testes.id('c4')), 'divergente',
   'saldo menor que o boleto (baixa manual parcial) continua divergente para conferência');
+
+-- D-126: com o Asaas desativado, a cobrança pendente continua cancelável (contrato não trava).
+reset role;
+select pg_temp.responder('POST', '/payments', '{"status":200,"corpo":{"id":"pay_5"}}');
+select testes.entrar(testes.id('fabi'));
+select set_config('app.carteira', '', true);
+select testes.guardar('c5', public.gerar_cobranca(testes.id('p0')));
+select testes.entrar(testes.id('ana'));
+select public.desativar_asaas(testes.id('tenant'));
+reset role;
+select pg_temp.responder('DELETE', '/payments/pay_5', '{"status":200,"corpo":{"deleted":true}}');
+select testes.entrar(testes.id('fabi'));
+select lives_ok($$ select public.cancelar_cobranca(testes.id('c5'), 'Integração desativada') $$,
+  'com o Asaas desativado, a cobrança pendente é cancelada no Asaas com a chave guardada');
+reset role;
+select ok(exists (select 1 from pg_temp.asaas_chamadas where metodo = 'DELETE' and caminho = '/payments/pay_5'),
+  'o boleto foi cancelado no Asaas');
+
+-- Chave recusada pelo Asaas (revogada): cancela só no NorteIA, com aviso no motivo.
+insert into public.cobrancas (tenant_id, parcela_id, asaas_id, valor_centavos, vencimento)
+  select tenant_id, id, 'pay_6', valor_centavos - pago_centavos, vencimento from public.parcelas where id = testes.id('p0');
+select pg_temp.responder('DELETE', '/payments/pay_6', '{"status":401,"corpo":{"errors":[{"description":"chave inválida"}]}}');
+select testes.entrar(testes.id('fabi'));
+select lives_ok($$ select public.cancelar_cobranca((select id from public.cobrancas where asaas_id = 'pay_6'), 'Chave revogada') $$,
+  'chave recusada pelo Asaas não trava o contrato');
+reset role;
+select ok((select motivo like '%cancele o boleto também no painel do Asaas%' from public.cobrancas where asaas_id = 'pay_6'),
+  'o motivo avisa para cancelar o boleto no painel do Asaas');
 
 select * from finish();
 rollback;
