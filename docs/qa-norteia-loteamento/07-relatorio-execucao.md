@@ -120,6 +120,8 @@
 
 ### A-12 (ALTA, desempenho) — `inadimplencia_historico` não escala — **CORRIGIDO** (migration `20261115110000`, D-120)
 
+> **Complemento (D-124):** a consulta passou a somar os recebimentos uma vez por data e parcela; 12 meses caíram de 5,8 s para 2,2 s, com resultado idêntico ao da versão anterior.
+
 - **Evidência:** CAR-009 com **mais de 180 s**, mesmo com uma única data (cancelado). Afeta os alertas de inadimplência (D-093) e o gráfico da carteira.
 - **Plano:** `Seq Scan on recebimentos` para cada parcela (subconsulta lateral por `parcela_id`). Os índices existentes começam por `tenant_id`, `(tenant_id, parcela_id)`, e não servem para um filtro só por `parcela_id`.
 - **Recomendação:** índice `recebimentos (parcela_id) where estornado_em is null` ou incluir `r.tenant_id = p.tenant_id` na subconsulta; agregar os recebimentos uma vez por data.
