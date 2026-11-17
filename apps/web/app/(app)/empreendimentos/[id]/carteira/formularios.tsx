@@ -9,7 +9,7 @@ import {
   descontoAntecipacao,
   gerarParcelasContrato,
 } from '@norteia/motor-financeiro'
-import { useActionState, useMemo, useState } from 'react'
+import { useActionState, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alerta, Campo, Entrada, Selecao, ariaCampo } from '@/components/ui/formulario'
 import type { EstadoFormulario } from '@/lib/acao'
@@ -89,17 +89,28 @@ export function FormularioRecebimento({
   parcela,
   regra,
   hoje,
+  recemRegistrado = false,
 }: {
   empreendimentoId: string
   contratoId: string
   parcela: { id: string; numero: number; vencimento: string; saldoCentavos: number }
   regra: { multa: string; jurosMoraMensal: string }
   hoje: string
+  /** Logo após um recebimento: trava o botão por um instante contra o clique repetido. */
+  recemRegistrado?: boolean
 }) {
   const [estado, acao, enviando] = useActionState<EstadoFormulario, FormData>(
     receber.bind(null, empreendimentoId, contratoId, parcela.id),
     {},
   )
+  // O formulário seguinte já nasce preenchido com o saldo; sem esta trava, uma segunda clicada
+  // logo após o sucesso registraria outro pagamento (auditoria de QA, duplo clique).
+  const [armado, setArmado] = useState(!recemRegistrado)
+  useEffect(() => {
+    if (armado) return
+    const t = setTimeout(() => setArmado(true), 1200)
+    return () => clearTimeout(t)
+  }, [armado])
   const er = estado.erros ?? {}
   const prefixo = `p${parcela.numero}`
   const [campos, setCampos] = useState({
@@ -172,7 +183,7 @@ export function FormularioRecebimento({
           <span className="text-muted-foreground">Informe a data e o valor.</span>
         )}
       </output>
-      <Button type="submit" disabled={enviando} className="self-start">
+      <Button type="submit" disabled={enviando || !armado} className="self-start">
         {enviando ? 'Registrando…' : 'Registrar recebimento'}
       </Button>
     </form>

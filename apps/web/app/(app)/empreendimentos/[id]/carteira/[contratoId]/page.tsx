@@ -285,6 +285,7 @@ export default async function PaginaContrato({
             parcela={proxima}
             regra={regra}
             hoje={hoje}
+            recemRegistrado={Boolean(avisos.recebido)}
           />
         </Cartao>
       )}
